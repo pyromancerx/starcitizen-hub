@@ -4,6 +4,7 @@ import asyncio
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from app.database import Base
+from app.models import User  # Import all models
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./data/test.db"
 

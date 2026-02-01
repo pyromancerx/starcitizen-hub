@@ -7,6 +7,7 @@ from alembic import context
 
 from app.database import Base
 from app.config import get_settings
+from app.models import User  # Import all models for autogenerate
 
 config = context.config
 settings = get_settings()
