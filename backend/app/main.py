@@ -1,5 +1,11 @@
 from fastapi import FastAPI
-from app.routers import auth_router, stockpile_router
+from app.routers import (
+    auth_router,
+    stockpile_router,
+    ship_router,
+    inventory_router,
+    wallet_router,
+)
 
 app = FastAPI(
     title="Star Citizen Hub",
@@ -9,6 +15,9 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(stockpile_router)
+app.include_router(ship_router)
+app.include_router(inventory_router)
+app.include_router(wallet_router)
 
 
 @app.get("/health")
