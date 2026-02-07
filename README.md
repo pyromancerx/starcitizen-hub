@@ -30,13 +30,19 @@ uvicorn app.main:app --reload
 
 ### Installation
 
-1. Clone the repository to your server:
+1. Download and run the installation script:
    ```bash
-   git clone <repo-url> /tmp/starcitizen-hub
-   cd /tmp/starcitizen-hub
+   curl -fsSL https://raw.githubusercontent.com/pyromancerx/starcitizen-hub/main/scripts/install.sh | sudo bash
    ```
 
-2. Run the installation script:
+   Or clone manually:
+   ```bash
+   git clone https://github.com/pyromancerx/starcitizen-hub.git
+   cd starcitizen-hub
+   sudo ./scripts/install.sh
+   ```
+
+2. Run the setup script:
    ```bash
    sudo ./scripts/install.sh
    ```
@@ -88,10 +94,20 @@ systemctl status starcitizen-hub
 journalctl -u caddy -f
 ```
 
+### Updating
+
+To update to the latest version:
+
+```bash
+sudo /opt/starcitizen-hub/scripts/update.sh
+```
+
+This pulls the latest code from GitHub and restarts the service.
+
 ### Uninstalling
 
 ```bash
-sudo ./scripts/uninstall.sh
+sudo /opt/starcitizen-hub/scripts/uninstall.sh
 ```
 
 ## API Documentation

@@ -77,7 +77,7 @@ log_info "Generating secure secret key..."
 SECRET_KEY=$(openssl rand -hex 32)
 
 log_info "Creating environment configuration..."
-cat > "$APP_DIR/.env" << EOF
+cat > "$APP_DIR/backend/.env" << EOF
 # Star Citizen Hub Configuration
 # Generated on $(date)
 
@@ -95,11 +95,11 @@ ALLOW_REGISTRATION=$ALLOW_REGISTRATION
 REQUIRE_APPROVAL=$REQUIRE_APPROVAL
 EOF
 
-chown starcitizen-hub:starcitizen-hub "$APP_DIR/.env"
-chmod 600 "$APP_DIR/.env"
+chown starcitizen-hub:starcitizen-hub "$APP_DIR/backend/.env"
+chmod 600 "$APP_DIR/backend/.env"
 
 log_info "Running database migrations..."
-cd "$APP_DIR"
+cd "$APP_DIR/backend"
 sudo -u starcitizen-hub "$APP_DIR/venv/bin/alembic" upgrade head
 
 log_info "Configuring Caddy reverse proxy..."
@@ -183,5 +183,5 @@ echo "  Restart app:       systemctl restart starcitizen-hub"
 echo "  Restart Caddy:     systemctl restart caddy"
 echo "  Check status:      systemctl status starcitizen-hub"
 echo ""
-echo "Configuration file: $APP_DIR/.env"
+echo "Configuration file: $APP_DIR/backend/.env"
 echo ""

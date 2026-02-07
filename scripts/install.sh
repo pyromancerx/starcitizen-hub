@@ -4,6 +4,9 @@
 
 set -e
 
+# Repository URL
+REPO_URL="https://github.com/pyromancerx/starcitizen-hub.git"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -43,6 +46,7 @@ apt-get install -y \
     libffi-dev \
     libssl-dev \
     curl \
+    git \
     debian-keyring \
     debian-archive-keyring \
     apt-transport-https \
@@ -81,16 +85,21 @@ fi
 # Create application directory
 APP_DIR="/opt/starcitizen-hub"
 log_info "Setting up application directory at $APP_DIR..."
-mkdir -p "$APP_DIR"
-mkdir -p "$APP_DIR/data"
+
+# Clone or update repository
+if [[ -d "$APP_DIR/.git" ]]; then
+    log_info "Updating existing installation from git..."
+    cd "$APP_DIR"
+    git fetch origin
+    git reset --hard origin/main
+else
+    log_info "Cloning repository from GitHub..."
+    rm -rf "$APP_DIR"
+    git clone "$REPO_URL" "$APP_DIR"
+fi
+
+mkdir -p "$APP_DIR/backend/data"
 mkdir -p "$APP_DIR/logs"
-
-# Copy application files
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-
-log_info "Copying application files..."
-cp -r "$PROJECT_DIR/backend/"* "$APP_DIR/"
 
 # Create Python virtual environment
 log_info "Creating Python virtual environment..."
@@ -99,7 +108,7 @@ python3 -m venv "$APP_DIR/venv"
 # Install Python dependencies
 log_info "Installing Python dependencies..."
 "$APP_DIR/venv/bin/pip" install --upgrade pip
-"$APP_DIR/venv/bin/pip" install -r "$APP_DIR/requirements.txt"
+"$APP_DIR/venv/bin/pip" install -r "$APP_DIR/backend/requirements.txt"
 
 # Set ownership
 chown -R starcitizen-hub:starcitizen-hub "$APP_DIR"
@@ -115,7 +124,7 @@ After=network.target
 Type=exec
 User=starcitizen-hub
 Group=starcitizen-hub
-WorkingDirectory=/opt/starcitizen-hub
+WorkingDirectory=/opt/starcitizen-hub/backend
 Environment="PATH=/opt/starcitizen-hub/venv/bin"
 ExecStart=/opt/starcitizen-hub/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
@@ -143,7 +152,7 @@ echo "============================================"
 echo ""
 echo "Next steps:"
 echo "  1. Run the setup script to configure your instance:"
-echo "     sudo $SCRIPT_DIR/setup.sh"
+echo "     sudo $APP_DIR/scripts/setup.sh"
 echo ""
 echo "  2. The setup script will:"
 echo "     - Ask for your domain name"

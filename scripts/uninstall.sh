@@ -59,8 +59,8 @@ if [[ "$PRESERVE_DB" =~ ^[Yy]$ ]]; then
     log_info "Preserving database..."
     BACKUP_DIR="/root/starcitizen-hub-backup-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$BACKUP_DIR"
-    cp -r "$APP_DIR/data" "$BACKUP_DIR/" 2>/dev/null || true
-    cp "$APP_DIR/.env" "$BACKUP_DIR/" 2>/dev/null || true
+    cp -r "$APP_DIR/backend/data" "$BACKUP_DIR/" 2>/dev/null || true
+    cp "$APP_DIR/backend/.env" "$BACKUP_DIR/" 2>/dev/null || true
     log_info "Database backed up to: $BACKUP_DIR"
 fi
 
