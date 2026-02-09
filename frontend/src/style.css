@@ -1,20 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Rajdhani', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #0b0c10;
+  background-color: var(--color-sc-dark);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Default Theme Variables */
+  --color-sc-dark: #0b0c10;
+  --color-sc-panel: #1f2833;
+  --color-sc-blue: #66fcf1;
+  --color-sc-light-blue: #45a29e;
+  --color-sc-grey: #c5c6c7;
 }
 
 body {

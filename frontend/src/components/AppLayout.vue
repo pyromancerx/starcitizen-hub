@@ -2,8 +2,9 @@
   <div class="min-h-screen bg-sc-dark text-white flex">
     <!-- Sidebar -->
     <aside class="w-64 bg-sc-panel border-r border-sc-grey/10 flex-shrink-0 hidden md:flex flex-col">
-      <div class="p-6 border-b border-sc-grey/10">
-        <h1 class="text-xl font-bold text-sc-blue tracking-widest uppercase">Star Hub</h1>
+      <div class="p-6 border-b border-sc-grey/10 flex items-center space-x-3">
+        <img v-if="themeStore.settings.logo_url" :src="themeStore.settings.logo_url" class="h-8 w-8 object-contain" />
+        <h1 class="text-lg font-bold text-sc-blue tracking-widest uppercase truncate">{{ themeStore.settings.org_name }}</h1>
       </div>
       <nav class="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
         <router-link to="/" class="nav-link" active-class="active">Dashboard</router-link>
@@ -47,7 +48,10 @@
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <!-- Header -->
       <header class="bg-sc-panel border-b border-sc-grey/10 h-16 flex items-center justify-between px-8 shadow-2xl z-20">
-        <div class="md:hidden text-xl font-bold text-sc-blue uppercase">Star Hub</div>
+        <div class="md:hidden flex items-center space-x-2">
+           <img v-if="themeStore.settings.logo_url" :src="themeStore.settings.logo_url" class="h-6 w-6 object-contain" />
+           <span class="text-xl font-bold text-sc-blue uppercase">{{ themeStore.settings.org_name }}</span>
+        </div>
         
         <div class="hidden md:flex items-center space-x-2 text-sc-grey/30 text-[10px] font-bold uppercase tracking-widest">
           <span class="text-sc-blue">System</span>
@@ -83,9 +87,11 @@
 <script setup>
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const themeStore = useThemeStore();
 
 const handleLogout = () => {
   authStore.logout();

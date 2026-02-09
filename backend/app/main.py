@@ -13,10 +13,14 @@ from app.routers import (
     project_router,
     federation_router,
     federation_inbound_router,
+    system_public_router,
+    system_admin_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
 from app.config import get_settings
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
 
 settings = get_settings()
 
@@ -39,6 +43,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Mount uploads directory for dev mode (Caddy handles prod)
+# Ensure dir exists
+Path("data/uploads").mkdir(parents=True, exist_ok=True)
+app.mount("/api/uploads", StaticFiles(directory="data/uploads"), name="uploads")
+
 # Add session middleware for flash messages
 app.add_middleware(
     SessionMiddleware,
@@ -57,6 +66,8 @@ app.include_router(event_router)
 app.include_router(project_router)
 app.include_router(federation_router)
 app.include_router(federation_inbound_router)
+app.include_router(system_public_router)
+app.include_router(system_admin_router)
 
 # Web routes (templates)
 app.include_router(web_router)

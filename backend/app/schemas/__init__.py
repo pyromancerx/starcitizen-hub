@@ -47,6 +47,9 @@ from app.schemas.federation import (
     FederatedEventCreate, FederatedEventResponse,
     TradeRequestCreate, TradeRequestResponse
 )
+from app.schemas.system import (
+    SystemSettingCreate, SystemSettingUpdate, SystemSettingResponse, ThemeSettings
+)
 
 __all__ = [
     "UserCreate", "UserUpdate", "UserResponse", "UserWithRoles",
@@ -71,4 +74,5 @@ __all__ = [
     "PeeredInstanceCreate", "PeeredInstanceUpdate", "PeeredInstanceResponse",
     "FederatedEventCreate", "FederatedEventResponse",
     "TradeRequestCreate", "TradeRequestResponse",
+    "SystemSettingCreate", "SystemSettingUpdate", "SystemSettingResponse", "ThemeSettings",
 ]

@@ -2,7 +2,10 @@
   <div class="min-h-screen flex items-center justify-center bg-sc-dark text-white bg-[url('/assets/bg-space.jpg')] bg-cover bg-center">
     <div class="absolute inset-0 bg-black/70"></div>
     <div class="relative z-10 w-full max-w-md p-8 bg-sc-panel border border-sc-blue/30 rounded-lg shadow-2xl backdrop-blur-sm">
-      <h2 class="text-3xl font-bold mb-6 text-center text-sc-blue tracking-widest uppercase">Star Citizen Hub</h2>
+      <div class="flex flex-col items-center mb-6">
+        <img v-if="themeStore.settings.logo_url" :src="themeStore.settings.logo_url" class="h-16 w-16 mb-4 object-contain" alt="Logo">
+        <h2 class="text-3xl font-bold text-center text-sc-blue tracking-widest uppercase">{{ themeStore.settings.org_name }}</h2>
+      </div>
       
       <form @submit.prevent="handleLogin" class="space-y-6">
         <div>
@@ -48,14 +51,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
 
 const email = ref('');
 const password = ref('');
 const authStore = useAuthStore();
+const themeStore = useThemeStore();
 const router = useRouter();
+
+onMounted(() => {
+  // Ensure theme is loaded even if not logged in
+  if (!themeStore.settings.org_name) {
+    themeStore.fetchTheme();
+  }
+});
 
 const handleLogin = async () => {
   try {

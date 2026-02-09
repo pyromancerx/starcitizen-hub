@@ -16,6 +16,7 @@ from app.models.federation import (
     PeeredInstance, FederatedEvent, TradeRequest,
     PeerStatus, TradeRequestStatus
 )
+from app.models.system import SystemSetting
 
 __all__ = [
     "User", "Role", "UserRole", "RoleTier",
@@ -28,4 +29,5 @@ __all__ = [
     "Project", "ProjectPhase", "Task", "ContributionGoal", "Contribution",
     "ProjectStatus", "TaskStatus",
     "PeeredInstance", "FederatedEvent", "TradeRequest", "PeerStatus", "TradeRequestStatus",
+    "SystemSetting",
 ]

@@ -10,6 +10,8 @@ from app.routers.event import router as event_router
 from app.routers.project import router as project_router
 from app.routers.federation import router as federation_router
 from app.routers.federation_inbound import router as federation_inbound_router
+from app.routers.system import public_router as system_public_router
+from app.routers.system import admin_router as system_admin_router
 
 __all__ = [
     "auth_router",
@@ -23,4 +25,6 @@ __all__ = [
     "project_router",
     "federation_router",
     "federation_inbound_router",
+    "system_public_router",
+    "system_admin_router",
 ]

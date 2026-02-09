@@ -7,15 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Sci-fi theme colors
-        'sc-dark': '#0b0c10',
-        'sc-panel': '#1f2833',
-        'sc-blue': '#66fcf1',
-        'sc-light-blue': '#45a29e',
-        'sc-grey': '#c5c6c7',
+        // Sci-fi theme colors utilizing CSS variables
+        'sc-dark': 'var(--color-sc-dark)',
+        'sc-panel': 'var(--color-sc-panel)',
+        'sc-blue': 'var(--color-sc-blue)',
+        'sc-light-blue': 'var(--color-sc-light-blue)',
+        'sc-grey': 'var(--color-sc-grey)',
       },
       fontFamily: {
-        sans: ['Rajdhani', 'sans-serif'], // Assuming we add a font later
+        sans: ['Rajdhani', 'sans-serif'],
       }
     },
   },
