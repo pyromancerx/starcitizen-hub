@@ -31,6 +31,20 @@
         <router-link to="/federation" class="nav-link" active-class="active">Federation</router-link>
 
         <div class="pt-4 pb-2">
+          <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Trading</span>
+        </div>
+        <router-link to="/trade-runs" class="nav-link" active-class="active">Trade Runs</router-link>
+        <router-link to="/prices" class="nav-link" active-class="active">Price Database</router-link>
+        <router-link to="/contracts" class="nav-link" active-class="active">Cargo Contracts</router-link>
+
+        <div class="pt-4 pb-2">
+          <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Multi-Crew</span>
+        </div>
+        <router-link to="/crew-finder" class="nav-link" active-class="active">Crew Finder (LFG)</router-link>
+        <router-link to="/availability" class="nav-link" active-class="active">Availability</router-link>
+        <router-link to="/crew-loadouts" class="nav-link" active-class="active">Crew Loadouts</router-link>
+
+        <div class="pt-4 pb-2">
           <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Command</span>
         </div>
         <router-link to="/admin" class="nav-link" active-class="active text-yellow-500">System Admin</router-link>

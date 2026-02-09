@@ -7,7 +7,7 @@ from app.models.wallet import Wallet, WalletTransaction
 from app.models.stockpile import OrgStockpile, StockpileTransaction, ResourceType
 from app.models.announcement import Announcement
 from app.models.forum import ForumCategory, ForumThread, ForumPost
-from app.models.event import Event, EventSignup, EventType, EventStatus, SignupStatus
+from app.models.event import Operation, OperationParticipant, OperationType, OperationStatus
 from app.models.project import (
     Project, ProjectPhase, Task, ContributionGoal, Contribution,
     ProjectStatus, TaskStatus
@@ -17,6 +17,13 @@ from app.models.federation import (
     PeerStatus, TradeRequestStatus
 )
 from app.models.system import SystemSetting
+from app.models.trade import TradeRun, PriceReport, CargoContract, ContractStatus
+from app.models.treasury import OrgTreasury, TreasuryTransaction
+from app.models.audit import AuditLog
+from app.models.crew import (
+    LFGPost, LFGResponse, LFGStatus,
+    UserAvailability, CrewLoadout
+)
 
 __all__ = [
     "User", "Role", "UserRole", "RoleTier",
@@ -25,9 +32,14 @@ __all__ = [
     "OrgStockpile", "StockpileTransaction", "ResourceType",
     "Announcement",
     "ForumCategory", "ForumThread", "ForumPost",
-    "Event", "EventSignup", "EventType", "EventStatus", "SignupStatus",
+    "Operation", "OperationParticipant", "OperationType", "OperationStatus",
     "Project", "ProjectPhase", "Task", "ContributionGoal", "Contribution",
     "ProjectStatus", "TaskStatus",
     "PeeredInstance", "FederatedEvent", "TradeRequest", "PeerStatus", "TradeRequestStatus",
     "SystemSetting",
+    "TradeRun", "PriceReport", "CargoContract", "ContractStatus",
+    "OrgTreasury", "TreasuryTransaction",
+    "AuditLog",
+    "LFGPost", "LFGResponse", "LFGStatus",
+    "UserAvailability", "CrewLoadout",
 ]

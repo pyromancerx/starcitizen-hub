@@ -17,6 +17,12 @@ import ProjectDetailView from '../views/ProjectDetailView.vue';
 import MembersView from '../views/MembersView.vue';
 import FederationView from '../views/FederationView.vue';
 import AdminView from '../views/AdminView.vue';
+import TradeView from '../views/TradeView.vue';
+import PriceDatabaseView from '../views/PriceDatabaseView.vue';
+import CargoContractsView from '../views/CargoContractsView.vue';
+import CrewFinderView from '../views/CrewFinderView.vue';
+import AvailabilityView from '../views/AvailabilityView.vue';
+import CrewLoadoutsView from '../views/CrewLoadoutsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -106,6 +112,36 @@ const router = createRouter({
           path: 'admin',
           name: 'admin',
           component: AdminView,
+        },
+        {
+          path: 'trade-runs',
+          name: 'trade-runs',
+          component: TradeView,
+        },
+        {
+          path: 'prices',
+          name: 'price-database',
+          component: PriceDatabaseView,
+        },
+        {
+          path: 'contracts',
+          name: 'cargo-contracts',
+          component: CargoContractsView,
+        },
+        {
+          path: 'crew-finder',
+          name: 'crew-finder',
+          component: CrewFinderView,
+        },
+        {
+          path: 'availability',
+          name: 'availability',
+          component: AvailabilityView,
+        },
+        {
+          path: 'crew-loadouts',
+          name: 'crew-loadouts',
+          component: CrewLoadoutsView,
         },
       ]
     },

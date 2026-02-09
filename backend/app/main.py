@@ -15,6 +15,8 @@ from app.routers import (
     federation_inbound_router,
     system_public_router,
     system_admin_router,
+    trade_router,
+    crew_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -71,6 +73,8 @@ app.include_router(federation_router)
 app.include_router(federation_inbound_router)
 app.include_router(system_public_router)
 app.include_router(system_admin_router)
+app.include_router(trade_router)
+app.include_router(crew_router)
 
 # Web routes (templates)
 app.include_router(web_router)
