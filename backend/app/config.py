@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     # Instance settings
     instance_name: str = "Star Citizen Hub"
+    instance_url: str = "http://localhost:8000" # Public URL of this instance
     allow_registration: bool = True
     require_approval: bool = True
 

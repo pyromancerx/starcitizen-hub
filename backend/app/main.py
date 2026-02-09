@@ -7,6 +7,12 @@ from app.routers import (
     ship_router,
     inventory_router,
     wallet_router,
+    announcement_router,
+    forum_router,
+    event_router,
+    project_router,
+    federation_router,
+    federation_inbound_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -14,10 +20,23 @@ from app.config import get_settings
 
 settings = get_settings()
 
+from contextlib import asynccontextmanager
+import asyncio
+from app.tasks.federation import federation_sync_loop
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start background tasks
+    task = asyncio.create_task(federation_sync_loop())
+    yield
+    # Cancel tasks on shutdown (optional but good practice)
+    task.cancel()
+
 app = FastAPI(
     title="Star Citizen Hub",
     description="Social and logistics hub for Star Citizen communities",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Add session middleware for flash messages
@@ -32,6 +51,12 @@ app.include_router(stockpile_router)
 app.include_router(ship_router)
 app.include_router(inventory_router)
 app.include_router(wallet_router)
+app.include_router(announcement_router)
+app.include_router(forum_router)
+app.include_router(event_router)
+app.include_router(project_router)
+app.include_router(federation_router)
+app.include_router(federation_inbound_router)
 
 # Web routes (templates)
 app.include_router(web_router)

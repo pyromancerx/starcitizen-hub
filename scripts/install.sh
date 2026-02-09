@@ -47,6 +47,7 @@ apt-get install -y \
     libssl-dev \
     curl \
     git \
+    bc \
     debian-keyring \
     debian-archive-keyring \
     apt-transport-https \
@@ -71,6 +72,16 @@ if ! command -v caddy &> /dev/null; then
     log_info "Caddy installed successfully"
 else
     log_info "Caddy is already installed"
+fi
+
+# Install Node.js
+log_info "Installing Node.js..."
+if ! command -v node &> /dev/null; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+    log_info "Node.js installed successfully"
+else
+    log_info "Node.js is already installed"
 fi
 
 # Create application user

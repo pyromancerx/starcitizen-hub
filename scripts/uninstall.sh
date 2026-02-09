@@ -72,6 +72,7 @@ userdel starcitizen-hub 2>/dev/null || true
 
 log_info "Removing Caddy configuration..."
 rm -f /etc/caddy/Caddyfile
+rm -rf /var/log/caddy
 systemctl restart caddy 2>/dev/null || true
 
 echo ""

@@ -21,6 +21,32 @@ from app.schemas.wallet import (
     WalletWithTransactions,
     TransferRequest,
 )
+from app.schemas.announcement import (
+    AnnouncementCreate,
+    AnnouncementUpdate,
+    AnnouncementResponse,
+)
+from app.schemas.forum import (
+    ForumCategoryCreate, ForumCategoryUpdate, ForumCategoryResponse,
+    ForumThreadCreate, ForumThreadUpdate, ForumThreadResponse, ForumThreadDetail,
+    ForumPostCreate, ForumPostUpdate, ForumPostResponse,
+)
+from app.schemas.event import (
+    EventCreate, EventUpdate, EventResponse, EventDetail,
+    EventSignupCreate, EventSignupUpdate, EventSignupResponse,
+)
+from app.schemas.project import (
+    ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetail,
+    ProjectPhaseCreate, ProjectPhaseUpdate, ProjectPhaseResponse,
+    TaskCreate, TaskUpdate, TaskResponse,
+    ContributionGoalCreate, ContributionGoalUpdate, ContributionGoalResponse,
+    ContributionCreate, ContributionResponse
+)
+from app.schemas.federation import (
+    PeeredInstanceCreate, PeeredInstanceUpdate, PeeredInstanceResponse,
+    FederatedEventCreate, FederatedEventResponse,
+    TradeRequestCreate, TradeRequestResponse
+)
 
 __all__ = [
     "UserCreate", "UserUpdate", "UserResponse", "UserWithRoles",
@@ -31,4 +57,18 @@ __all__ = [
     "InventoryAdjustment",
     "WalletResponse", "WalletTransactionCreate", "WalletTransactionResponse",
     "WalletWithTransactions", "TransferRequest",
+    "AnnouncementCreate", "AnnouncementUpdate", "AnnouncementResponse",
+    "ForumCategoryCreate", "ForumCategoryUpdate", "ForumCategoryResponse",
+    "ForumThreadCreate", "ForumThreadUpdate", "ForumThreadResponse", "ForumThreadDetail",
+    "ForumPostCreate", "ForumPostUpdate", "ForumPostResponse",
+    "EventCreate", "EventUpdate", "EventResponse", "EventDetail",
+    "EventSignupCreate", "EventSignupUpdate", "EventSignupResponse",
+    "ProjectCreate", "ProjectUpdate", "ProjectResponse", "ProjectDetail",
+    "ProjectPhaseCreate", "ProjectPhaseUpdate", "ProjectPhaseResponse",
+    "TaskCreate", "TaskUpdate", "TaskResponse",
+    "ContributionGoalCreate", "ContributionGoalUpdate", "ContributionGoalResponse",
+    "ContributionCreate", "ContributionResponse",
+    "PeeredInstanceCreate", "PeeredInstanceUpdate", "PeeredInstanceResponse",
+    "FederatedEventCreate", "FederatedEventResponse",
+    "TradeRequestCreate", "TradeRequestResponse",
 ]

@@ -83,6 +83,12 @@ log_info "Updating Python dependencies..."
 "$APP_DIR/venv/bin/pip" install --upgrade pip
 "$APP_DIR/venv/bin/pip" install -r "$APP_DIR/backend/requirements.txt"
 
+# Update Frontend
+log_info "Updating frontend..."
+cd "$APP_DIR/frontend"
+npm install
+npm run build
+
 # Run database migrations
 log_info "Running database migrations..."
 cd "$APP_DIR/backend"
@@ -91,6 +97,7 @@ sudo -u starcitizen-hub "$APP_DIR/venv/bin/alembic" upgrade head
 # Restart the service
 log_info "Starting service..."
 systemctl start starcitizen-hub
+systemctl restart caddy
 
 # Wait for service to start
 sleep 2

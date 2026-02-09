@@ -102,14 +102,36 @@ log_info "Running database migrations..."
 cd "$APP_DIR/backend"
 sudo -u starcitizen-hub "$APP_DIR/venv/bin/alembic" upgrade head
 
+log_info "Seeding initial data..."
+sudo -u starcitizen-hub "$APP_DIR/venv/bin/python" -m app.tasks.seed
+
+log_info "Building frontend..."
+cd "$APP_DIR/frontend"
+npm install
+npm run build
+
+# Ensure correct ownership after build
+chown -R starcitizen-hub:starcitizen-hub "$APP_DIR"
+
 log_info "Configuring Caddy reverse proxy..."
 cat > /etc/caddy/Caddyfile << EOF
 # Star Citizen Hub - Caddy Configuration
 # Domain: $DOMAIN_NAME
 
 $DOMAIN_NAME {
-    # Reverse proxy to the FastAPI backend
-    reverse_proxy 127.0.0.1:8000
+    # Serve frontend static files
+    root * $APP_DIR/frontend/dist
+    file_server
+
+    # Reverse proxy API requests to the FastAPI backend
+    handle_path /api* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    # Fallback to index.html for SPA routing
+    handle {
+        try_files {path} /index.html
+    }
 
     # Enable compression
     encode gzip zstd
