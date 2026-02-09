@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - {{ instance_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Manage user accounts, approvals, and roles.
+            </p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+        <form hx-get="/admin/users"
+              hx-target="#users-table"
+              hx-swap="innerHTML"
+              hx-trigger="change, keyup delay:300ms from:#search"
+              class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="search" class="sr-only">Search users</label>
+                <input type="text" name="search" id="search" value="{{ search or '' }}"
+                       class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm"
+                       placeholder="Search by email, name, or handle...">
+            </div>
+            <div>
+                <select name="status" id="status"
+                        class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if status == 'pending' %}selected{% endif %}>Pending Approval</option>
+                    <option value="approved" {% if status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="banned" {% if status == 'banned' %}selected{% endif %}>Banned</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Users table -->
+    <div id="users-table" class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        {% include "admin/partials/users_table.html" %}
+    </div>
+</div>
+{% endblock %}

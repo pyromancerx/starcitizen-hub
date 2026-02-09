@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Login - {{ instance_name }}{% endblock %}
+
+{% block public_content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-sc-dark via-sc-blue to-sc-dark">
+    <div class="max-w-md w-full space-y-8">
+        <div>
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-white">
+                Sign in to {{ instance_name }}
+            </h2>
+            <p class="mt-2 text-center text-sm text-gray-300">
+                {% if allow_registration %}
+                Or
+                <a href="/register" class="font-medium text-sc-gold hover:text-yellow-400">
+                    create a new account
+                </a>
+                {% endif %}
+            </p>
+        </div>
+
+        <form class="mt-8 space-y-6 bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl"
+              hx-post="/login"
+              hx-target="#form-errors"
+              hx-swap="innerHTML">
+
+            <div id="form-errors"></div>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Email address
+                    </label>
+                    <input id="email" name="username" type="email" autocomplete="email" required
+                           class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-sc-blue focus:border-sc-blue focus:z-10 sm:text-sm"
+                           placeholder="citizen@example.com">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Password
+                    </label>
+                    <input id="password" name="password" type="password" autocomplete="current-password" required
+                           class="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 text-gray-900 dark:text-white dark:bg-gray-700 rounded-lg focus:outline-none focus:ring-sc-blue focus:border-sc-blue focus:z-10 sm:text-sm"
+                           placeholder="Password">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit"
+                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-sc-blue hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sc-blue transition">
+                    <span class="htmx-indicator absolute left-4">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </span>
+                    Sign in
+                </button>
+            </div>
+        </form>
+
+        <div class="text-center">
+            <a href="/" class="text-sm text-gray-300 hover:text-white">
+                &larr; Back to home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
