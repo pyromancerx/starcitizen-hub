@@ -10,6 +10,8 @@ from app.database import get_db
 from app.templates_config import templates, get_template_context
 from app.models.user import User
 from app.models.role import Role, UserRole, RoleTier
+from app.models.audit import AuditLog
+from app.services.audit import AuditLogger
 from app.web_dependencies import (
     check_admin_permission,
     get_user_permissions,
@@ -99,6 +101,17 @@ async def approve_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     target_user.is_approved = True
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="user.approve", 
+        target_type="user", 
+        target_id=user_id,
+        details={"admin_id": admin.id}
+    )
+    
     await db.commit()
     await db.refresh(target_user)
 
@@ -126,6 +139,16 @@ async def ban_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     target_user.is_active = False
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="user.ban", 
+        target_type="user", 
+        target_id=user_id
+    )
+    
     await db.commit()
     await db.refresh(target_user)
 
@@ -150,6 +173,16 @@ async def unban_user(
         raise HTTPException(status_code=404, detail="User not found")
 
     target_user.is_active = True
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="user.unban", 
+        target_type="user", 
+        target_id=user_id
+    )
+    
     await db.commit()
     await db.refresh(target_user)
 
@@ -228,6 +261,16 @@ async def update_user_roles(
         )
         db.add(user_role)
 
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="user.update_roles", 
+        target_type="user", 
+        target_id=user_id,
+        details={"roles": roles}
+    )
+
     await db.commit()
 
     # Return empty to close modal
@@ -301,6 +344,16 @@ async def create_role(
         sort_order=sort_order,
     )
     db.add(role)
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="role.create", 
+        target_type="role", 
+        details={"name": name, "tier": tier}
+    )
+    
     await db.commit()
 
     # Return updated roles list
@@ -371,6 +424,16 @@ async def update_role(
     role.is_default = is_default
     role.sort_order = sort_order
 
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="role.update", 
+        target_type="role", 
+        target_id=role_id,
+        details={"name": name}
+    )
+
     await db.commit()
 
     # Return updated roles list
@@ -401,10 +464,49 @@ async def delete_role(
         raise HTTPException(status_code=400, detail="Cannot delete the default role")
 
     await db.delete(role)
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="role.delete", 
+        target_type="role", 
+        target_id=role_id,
+        details={"name": role.name}
+    )
+    
     await db.commit()
 
     # Return empty response to remove from DOM
     return HTMLResponse("")
+
+
+# ============================================================
+# AUDIT LOG
+# ============================================================
+
+@router.get("/audit", response_class=HTMLResponse)
+async def audit_log(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(check_admin_permission)],
+    page: int = 1,
+):
+    """View audit log."""
+    await set_admin_request(request, user, db)
+    
+    limit = 50
+    offset = (page - 1) * limit
+    
+    query = select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).offset(offset)
+    result = await db.execute(query)
+    logs = result.scalars().all()
+    
+    # Resolve users
+    # In a real app we'd join, but simple lazy load or pre-fetch is fine for now
+    
+    context = get_template_context(request, logs=logs, page=page)
+    return templates.TemplateResponse("admin/audit.html", context)
 
 
 # ============================================================
@@ -461,6 +563,20 @@ async def update_settings(
     # Note: In a production app, you'd persist these settings to a database
     # For now, we'll just acknowledge the change
     # The actual settings are loaded from environment/config
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, 
+        action="settings.update", 
+        target_type="system", 
+        details={
+            "instance_name": instance_name,
+            "allow_registration": allow_registration,
+            "require_approval": require_approval
+        }
+    )
+    await db.commit()
 
     return templates.TemplateResponse(
         "components/form_success.html",

@@ -18,6 +18,9 @@ from app.routers import (
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
+from app.routers.operation_web import router as operation_web_router
+from app.routers.member_web import router as member_web_router
+from app.routers.treasury_web import router as treasury_web_router
 from app.config import get_settings
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
@@ -72,6 +75,9 @@ app.include_router(system_admin_router)
 # Web routes (templates)
 app.include_router(web_router)
 app.include_router(admin_router)
+app.include_router(operation_web_router)
+app.include_router(member_web_router)
+app.include_router(treasury_web_router)
 
 
 @app.get("/health")

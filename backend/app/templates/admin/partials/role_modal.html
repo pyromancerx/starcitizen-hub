@@ -1,142 +1,82 @@
-<!-- Modal backdrop -->
 <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex min-h-screen items-end justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <!-- Background overlay -->
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onclick="document.getElementById('modal-container').innerHTML = ''"></div>
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="document.getElementById('modal-container').innerHTML = ''"></div>
 
-        <!-- Modal panel -->
-        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-            <form hx-{{ 'put' if role else 'post' }}="/admin/roles{% if role %}/{{ role.id }}{% endif %}"
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <form {% if role %}hx-put="/admin/roles/{{ role.id }}"{% else %}hx-post="/admin/roles"{% endif %}
                   hx-target="#roles-list"
                   hx-swap="innerHTML"
-                  hx-on::after-request="document.getElementById('modal-container').innerHTML = ''">
-                <div>
-                    <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white" id="modal-title">
-                        {{ 'Edit Role' if role else 'Create New Role' }}
-                    </h3>
-                    <div class="mt-4 space-y-4">
-                        <!-- Role name -->
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Role Name <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" name="name" id="name" required
-                                   value="{{ role.name if role else '' }}"
-                                   class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm"
-                                   placeholder="e.g., Fleet Commander">
-                        </div>
+                  onsubmit="document.getElementById('modal-container').innerHTML = ''">
 
-                        <!-- Role tier -->
-                        <div>
-                            <label for="tier" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Tier
-                            </label>
-                            <select name="tier" id="tier"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm">
-                                <option value="recruit" {% if role and role.tier == 'recruit' %}selected{% endif %}>Recruit</option>
-                                <option value="member" {% if role and role.tier == 'member' %}selected{% endif %}>Member</option>
-                                <option value="officer" {% if role and role.tier == 'officer' %}selected{% endif %}>Officer</option>
-                                <option value="admin" {% if role and role.tier == 'admin' %}selected{% endif %}>Admin</option>
-                                <option value="custom" {% if not role or role.tier == 'custom' %}selected{% endif %}>Custom</option>
-                            </select>
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Higher tiers inherit permissions from lower tiers.
-                            </p>
-                        </div>
-
-                        <!-- Permissions -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Permissions
-                            </label>
-                            <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-md p-3 space-y-3">
-                                <!-- Admin permissions -->
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                                {% if role %}Edit Role{% else %}Create New Role{% endif %}
+                            </h3>
+                            <div class="mt-4 space-y-4">
                                 <div>
-                                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Admin</p>
-                                    <div class="space-y-1">
-                                        {% for perm in ['admin.manage_users', 'admin.manage_roles', 'admin.manage_settings', 'admin.view_audit_log'] %}
-                                        <label class="flex items-center">
-                                            <input type="checkbox" name="permissions" value="{{ perm }}"
-                                                   {% if role and perm in role.permissions %}checked{% endif %}
-                                                   class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-sc-blue focus:ring-sc-blue">
-                                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ perm }}</span>
-                                        </label>
-                                        {% endfor %}
-                                    </div>
+                                    <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role Name</label>
+                                    <input type="text" name="name" id="name" required value="{{ role.name if role else '' }}"
+                                           class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm">
                                 </div>
 
-                                <!-- Org permissions -->
                                 <div>
-                                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Organization</p>
-                                    <div class="space-y-1">
-                                        {% for perm in ['org.manage_treasury', 'org.manage_stockpiles', 'org.create_operations', 'org.manage_operations', 'org.post_announcements'] %}
-                                        <label class="flex items-center">
-                                            <input type="checkbox" name="permissions" value="{{ perm }}"
-                                                   {% if role and perm in role.permissions %}checked{% endif %}
-                                                   class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-sc-blue focus:ring-sc-blue">
-                                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ perm }}</span>
-                                        </label>
-                                        {% endfor %}
-                                    </div>
+                                    <label for="tier" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tier</label>
+                                    <select name="tier" id="tier" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm">
+                                        <option value="recruit" {% if role and role.tier == 'recruit' %}selected{% endif %}>Recruit (Low)</option>
+                                        <option value="member" {% if role and role.tier == 'member' %}selected{% endif %}>Member</option>
+                                        <option value="officer" {% if role and role.tier == 'officer' %}selected{% endif %}>Officer</option>
+                                        <option value="admin" {% if role and role.tier == 'admin' %}selected{% endif %}>Admin (High)</option>
+                                    </select>
                                 </div>
 
-                                <!-- Members permissions -->
                                 <div>
-                                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Members & Trading</p>
-                                    <div class="space-y-1">
-                                        {% for perm in ['members.approve', 'members.view_directory', 'trading.create_contracts', 'trading.manage_prices'] %}
-                                        <label class="flex items-center">
-                                            <input type="checkbox" name="permissions" value="{{ perm }}"
+                                    <label for="sort_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sort Order</label>
+                                    <input type="number" name="sort_order" id="sort_order" required value="{{ role.sort_order if role else 0 }}"
+                                           class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm">
+                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Lower numbers appear higher in lists.</p>
+                                </div>
+
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="is_default" id="is_default" value="true" {% if role and role.is_default %}checked{% endif %}
+                                           class="h-4 w-4 text-sc-blue focus:ring-sc-blue border-gray-300 rounded">
+                                    <label for="is_default" class="ml-2 block text-sm text-gray-900 dark:text-white">
+                                        Default role for new users
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Permissions</label>
+                                    <div class="h-48 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2 space-y-2">
+                                        {% for perm in ['admin.manage_users', 'admin.manage_roles', 'admin.manage_settings', 'admin.view_audit_log',
+                                                        'org.manage_treasury', 'org.manage_stockpiles', 'org.create_operations', 'org.manage_operations', 'org.post_announcements',
+                                                        'members.approve', 'members.view_directory',
+                                                        'trading.create_contracts', 'trading.manage_prices'] %}
+                                        <div class="flex items-center">
+                                            <input type="checkbox" name="permissions" value="{{ perm }}" id="perm_{{ perm }}"
                                                    {% if role and perm in role.permissions %}checked{% endif %}
-                                                   class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-sc-blue focus:ring-sc-blue">
-                                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ perm }}</span>
-                                        </label>
+                                                   class="h-4 w-4 text-sc-blue focus:ring-sc-blue border-gray-300 rounded">
+                                            <label for="perm_{{ perm }}" class="ml-2 block text-sm text-gray-900 dark:text-white">
+                                                {{ perm }}
+                                            </label>
+                                        </div>
                                         {% endfor %}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Default role -->
-                        <div class="flex items-start">
-                            <div class="flex items-center h-5">
-                                <input type="checkbox" name="is_default" id="is_default"
-                                       {% if role and role.is_default %}checked{% endif %}
-                                       class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-sc-blue focus:ring-sc-blue">
-                            </div>
-                            <div class="ml-3 text-sm">
-                                <label for="is_default" class="font-medium text-gray-700 dark:text-gray-300">
-                                    Default Role
-                                </label>
-                                <p class="text-gray-500 dark:text-gray-400">
-                                    Assign this role to new users automatically.
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Sort order -->
-                        <div>
-                            <label for="sort_order" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Sort Order
-                            </label>
-                            <input type="number" name="sort_order" id="sort_order"
-                                   value="{{ role.sort_order if role else 0 }}"
-                                   class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm">
-                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                Lower numbers appear first.
-                            </p>
                         </div>
                     </div>
                 </div>
-
-                <div class="mt-5 sm:mt-6 sm:grid sm:grid-flow-row-dense sm:grid-cols-2 sm:gap-3">
-                    <button type="submit"
-                            class="inline-flex w-full justify-center rounded-md border border-transparent bg-sc-blue px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-sc-blue focus:ring-offset-2 sm:col-start-2 sm:text-sm">
-                        {{ 'Save Changes' if role else 'Create Role' }}
+                <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-sc-blue text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sc-blue sm:ml-3 sm:w-auto sm:text-sm">
+                        {% if role %}Save Changes{% else %}Create Role{% endif %}
                     </button>
-                    <button type="button"
-                            onclick="document.getElementById('modal-container').innerHTML = ''"
-                            class="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-sc-blue focus:ring-offset-2 sm:col-start-1 sm:mt-0 sm:text-sm">
+                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sc-blue sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                            onclick="document.getElementById('modal-container').innerHTML = ''">
                         Cancel
                     </button>
                 </div>

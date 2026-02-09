@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}{{ operation.title }} - Operations{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol role="list" class="flex items-center space-x-4">
+                    <li>
+                        <div>
+                            <a href="/operations" class="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">Operations</a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+                            </svg>
+                            <span class="ml-4 text-sm font-medium text-gray-500 dark:text-gray-400">{{ operation.title }}</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            <h1 class="mt-2 text-2xl font-bold leading-7 text-gray-900 dark:text-white sm:truncate sm:text-3xl sm:tracking-tight">
+                {{ operation.title }}
+            </h1>
+            <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+                <div class="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                        {% if operation.type == 'combat' %}bg-red-50 text-red-700 ring-red-600/20
+                        {% elif operation.type == 'mining' %}bg-yellow-50 text-yellow-700 ring-yellow-600/20
+                        {% elif operation.type == 'cargo' %}bg-blue-50 text-blue-700 ring-blue-600/20
+                        {% elif operation.type == 'exploration' %}bg-purple-50 text-purple-700 ring-purple-600/20
+                        {% elif operation.type == 'salvage' %}bg-green-50 text-green-700 ring-green-600/20
+                        {% else %}bg-gray-50 text-gray-700 ring-gray-600/20
+                        {% endif %} mr-2">
+                        {{ operation.type.value.title() }}
+                    </span>
+                    {{ operation.status.value.title() }}
+                </div>
+            </div>
+        </div>
+        <div class="mt-5 flex lg:ml-4 lg:mt-0">
+            {% if is_admin or current_user.id == operation.created_by_id %}
+            <span class="hidden sm:block">
+                <a href="/operations/{{ operation.id }}/edit" class="inline-flex items-center rounded-md bg-white dark:bg-gray-700 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600">
+                    <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Edit
+                </a>
+            </span>
+            {% endif %}
+
+            <span class="ml-3">
+                {% set is_signed_up = false %}
+                {% for p in operation.participants %}
+                    {% if p.user_id == current_user.id %}
+                        {% set is_signed_up = true %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if is_signed_up %}
+                <form hx-post="/operations/{{ operation.id }}/leave" hx-target="body">
+                    <button type="submit" class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+                        Leave Operation
+                    </button>
+                </form>
+                {% else %}
+                <button hx-get="/operations/{{ operation.id }}/signup" hx-target="#modal-container" hx-swap="innerHTML" class="inline-flex items-center rounded-md bg-sc-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sc-blue">
+                    Sign Up
+                </button>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Details Column -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Description -->
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">Description</h3>
+                    <div class="mt-4 prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
+                        {{ operation.description or 'No description provided.' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requirements -->
+            {% if operation.requirements %}
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">Requirements</h3>
+                    <div class="mt-4 text-gray-600 dark:text-gray-300">
+                        {{ operation.requirements }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Roster -->
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:px-6 flex items-center justify-between">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">Participant Roster</h3>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ operation.participants|length }} / {{ operation.max_participants or '∞' }}
+                    </span>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700">
+                    <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for p in operation.participants %}
+                        <li class="px-4 py-4 sm:px-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        {% if p.user.avatar_url %}
+                                        <img class="h-10 w-10 rounded-full" src="{{ p.user.avatar_url }}" alt="">
+                                        {% else %}
+                                        <div class="h-10 w-10 rounded-full bg-sc-blue flex items-center justify-center text-white font-medium">
+                                            {{ (p.user.display_name or p.user.email)[0].upper() }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                            {{ p.user.display_name or p.user.email }}
+                                            {% if p.user_id == operation.created_by_id %}
+                                            <span class="ml-2 inline-flex items-center rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">Organizer</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            {{ p.role_preference or 'No role specified' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-gray-900 dark:text-white">
+                                        {% if p.ship_id %}
+                                        <!-- Need to fetch ship info -->
+                                        Ship Registered
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        Joined {{ p.joined_at.strftime('%H:%M') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                            No participants yet. Be the first to join!
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:p-6 space-y-4">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white">Operation Info</h3>
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <span class="block text-gray-500 dark:text-gray-400">Date</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ operation.scheduled_at.strftime('%A, %b %d, %Y') }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-500 dark:text-gray-400">Time</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ operation.scheduled_at.strftime('%H:%M UTC') }}</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-500 dark:text-gray-400">Estimated Duration</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ operation.estimated_duration or '?' }} minutes</span>
+                        </div>
+                        <div>
+                            <span class="block text-gray-500 dark:text-gray-400">Created By</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ operation.creator.display_name or operation.creator.email }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-container"></div>
+{% endblock %}

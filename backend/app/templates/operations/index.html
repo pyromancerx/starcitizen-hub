@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Operations - {{ instance_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Fleet Operations</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Coordinate group activities and sign up for upcoming missions.
+            </p>
+        </div>
+        <div class="mt-4 sm:mt-0">
+            <a href="/operations/new"
+               class="inline-flex items-center rounded-md bg-sc-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-sc-blue focus:ring-offset-2">
+                <svg class="-ml-0.5 mr-1.5 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                New Operation
+            </a>
+        </div>
+    </div>
+
+    <!-- Operations list -->
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {% for op in operations %}
+        <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden flex flex-col">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset 
+                        {% if op.type == 'combat' %}bg-red-50 text-red-700 ring-red-600/20
+                        {% elif op.type == 'mining' %}bg-yellow-50 text-yellow-700 ring-yellow-600/20
+                        {% elif op.type == 'cargo' %}bg-blue-50 text-blue-700 ring-blue-600/20
+                        {% elif op.type == 'exploration' %}bg-purple-50 text-purple-700 ring-purple-600/20
+                        {% elif op.type == 'salvage' %}bg-green-50 text-green-700 ring-green-600/20
+                        {% else %}bg-gray-50 text-gray-700 ring-gray-600/20
+                        {% endif %}">
+                        {{ op.type.value.title() }}
+                    </span>
+                    <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {{ op.status.value.title() }}
+                    </span>
+                </div>
+                <h3 class="mt-2 text-lg font-bold text-gray-900 dark:text-white truncate">{{ op.title }}</h3>
+            </div>
+            <div class="px-4 py-4 flex-1">
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center text-gray-500 dark:text-gray-400">
+                        <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        {{ op.scheduled_at.strftime('%b %d, %Y at %H:%M') }}
+                    </div>
+                    <div class="flex items-center text-gray-500 dark:text-gray-400">
+                        <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12a5 5 0 1110 0 5 5 0 01-10 0zm0 0V6"/>
+                        </svg>
+                        {{ op.estimated_duration or '?' }} mins
+                    </div>
+                    <div class="flex items-center text-gray-500 dark:text-gray-400">
+                        <svg class="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        {{ op.participants|length }} / {{ op.max_participants or '∞' }} participants
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-4 bg-gray-50 dark:bg-gray-700/50">
+                <a href="/operations/{{ op.id }}" class="block w-full text-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-white shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    View Details
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="sm:col-span-2 lg:col-span-3 bg-white dark:bg-gray-800 shadow rounded-lg px-6 py-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No operations scheduled</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating a new operation.</p>
+            <div class="mt-6">
+                <a href="/operations/new" class="inline-flex items-center rounded-md bg-sc-blue px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700">
+                    New Operation
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

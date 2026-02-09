@@ -3,10 +3,12 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.database import get_db
 from app.services.auth import AuthService
 from app.services.user import UserService
 from app.models.user import User
+from app.models.role import Role, UserRole
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -57,3 +59,41 @@ async def get_current_approved_user(
     if not current_user.is_approved:
         raise HTTPException(status_code=403, detail="User not approved")
     return current_user
+
+async def get_user_permissions(
+    user: User,
+    db: AsyncSession,
+) -> list[str]:
+    """Get all permissions for a user from their roles."""
+    result = await db.execute(
+        select(Role)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user.id)
+    )
+    roles = result.scalars().all()
+
+    permissions = set()
+    for role in roles:
+        if role.permissions:
+            # Handle "*" admin permission
+            if "*" in role.permissions:
+                return ["*"]
+            permissions.update(role.permissions)
+
+    return list(permissions)
+
+def check_permission(required_permission: str):
+    async def dependency(
+        user: Annotated[User, Depends(get_current_approved_user)],
+        db: Annotated[AsyncSession, Depends(get_db)],
+    ):
+        permissions = await get_user_permissions(user, db)
+        if "*" in permissions:
+            return user
+        if required_permission not in permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied. Required: {required_permission}",
+            )
+        return user
+    return dependency

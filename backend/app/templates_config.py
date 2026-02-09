@@ -14,18 +14,14 @@ templates = Jinja2Templates(directory=str(templates_dir))
 
 def get_flashed_messages(request: Request) -> list:
     """Get and clear flash messages from session."""
-    if hasattr(request.state, "_messages"):
-        messages = request.state._messages
-        request.state._messages = []
-        return messages
-    return []
+    return request.session.pop("_messages", [])
 
 
 def flash(request: Request, message: str, category: str = "info"):
     """Add a flash message to the session."""
-    if not hasattr(request.state, "_messages"):
-        request.state._messages = []
-    request.state._messages.append({"text": message, "category": category})
+    if "_messages" not in request.session:
+        request.session["_messages"] = []
+    request.session["_messages"].append({"text": message, "category": category})
 
 
 def get_template_context(request: Request, **kwargs) -> dict:

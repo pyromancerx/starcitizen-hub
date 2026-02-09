@@ -1,0 +1,55 @@
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {% for member in members %}
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden flex flex-col">
+        <div class="px-4 py-5 sm:p-6 flex-1">
+            <div class="flex items-center space-x-4">
+                <div class="flex-shrink-0">
+                    {% if member.avatar_url %}
+                    <img class="h-12 w-12 rounded-full" src="{{ member.avatar_url }}" alt="{{ member.display_name or member.email }}">
+                    {% else %}
+                    <div class="h-12 w-12 rounded-full bg-sc-blue flex items-center justify-center text-white text-lg font-medium">
+                        {{ (member.display_name or member.email)[0].upper() }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {{ member.display_name or member.email }}
+                    </p>
+                    {% if member.rsi_handle %}
+                    <a href="https://robertsspaceindustries.com/citizens/{{ member.rsi_handle }}" 
+                       target="_blank"
+                       class="text-xs text-sc-gold hover:underline truncate block">
+                        {{ member.rsi_handle }}
+                    </a>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if member.last_seen_at and (now() - member.last_seen_at).total_seconds() < 900 %}
+                    <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white dark:ring-gray-800" title="Online"></span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <div class="flex flex-wrap gap-1">
+                    {% for role in member.roles %}
+                    <span class="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+                        {{ role.name }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:px-6">
+            <a href="/members/{{ member.id }}" class="text-sm font-medium text-sc-blue hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                View Profile &rarr;
+            </a>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-full py-12 bg-white dark:bg-gray-800 shadow rounded-lg text-center">
+        <p class="text-gray-500 dark:text-gray-400">No members found.</p>
+    </div>
+    {% endfor %}
+</div>

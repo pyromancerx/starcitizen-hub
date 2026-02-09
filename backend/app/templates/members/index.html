@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Member Directory - {{ instance_name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Page header -->
+    <div class="sm:flex sm:items-center sm:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Member Directory</h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Browse and search organization members.
+            </p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+        <form hx-get="/members"
+              hx-target="#members-grid"
+              hx-swap="innerHTML"
+              hx-trigger="keyup delay:300ms from:#search, change"
+              class="flex flex-wrap gap-4">
+            <div class="flex-1 min-w-[200px]">
+                <label for="search" class="sr-only">Search members</label>
+                <input type="text" name="search" id="search" value="{{ search or '' }}"
+                       class="block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-sc-blue focus:ring-sc-blue sm:text-sm"
+                       placeholder="Search by name, RSI handle...">
+            </div>
+        </form>
+    </div>
+
+    <!-- Members grid -->
+    <div id="members-grid">
+        {% include "members/partials/members_grid.html" %}
+    </div>
+</div>
+{% endblock %}

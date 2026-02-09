@@ -17,10 +17,42 @@ async def seed_data():
         if not result.scalars().first():
             logger.info("Seeding roles...")
             roles = [
-                Role(name="Recruit", tier=RoleTier.RECRUIT, permissions=["assets.view"], is_default=True, sort_order=0),
-                Role(name="Member", tier=RoleTier.MEMBER, permissions=["assets.view", "assets.edit", "forum.post", "events.signup"], sort_order=1),
-                Role(name="Officer", tier=RoleTier.OFFICER, permissions=["assets.view", "assets.edit", "forum.post", "events.signup", "events.create", "announcements.post"], sort_order=2),
-                Role(name="Admin", tier=RoleTier.ADMIN, permissions=["*"], sort_order=100),
+                Role(
+                    name="Recruit", 
+                    tier=RoleTier.RECRUIT, 
+                    permissions=["assets.view", "projects.view"], 
+                    is_default=True, 
+                    sort_order=0
+                ),
+                Role(
+                    name="Member", 
+                    tier=RoleTier.MEMBER, 
+                    permissions=[
+                        "assets.view", "assets.edit", 
+                        "forum.post", 
+                        "events.signup",
+                        "projects.view", "projects.contribute"
+                    ], 
+                    sort_order=1
+                ),
+                Role(
+                    name="Officer", 
+                    tier=RoleTier.OFFICER, 
+                    permissions=[
+                        "assets.view", "assets.edit", 
+                        "forum.post", "forum.moderate",
+                        "events.signup", "events.create", 
+                        "announcements.post",
+                        "projects.view", "projects.contribute", "projects.create", "projects.manage"
+                    ], 
+                    sort_order=2
+                ),
+                Role(
+                    name="Admin", 
+                    tier=RoleTier.ADMIN, 
+                    permissions=["*"], 
+                    sort_order=100
+                ),
             ]
             session.add_all(roles)
             await session.commit()
@@ -29,9 +61,7 @@ async def seed_data():
         # 2. Check for users
         result = await session.execute(select(User))
         if not result.scalars().first():
-            logger.warn("NO USERS FOUND. You should create the first user through the web interface.")
-            # We don't auto-create an admin user with a default password for security,
-            # but we could add a CLI command for it.
+            logger.warning("NO USERS FOUND. You should create the first user through the web interface or CLI.")
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
