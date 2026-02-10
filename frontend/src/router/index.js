@@ -28,6 +28,7 @@ import AchievementsView from '../views/AchievementsView.vue';
 import MessagesView from '../views/MessagesView.vue';
 import RSIAdminView from '../views/RSIAdminView.vue';
 import ProfileView from '../views/ProfileView.vue';
+import TreasuryView from '../views/TreasuryView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -177,6 +178,11 @@ const router = createRouter({
           path: 'profile',
           name: 'profile',
           component: ProfileView,
+        },
+        {
+          path: 'treasury',
+          name: 'treasury',
+          component: TreasuryView,
         },
       ]
     },

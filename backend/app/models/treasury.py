@@ -26,7 +26,11 @@ class OrgTreasury(Base):
     __tablename__ = "org_treasury"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), default="Main Treasury")
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     balance: Mapped[int] = mapped_column(Integer, default=0)
+    is_primary: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class TreasuryTransaction(Base):

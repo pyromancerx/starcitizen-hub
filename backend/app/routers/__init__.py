@@ -20,6 +20,7 @@ from app.routers.achievement import router as achievement_router
 from app.routers.message import router as message_router
 from app.routers.discord import router as discord_router
 from app.routers.rsi import rsi_router
+from app.routers.treasury import router as treasury_router
 
 __all__ = [
     "auth_router",
@@ -43,4 +44,5 @@ __all__ = [
     "message_router",
     "discord_router",
     "rsi_router",
+    "treasury_router",
 ]

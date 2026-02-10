@@ -56,6 +56,7 @@
         <div class="pt-4 pb-2">
           <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Command</span>
         </div>
+        <router-link to="/treasury" class="nav-link" active-class="active text-yellow-500">Org Treasury</router-link>
         <router-link to="/admin" class="nav-link" active-class="active text-yellow-500">System Admin</router-link>
         <router-link to="/admin/rsi-verification" class="nav-link" active-class="active text-yellow-500">RSI Verification</router-link>
       </nav>
