@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from app.models.message import Conversation, Message
     from app.models.discord import UserDiscordLink
     from app.models.rsi import RSIVerificationRequest
+    from app.models.privacy import UserPrivacy
 
 
 class User(Base):
@@ -65,5 +66,10 @@ class User(Base):
     verification_requests: Mapped[list["RSIVerificationRequest"]] = relationship(
         back_populates="user",
         foreign_keys="RSIVerificationRequest.user_id",
+        cascade="all, delete-orphan"
+    )
+    privacy: Mapped[Optional["UserPrivacy"]] = relationship(
+        back_populates="user",
+        uselist=False,
         cascade="all, delete-orphan"
     )

@@ -21,6 +21,7 @@ from app.routers.message import router as message_router
 from app.routers.discord import router as discord_router
 from app.routers.rsi import rsi_router
 from app.routers.treasury import router as treasury_router
+from app.routers.privacy import router as privacy_router
 
 __all__ = [
     "auth_router",
@@ -45,4 +46,5 @@ __all__ = [
     "discord_router",
     "rsi_router",
     "treasury_router",
+    "privacy_router",
 ]
