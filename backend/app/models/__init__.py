@@ -39,6 +39,7 @@ from app.models.message import Conversation, Message
 from app.models.discord import (
     DiscordIntegration, DiscordWebhook, UserDiscordLink, DiscordRoleMapping
 )
+from app.models.rsi import RSIVerificationRequest, VerificationStatus
 
 __all__ = [
     "User", "Role", "UserRole", "RoleTier",
@@ -62,4 +63,5 @@ __all__ = [
     "Achievement", "AchievementRarity", "AchievementType", "UserAchievement",
     "Conversation", "Message",
     "DiscordIntegration", "DiscordWebhook", "UserDiscordLink", "DiscordRoleMapping",
+    "RSIVerificationRequest", "VerificationStatus",
 ]

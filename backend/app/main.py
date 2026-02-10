@@ -22,6 +22,7 @@ from app.routers import (
     achievement_router,
     message_router,
     discord_router,
+    rsi_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -85,6 +86,7 @@ app.include_router(notification_router)
 app.include_router(achievement_router)
 app.include_router(message_router)
 app.include_router(discord_router)
+app.include_router(rsi_router)
 
 # Web routes (templates)
 app.include_router(web_router)

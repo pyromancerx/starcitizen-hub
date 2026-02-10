@@ -26,6 +26,8 @@ import CrewLoadoutsView from '../views/CrewLoadoutsView.vue';
 import NotificationsView from '../views/NotificationsView.vue';
 import AchievementsView from '../views/AchievementsView.vue';
 import MessagesView from '../views/MessagesView.vue';
+import RSIAdminView from '../views/RSIAdminView.vue';
+import ProfileView from '../views/ProfileView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -165,6 +167,16 @@ const router = createRouter({
           path: 'messages/:id',
           name: 'conversation',
           component: MessagesView,
+        },
+        {
+          path: 'admin/rsi-verification',
+          name: 'rsi-admin',
+          component: RSIAdminView,
+        },
+        {
+          path: 'profile',
+          name: 'profile',
+          component: ProfileView,
         },
       ]
     },

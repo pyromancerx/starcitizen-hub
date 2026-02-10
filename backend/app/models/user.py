@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.models.achievement import UserAchievement
     from app.models.message import Conversation, Message
     from app.models.discord import UserDiscordLink
+    from app.models.rsi import RSIVerificationRequest
 
 
 class User(Base):
@@ -19,6 +20,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     rsi_handle: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True, nullable=True)
+    is_rsi_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
@@ -58,5 +60,10 @@ class User(Base):
     discord_link: Mapped[Optional["UserDiscordLink"]] = relationship(
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan"
+    )
+    verification_requests: Mapped[list["RSIVerificationRequest"]] = relationship(
+        back_populates="user",
+        foreign_keys="RSIVerificationRequest.user_id",
         cascade="all, delete-orphan"
     )

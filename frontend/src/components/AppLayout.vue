@@ -57,6 +57,7 @@
           <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Command</span>
         </div>
         <router-link to="/admin" class="nav-link" active-class="active text-yellow-500">System Admin</router-link>
+        <router-link to="/admin/rsi-verification" class="nav-link" active-class="active text-yellow-500">RSI Verification</router-link>
       </nav>
       
       <div class="p-4 border-t border-sc-grey/10 bg-black/20">
@@ -84,16 +85,18 @@
           <span>Online</span>
         </div>
 
-        <div class="flex items-center space-x-6 ml-auto">
-          <NotificationBell />
-          <div class="text-right hidden sm:block">
-            <div class="text-xs font-bold text-white uppercase tracking-tight">Citizen Pilot</div>
-            <div class="text-[8px] text-sc-blue font-black uppercase tracking-widest">Verified Signal</div>
-          </div>
-          <div class="h-10 w-10 rounded bg-sc-panel border border-sc-blue/30 flex items-center justify-center text-sc-blue shadow-[0_0_10px_rgba(102,252,241,0.2)]">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-          </div>
-        </div>
+         <div class="flex items-center space-x-6 ml-auto">
+           <NotificationBell />
+           <router-link to="/profile" class="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+             <div class="text-right hidden sm:block">
+               <div class="text-xs font-bold text-white uppercase tracking-tight">Citizen Pilot</div>
+               <div class="text-[8px] text-sc-blue font-black uppercase tracking-widest">Verified Signal</div>
+             </div>
+             <div class="h-10 w-10 rounded bg-sc-panel border border-sc-blue/30 flex items-center justify-center text-sc-blue shadow-[0_0_10px_rgba(102,252,241,0.2)]">
+               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+             </div>
+           </router-link>
+         </div>
       </header>
 
       <!-- Content Area -->

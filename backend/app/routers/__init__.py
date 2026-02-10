@@ -19,6 +19,7 @@ from app.routers.notification import router as notification_router
 from app.routers.achievement import router as achievement_router
 from app.routers.message import router as message_router
 from app.routers.discord import router as discord_router
+from app.routers.rsi import rsi_router
 
 __all__ = [
     "auth_router",
@@ -41,4 +42,5 @@ __all__ = [
     "achievement_router",
     "message_router",
     "discord_router",
+    "rsi_router",
 ]
