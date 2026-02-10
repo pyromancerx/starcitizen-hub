@@ -17,6 +17,8 @@ from app.routers import (
     system_admin_router,
     trade_router,
     crew_router,
+    activity_router,
+    notification_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -75,6 +77,8 @@ app.include_router(system_public_router)
 app.include_router(system_admin_router)
 app.include_router(trade_router)
 app.include_router(crew_router)
+app.include_router(activity_router)
+app.include_router(notification_router)
 
 # Web routes (templates)
 app.include_router(web_router)

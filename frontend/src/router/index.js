@@ -23,6 +23,7 @@ import CargoContractsView from '../views/CargoContractsView.vue';
 import CrewFinderView from '../views/CrewFinderView.vue';
 import AvailabilityView from '../views/AvailabilityView.vue';
 import CrewLoadoutsView from '../views/CrewLoadoutsView.vue';
+import NotificationsView from '../views/NotificationsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -142,6 +143,11 @@ const router = createRouter({
           path: 'crew-loadouts',
           name: 'crew-loadouts',
           component: CrewLoadoutsView,
+        },
+        {
+          path: 'notifications',
+          name: 'notifications',
+          component: NotificationsView,
         },
       ]
     },

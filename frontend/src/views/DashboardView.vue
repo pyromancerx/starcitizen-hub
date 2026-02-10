@@ -60,6 +60,9 @@
 
     <!-- Recent Comms Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Activity Feed -->
+      <ActivityFeed />
+
       <!-- Recent Announcements -->
       <div class="bg-sc-panel border border-sc-grey/10 rounded-lg flex flex-col shadow-xl">
         <div class="p-6 border-b border-sc-grey/10 flex justify-between items-center">
@@ -79,20 +82,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Pending Tasks -->
-      <div class="bg-sc-panel border border-sc-grey/10 rounded-lg flex flex-col shadow-xl">
-        <div class="p-6 border-b border-sc-grey/10 flex justify-between items-center">
-          <h3 class="text-sm font-black text-white uppercase tracking-[0.2em]">Assigned Objectives</h3>
-          <router-link to="/projects" class="text-[8px] text-sc-blue font-bold uppercase hover:underline">Logistics Board</router-link>
-        </div>
-        <div class="flex-1 p-6 text-center flex flex-col items-center justify-center space-y-4">
-          <div class="h-12 w-12 rounded-full border-2 border-sc-grey/10 flex items-center justify-center text-sc-grey/20">
-            <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"></path></svg>
-          </div>
-          <p class="text-xs text-sc-grey/30 uppercase tracking-widest font-bold">No active combat assignments found.</p>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -100,6 +89,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../services/api';
+import ActivityFeed from '../components/ActivityFeed.vue';
 
 const announcements = ref([]);
 

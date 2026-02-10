@@ -14,6 +14,8 @@ from app.routers.system import public_router as system_public_router
 from app.routers.system import admin_router as system_admin_router
 from app.routers.trade import router as trade_router
 from app.routers.crew import router as crew_router
+from app.routers.activity import router as activity_router
+from app.routers.notification import router as notification_router
 
 __all__ = [
     "auth_router",
@@ -31,4 +33,6 @@ __all__ = [
     "system_admin_router",
     "trade_router",
     "crew_router",
+    "activity_router",
+    "notification_router",
 ]

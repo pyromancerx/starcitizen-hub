@@ -24,6 +24,13 @@ from app.models.crew import (
     LFGPost, LFGResponse, LFGStatus,
     UserAvailability, CrewLoadout
 )
+from app.models.activity import (
+    Activity, ActivityType, ActivityReaction
+)
+from app.models.notification import (
+    Notification, NotificationType, NotificationPriority,
+    NotificationPreference
+)
 
 __all__ = [
     "User", "Role", "UserRole", "RoleTier",
@@ -42,4 +49,6 @@ __all__ = [
     "AuditLog",
     "LFGPost", "LFGResponse", "LFGStatus",
     "UserAvailability", "CrewLoadout",
+    "Activity", "ActivityType", "ActivityReaction",
+    "Notification", "NotificationType", "NotificationPriority", "NotificationPreference",
 ]

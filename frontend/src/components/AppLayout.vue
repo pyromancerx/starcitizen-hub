@@ -76,6 +76,7 @@
         </div>
 
         <div class="flex items-center space-x-6 ml-auto">
+          <NotificationBell />
           <div class="text-right hidden sm:block">
             <div class="text-xs font-bold text-white uppercase tracking-tight">Citizen Pilot</div>
             <div class="text-[8px] text-sc-blue font-black uppercase tracking-widest">Verified Signal</div>
@@ -102,6 +103,7 @@
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
+import NotificationBell from './NotificationBell.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
