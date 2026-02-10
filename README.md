@@ -312,6 +312,56 @@ Each post includes rich Discord embeds with appropriate colors.
 
 ---
 
+## ✓ RSI Integration
+
+Verify Star Citizen accounts to prove identity and display verified RSI handles on profiles.
+
+### Features
+
+#### 1. Account Verification
+- Users submit their RSI handle with a screenshot proof.
+- Admins review and approve/reject verification requests.
+- Verified users get a badge and link to their RSI profile.
+- Prevents impersonation and builds trust within the organization.
+
+#### 2. Verification Workflow
+1. **User Submits:** Provides RSI handle and screenshot URL
+2. **Admin Review:** Screenshot is checked for validity
+3. **Approval:** Handle is linked to user profile with verified badge
+4. **Rejection:** User is notified with reason (optional)
+
+#### 3. Profile Display
+- Verified RSI handle shown on member profiles
+- Direct link to RSI profile page
+- Visual verification badge
+
+### Verification Instructions for Users
+
+1. Go to your RSI profile: https://robertsspaceindustries.com/account/profile
+2. Take a screenshot showing your handle clearly
+3. Upload to an image host (Imgur, Discord, etc.)
+4. Submit via Profile → RSI Verification
+5. Wait for admin approval
+
+### Admin Review Process
+
+1. Go to **Command** → **RSI Verification**
+2. Review pending requests
+3. Check screenshot for:
+   - Handle matches submission
+   - Screenshot is clear and valid
+   - Profile appears legitimate
+4. Approve or reject with notes
+
+### API Endpoints
+- `POST /api/rsi/verify` - Submit verification request
+- `GET /api/rsi/status` - Get my verification status
+- `GET /api/rsi/profile/{user_id}` - Get user's RSI profile
+- `GET /api/rsi/admin/pending` - Get pending requests (admin)
+- `POST /api/rsi/admin/review/{request_id}` - Review request (admin)
+
+---
+
 ## 📡 Federation Guide
 
 Federation allows multiple Star Citizen Hub instances to peer with each other, enabling shared situational awareness and logistics across allied organizations.
