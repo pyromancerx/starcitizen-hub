@@ -19,6 +19,9 @@ from app.routers import (
     crew_router,
     activity_router,
     notification_router,
+    achievement_router,
+    message_router,
+    discord_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -79,6 +82,9 @@ app.include_router(trade_router)
 app.include_router(crew_router)
 app.include_router(activity_router)
 app.include_router(notification_router)
+app.include_router(achievement_router)
+app.include_router(message_router)
+app.include_router(discord_router)
 
 # Web routes (templates)
 app.include_router(web_router)

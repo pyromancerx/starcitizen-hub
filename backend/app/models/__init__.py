@@ -31,6 +31,14 @@ from app.models.notification import (
     Notification, NotificationType, NotificationPriority,
     NotificationPreference
 )
+from app.models.achievement import (
+    Achievement, AchievementRarity, AchievementType,
+    UserAchievement
+)
+from app.models.message import Conversation, Message
+from app.models.discord import (
+    DiscordIntegration, DiscordWebhook, UserDiscordLink, DiscordRoleMapping
+)
 
 __all__ = [
     "User", "Role", "UserRole", "RoleTier",
@@ -51,4 +59,7 @@ __all__ = [
     "UserAvailability", "CrewLoadout",
     "Activity", "ActivityType", "ActivityReaction",
     "Notification", "NotificationType", "NotificationPriority", "NotificationPreference",
+    "Achievement", "AchievementRarity", "AchievementType", "UserAchievement",
+    "Conversation", "Message",
+    "DiscordIntegration", "DiscordWebhook", "UserDiscordLink", "DiscordRoleMapping",
 ]

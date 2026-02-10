@@ -24,6 +24,8 @@ import CrewFinderView from '../views/CrewFinderView.vue';
 import AvailabilityView from '../views/AvailabilityView.vue';
 import CrewLoadoutsView from '../views/CrewLoadoutsView.vue';
 import NotificationsView from '../views/NotificationsView.vue';
+import AchievementsView from '../views/AchievementsView.vue';
+import MessagesView from '../views/MessagesView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -148,6 +150,21 @@ const router = createRouter({
           path: 'notifications',
           name: 'notifications',
           component: NotificationsView,
+        },
+        {
+          path: 'achievements',
+          name: 'achievements',
+          component: AchievementsView,
+        },
+        {
+          path: 'messages',
+          name: 'messages',
+          component: MessagesView,
+        },
+        {
+          path: 'messages/:id',
+          name: 'conversation',
+          component: MessagesView,
         },
       ]
     },

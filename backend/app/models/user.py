@@ -7,6 +7,9 @@ from app.database import Base
 
 if TYPE_CHECKING:
     from app.models.notification import Notification, NotificationPreference
+    from app.models.achievement import UserAchievement
+    from app.models.message import Conversation, Message
+    from app.models.discord import UserDiscordLink
 
 
 class User(Base):
@@ -34,6 +37,25 @@ class User(Base):
         foreign_keys="Notification.user_id"
     )
     notification_preference: Mapped[Optional["NotificationPreference"]] = relationship(
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    achievements: Mapped[list["UserAchievement"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    conversations_as_user1: Mapped[list["Conversation"]] = relationship(
+        back_populates="user1",
+        foreign_keys="Conversation.user1_id",
+        cascade="all, delete-orphan"
+    )
+    conversations_as_user2: Mapped[list["Conversation"]] = relationship(
+        back_populates="user2",
+        foreign_keys="Conversation.user2_id",
+        cascade="all, delete-orphan"
+    )
+    discord_link: Mapped[Optional["UserDiscordLink"]] = relationship(
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan"

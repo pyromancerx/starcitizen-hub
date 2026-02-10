@@ -23,6 +23,10 @@
         <router-link to="/events" class="nav-link" active-class="active">Operations</router-link>
         <router-link to="/forum" class="nav-link" active-class="active">Spectrum Forum</router-link>
         <router-link to="/members" class="nav-link" active-class="active">Personnel</router-link>
+        <router-link to="/messages" class="nav-link" active-class="active">
+          Messages
+          <span v-if="messageUnreadCount > 0" class="ml-2 bg-sc-blue text-black text-[10px] px-1.5 rounded-full">{{ messageUnreadCount }}</span>
+        </router-link>
 
         <div class="pt-4 pb-2">
           <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Logistics</span>
@@ -43,6 +47,11 @@
         <router-link to="/crew-finder" class="nav-link" active-class="active">Crew Finder (LFG)</router-link>
         <router-link to="/availability" class="nav-link" active-class="active">Availability</router-link>
         <router-link to="/crew-loadouts" class="nav-link" active-class="active">Crew Loadouts</router-link>
+
+        <div class="pt-4 pb-2">
+          <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Recognition</span>
+        </div>
+        <router-link to="/achievements" class="nav-link" active-class="active">Achievements</router-link>
 
         <div class="pt-4 pb-2">
           <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Command</span>
@@ -101,13 +110,39 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
+import { useMessageStore } from '../stores/message';
 import NotificationBell from './NotificationBell.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const messageStore = useMessageStore();
+
+const messageUnreadCount = ref(0);
+let messagePolling = null;
+
+onMounted(() => {
+  // Fetch initial unread count
+  messageStore.fetchUnreadCount().then(() => {
+    messageUnreadCount.value = messageStore.unreadCount;
+  });
+  
+  // Poll for unread count every 30 seconds
+  messagePolling = setInterval(() => {
+    messageStore.fetchUnreadCount().then(() => {
+      messageUnreadCount.value = messageStore.unreadCount;
+    });
+  }, 30000);
+});
+
+onUnmounted(() => {
+  if (messagePolling) {
+    clearInterval(messagePolling);
+  }
+});
 
 const handleLogout = () => {
   authStore.logout();

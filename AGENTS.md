@@ -191,6 +191,15 @@ export const useStoreName = defineStore('storeName', {
 });
 ```
 
+**Available Stores:**
+- `useAuthStore` - Authentication state
+- `useActivityStore` - Activity feed data
+- `useNotificationStore` - Notifications with polling
+- `useAchievementStore` - Achievements and leaderboard
+- `useMessageStore` - Direct messaging
+- `useTradeStore` - Trading, prices, contracts
+- `useCrewStore` - LFG, availability, loadouts
+
 ---
 
 ## Architecture Overview
@@ -211,6 +220,72 @@ export const useStoreName = defineStore('storeName', {
 - `src/stores/` - Pinia state management
 - `src/services/` - API service layer
 - `src/router/` - Vue Router configuration
+
+---
+
+## Feature Implementation Guide
+
+### Adding Activity Tracking
+When implementing features that should appear in the Activity Feed:
+
+```python
+from app.services.activity import ActivityService
+from app.models.activity import ActivityType
+
+# In your service/endpoint:
+activity_service = ActivityService(db)
+await activity_service.track_ship_added(
+    user_id=user.id,
+    ship_id=ship.id,
+    ship_name=ship.name,
+    ship_type=ship.ship_type
+)
+```
+
+### Adding Notifications
+When implementing features that should send notifications:
+
+```python
+from app.services.notification import NotificationService
+
+notification_service = NotificationService(db)
+await notification_service.notify_op_invite(
+    user_id=invited_user_id,
+    invited_by_id=current_user.id,
+    invited_by_name=current_user.display_name,
+    operation_title=event.title,
+    operation_id=event.id
+)
+```
+
+### Adding Achievements
+System achievements are auto-checked. To award custom achievements:
+
+```python
+from app.services.achievement import AchievementService
+
+achievement_service = AchievementService(db)
+await achievement_service.award_achievement(
+    user_id=user_id,
+    achievement_id=achievement_id,
+    awarded_by_id=admin_id,
+    award_note="For exceptional service"
+)
+```
+
+### Discord Webhook Integration
+To post to Discord when an event occurs:
+
+```python
+from app.services.discord import DiscordService
+
+discord_service = DiscordService(db)
+await discord_service.post_announcement(
+    title="New Ship Acquired",
+    content=f"{user.display_name} has added a {ship_type} to the fleet!",
+    author_name=user.display_name
+)
+```
 
 ---
 

@@ -16,6 +16,9 @@ from app.routers.trade import router as trade_router
 from app.routers.crew import router as crew_router
 from app.routers.activity import router as activity_router
 from app.routers.notification import router as notification_router
+from app.routers.achievement import router as achievement_router
+from app.routers.message import router as message_router
+from app.routers.discord import router as discord_router
 
 __all__ = [
     "auth_router",
@@ -35,4 +38,7 @@ __all__ = [
     "crew_router",
     "activity_router",
     "notification_router",
+    "achievement_router",
+    "message_router",
+    "discord_router",
 ]
