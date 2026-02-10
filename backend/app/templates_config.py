@@ -38,7 +38,7 @@ def get_template_context(request: Request, **kwargs) -> dict:
         "current_user": current_user,
         "is_admin": is_admin,
         "get_flashed_messages": lambda: get_flashed_messages(request),
-        "csrf_token": "",  # TODO: Implement CSRF if needed
+        "csrf_token": request.state.csrf_generate_token(),
     }
     context.update(kwargs)
     return context

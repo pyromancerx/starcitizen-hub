@@ -2,7 +2,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional, List, TYPE_CHECKING
-from sqlalchemy import String, Text, DateTime, ForeignKey, Integer, Enum as SQLEnum
+from sqlalchemy import String, Text, DateTime, ForeignKey, Integer, Enum as SQLEnum, Boolean, JSON # Import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -37,6 +37,9 @@ class Operation(Base):
     status: Mapped[OperationStatus] = mapped_column(SQLEnum(OperationStatus), default=OperationStatus.PLANNING)
     max_participants: Mapped[Optional[int]] = mapped_column(Integer)
     requirements: Mapped[Optional[str]] = mapped_column(Text)
+    required_roles: Mapped[List[str]] = mapped_column(JSON, default=list) # New field
+    required_ship_types: Mapped[List[str]] = mapped_column(JSON, default=list) # New field
+    is_public: Mapped[bool] = mapped_column(Boolean, default=True)
     
     created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

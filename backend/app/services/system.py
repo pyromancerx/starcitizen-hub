@@ -47,3 +47,8 @@ class SystemService:
             if value is not None:
                 await self.set_setting(key, str(value), is_public=True, description="Theme Setting")
         return settings
+
+    async def bulk_update_settings(self, settings: dict):
+        for key, value in settings.items():
+            await self.set_setting(key, str(value))
+        return {key: str(value) for key, value in settings.items()}

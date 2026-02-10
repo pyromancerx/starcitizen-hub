@@ -2,7 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.dependencies import get_current_approved_user
+from app.dependencies import get_current_approved_user, require_permission
 from app.models.user import User
 from app.schemas.federation import (
     PeeredInstanceCreate, PeeredInstanceUpdate, PeeredInstanceResponse,
@@ -18,9 +18,8 @@ router = APIRouter(prefix="/api/federation", tags=["federation"])
 async def create_peer(
     data: PeeredInstanceCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("admin.manage_settings"))],
 ):
-    # TODO: Admin check
     service = FederationService(db)
     return await service.create_peer(data)
 
@@ -51,26 +50,24 @@ async def update_peer(
     peer_id: int,
     data: PeeredInstanceUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("admin.manage_settings"))],
 ):
     service = FederationService(db)
     peer = await service.get_peer(peer_id)
     if not peer:
         raise HTTPException(status_code=404, detail="Peer not found")
-    # TODO: Admin check
     return await service.update_peer(peer, data)
 
 @router.delete("/peers/{peer_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_peer(
     peer_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("admin.manage_settings"))],
 ):
     service = FederationService(db)
     peer = await service.get_peer(peer_id)
     if not peer:
         raise HTTPException(status_code=404, detail="Peer not found")
-    # TODO: Admin check
     await service.delete_peer(peer)
 
 # --- Events ---

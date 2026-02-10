@@ -550,6 +550,10 @@ async def settings_page(
     return templates.TemplateResponse("admin/settings.html", context)
 
 
+from app.services.system import SystemService
+
+...
+
 @router.put("/settings", response_class=HTMLResponse)
 async def update_settings(
     request: Request,
@@ -560,9 +564,13 @@ async def update_settings(
     require_approval: Annotated[bool, Form()] = False,
 ):
     """Update instance settings."""
-    # Note: In a production app, you'd persist these settings to a database
-    # For now, we'll just acknowledge the change
-    # The actual settings are loaded from environment/config
+    system_service = SystemService(db)
+    settings_to_update = {
+        "instance_name": instance_name,
+        "allow_registration": allow_registration,
+        "require_approval": require_approval,
+    }
+    await system_service.bulk_update_settings(settings_to_update)
     
     # Audit Log
     logger = AuditLogger(db)
@@ -570,11 +578,7 @@ async def update_settings(
         request, 
         action="settings.update", 
         target_type="system", 
-        details={
-            "instance_name": instance_name,
-            "allow_registration": allow_registration,
-            "require_approval": require_approval
-        }
+        details=settings_to_update
     )
     await db.commit()
 
@@ -582,6 +586,38 @@ async def update_settings(
         "components/form_success.html",
         {
             "request": request,
-            "message": "Settings updated. Note: Some settings require a server restart to take effect.",
+            "message": "Settings updated successfully.",
         },
+    )
+
+
+# ============================================================
+# ORG DATA EXPORT
+# ============================================================
+
+@router.get("/export/org-data", response_class=JSONResponse)
+async def get_org_data_export(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(check_admin_permission)],
+    request: Request, # Add Request dependency for audit log
+):
+    """Export all organization data (admin only)."""
+    admin_service = AdminService(db)
+    org_data = await admin_service.export_org_data()
+    
+    # Audit Log
+    logger = AuditLogger(db)
+    await logger.log(
+        request, # Use the injected Request object
+        action="org.export_data", 
+        target_type="system", 
+        target_id=1, # Symbolic ID for the instance
+        details={"admin_id": admin.id, "total_records": org_data.total_records}
+    )
+    
+    return JSONResponse(
+        content=org_data.model_dump(),
+        headers={
+            "Content-Disposition": f"attachment; filename=org_data_export_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.json"
+        }
     )

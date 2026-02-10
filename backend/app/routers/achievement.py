@@ -389,6 +389,16 @@ async def get_user_achievements(
     limit: int = Query(50, ge=1, le=100),
 ):
     """Get achievements for a specific user."""
+    # Check privacy settings
+    if user_id != current_user.id:
+        privacy_service = PrivacyService(db)
+        privacy_settings = await privacy_service.get_or_create_privacy_settings(user_id)
+        if privacy_settings.hide_achievements:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User has chosen to hide their achievements."
+            )
+
     service = AchievementService(db)
     user_achievements = await service.get_user_achievements(
         user_id=user_id,

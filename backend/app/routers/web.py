@@ -230,6 +230,11 @@ async def logout(request: Request):
 # DASHBOARD ROUTES
 # ============================================================
 
+from app.services.operation import OperationService
+from app.services.activity import ActivityService
+
+...
+
 @router.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(
     request: Request,
@@ -259,13 +264,20 @@ async def dashboard(
         "inventory_count": inventory_count or 0,
     }
 
-    # TODO: Get recent activity
-    recent_activity = []
+    # Get recent activity
+    activity_service = ActivityService(db)
+    recent_activity = await activity_service.get_recent_activities(limit=5)
+
+    # Get upcoming operations
+    operation_service = OperationService(db)
+    upcoming_operations = await operation_service.get_user_upcoming_operations(user.id)
+
 
     context = get_template_context(
         request,
         stats=stats,
         recent_activity=recent_activity,
+        upcoming_operations=upcoming_operations,
     )
     return templates.TemplateResponse("dashboard/index.html", context)
 

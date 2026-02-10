@@ -16,6 +16,7 @@
     <form hx-put="/admin/settings"
           hx-target="#settings-result"
           hx-swap="innerHTML"
+          hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token }}"}'
           class="space-y-6">
 
         <div id="settings-result"></div>

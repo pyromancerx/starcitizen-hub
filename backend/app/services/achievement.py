@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.trade import TradeRun, CargoContract
 from app.models.ship import Ship
 from app.models.event import Operation
+from app.models.privacy import UserPrivacy # Import UserPrivacy
 from app.schemas.achievement import (
     AchievementCreate, AchievementUpdate, AwardAchievementRequest
 )
@@ -291,31 +292,27 @@ class AchievementService:
             select(
                 UserAchievement.user_id,
                 func.sum(Achievement.points).label("total_points"),
-                func.count(UserAchievement.id).label("achievement_count")
+                func.count(UserAchievement.id).label("achievement_count"),
+                User.display_name # Include display_name here
             )
             .join(Achievement, UserAchievement.achievement_id == Achievement.id)
-            .group_by(UserAchievement.user_id)
+            .join(User, UserAchievement.user_id == User.id)
+            .outerjoin(UserPrivacy, User.id == UserPrivacy.user_id) # Join with UserPrivacy
+            .where(
+                (UserPrivacy.hide_from_leaderboards == False) | (UserPrivacy.hide_from_leaderboards == None)
+            ) # Filter out users who hide from leaderboards
+            .group_by(UserAchievement.user_id, User.display_name) # Group by display_name too
             .order_by(func.sum(Achievement.points).desc())
             .limit(limit)
         )
         
         rows = result.all()
         
-        # Get user display names
-        user_ids = [row[0] for row in rows]
-        if user_ids:
-            user_result = await self.db.execute(
-                select(User.id, User.display_name).where(User.id.in_(user_ids))
-            )
-            user_names = {uid: name for uid, name in user_result.all()}
-        else:
-            user_names = {}
-        
         leaderboard = []
-        for idx, (user_id, total_points, achievement_count) in enumerate(rows, 1):
+        for idx, (user_id, total_points, achievement_count, display_name) in enumerate(rows, 1):
             leaderboard.append({
                 "user_id": user_id,
-                "display_name": user_names.get(user_id, f"User {user_id}"),
+                "display_name": display_name or f"User {user_id}",
                 "total_points": total_points or 0,
                 "total_achievements": achievement_count or 0,
                 "rank": idx,

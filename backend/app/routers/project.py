@@ -2,7 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.dependencies import get_current_approved_user
+from app.dependencies import get_current_approved_user, require_permission
 from app.models.user import User
 from app.schemas.project import (
     ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetail,
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 async def create_project(
     data: ProjectCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("org.create_operations"))],
 ):
     service = ProjectService(db)
     return await service.create_project(data, current_user.id)
@@ -52,13 +52,12 @@ async def update_project(
     project_id: int,
     data: ProjectUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("org.manage_operations"))],
 ):
     service = ProjectService(db)
     project = await service.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    # TODO: Permission check (Manager/Admin)
     return await service.update_project(project, data)
 
 # --- Phases ---
@@ -84,7 +83,10 @@ async def create_task(
     current_user: Annotated[User, Depends(get_current_approved_user)],
 ):
     service = ProjectService(db)
-    # TODO: Verify phase exists
+    # Verify phase exists
+    phase = await service.get_phase(phase_id)
+    if not phase:
+        raise HTTPException(status_code=404, detail="Phase not found")
     return await service.create_task(phase_id, data)
 
 @router.patch("/tasks/{task_id}", response_model=TaskResponse)

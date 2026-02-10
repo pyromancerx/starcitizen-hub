@@ -162,6 +162,49 @@
         </div>
     </div>
 
+    <!-- Upcoming Operations section -->
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Upcoming Operations</h3>
+            {% if upcoming_operations %}
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for operation in upcoming_operations %}
+                <li class="py-4">
+                    <a href="/operations/{{ operation.id }}" class="block hover:bg-gray-50 dark:hover:bg-gray-700/50 p-2 rounded-md">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-shrink-0">
+                                <span class="inline-block h-8 w-8 rounded-full bg-sc-blue text-white flex items-center justify-center font-bold">
+                                    {{ operation.type.value[0].upper() }}
+                                </span>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ operation.title }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                    {{ operation.type.value|title }} &middot; {{ operation.scheduled_at.strftime('%b %d, %Y at %H:%M') }}
+                                </p>
+                            </div>
+                            <div>
+                                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="text-center py-6">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No upcoming operations</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">You haven't signed up for any upcoming operations yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Recent activity section -->
     <div class="bg-white dark:bg-gray-800 shadow rounded-lg">
         <div class="px-4 py-5 sm:p-6">
@@ -179,7 +222,19 @@
                             </div>
                         </div>
                         <div class="min-w-0 flex-1">
-                            <p class="text-sm text-gray-900 dark:text-white">{{ activity.description }}</p>
+                            <p class="text-sm text-gray-900 dark:text-white">
+                                {% if activity.type.value == 'MEMBER_JOINED' %}
+                                    <span class="font-semibold">{{ activity.content.display_name }}</span> joined the hub.
+                                {% elif activity.type.value == 'SHIP_ADDED' %}
+                                    <span class="font-semibold">{{ activity.user_display_name }}</span> added the <span class="font-semibold">{{ activity.content.ship_name }}</span> to their fleet.
+                                {% elif activity.type.value == 'TRADE_COMPLETED' %}
+                                    <span class="font-semibold">{{ activity.user_display_name }}</span> completed a trade run with <span class="font-semibold">{{ activity.content.commodity }}</span> for a profit of <span class="font-semibold">{{ activity.content.profit }}</span> aUEC.
+                                {% elif activity.type.value == 'ANNOUNCEMENT_POSTED' %}
+                                    <span class="font-semibold">{{ activity.user_display_name }}</span> posted an announcement: <span class="font-semibold">{{ activity.content.title }}</span>.
+                                {% else %}
+                                    {{ activity.type.value.replace('_', ' ')|title }} by <span class="font-semibold">{{ activity.user_display_name }}</span>.
+                                {% endif %}
+                            </p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">{{ activity.created_at.strftime('%b %d, %Y at %H:%M') }}</p>
                         </div>
                     </div>

@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi_csrf_protect import CsrfProtect
+from fastapi_csrf_protect.exceptions import CsrfProtectError
 from app.routers import (
     auth_router,
     stockpile_router,
@@ -55,6 +58,17 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+# CSRF Protection
+@app.exception_handler(CsrfProtectError)
+def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail":  exc.message
+                 }
+    )
+
+app.add_middleware(CsrfProtect, secret_key=settings.secret_key)
 
 # Mount uploads directory for dev mode (Caddy handles prod)
 # Ensure dir exists

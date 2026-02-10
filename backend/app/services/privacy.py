@@ -350,3 +350,87 @@ class PrivacyService:
         """Check a specific privacy setting for a user."""
         privacy = await self.get_or_create_privacy_settings(user_id)
         return getattr(privacy, setting_name, False)
+
+    async def anonymize_user_data(self, user_id: int):
+        """Anonymize user's personal data and delete related records."""
+        # Anonymize User data
+        user = await self.db.get(User, user_id)
+        if user:
+            user.email = f"deleted_user_{user_id}@example.com"
+            user.display_name = f"Deleted User {user_id}"
+            user.rsi_handle = None
+            user.is_rsi_verified = False
+            user.hashed_password = "anonymized"
+            user.last_seen_at = None
+            user.created_at = datetime(2000, 1, 1) # Set to a generic past date
+            user.is_active = False # Deactivate user
+            user.is_superuser = False
+            user.is_federation_admin = False
+            user.is_staff = False
+            await self.db.flush()
+
+        # Delete related records
+        # Ships
+        await self.db.execute(Ship.__table__.delete().where(Ship.user_id == user_id))
+        
+        # Personal Inventory
+        await self.db.execute(PersonalInventory.__table__.delete().where(PersonalInventory.user_id == user_id))
+        
+        # Wallet and Transactions
+        wallet_result = await self.db.execute(select(Wallet).where(Wallet.user_id == user_id))
+        wallets = wallet_result.scalars().all()
+        for wallet in wallets:
+            await self.db.execute(WalletTransaction.__table__.delete().where(WalletTransaction.wallet_id == wallet.id))
+            await self.db.delete(wallet)
+        
+        # Trade Runs
+        await self.db.execute(TradeRun.__table__.delete().where(TradeRun.user_id == user_id))
+        
+        # Cargo Contracts (anonymize poster_id/hauler_id)
+        await self.db.execute(
+            CargoContract.__table__.update()
+            .where(CargoContract.poster_id == user_id)
+            .values(poster_id=None) # Assuming NULL is allowed, otherwise use a placeholder ID
+        )
+        await self.db.execute(
+            CargoContract.__table__.update()
+            .where(CargoContract.hauler_id == user_id)
+            .values(hauler_id=None) # Assuming NULL is allowed
+        )
+        
+        # Forum Posts
+        await self.db.execute(ForumPost.__table__.delete().where(ForumPost.author_id == user_id))
+        
+        # Messages (sent by user)
+        await self.db.execute(Message.__table__.delete().where(Message.sender_id == user_id))
+
+        # Conversations (if user is participant)
+        # This is more complex. If only one user is being deleted, the conversation might remain.
+        # For simplicity, if the deleted user is user1 or user2, delete the conversation.
+        await self.db.execute(
+            Conversation.__table__.delete()
+            .where((Conversation.user1_id == user_id) | (Conversation.user2_id == user_id))
+        )
+        
+        # Achievements
+        await self.db.execute(UserAchievement.__table__.delete().where(UserAchievement.user_id == user_id))
+        
+        # Notifications
+        await self.db.execute(Notification.__table__.delete().where(Notification.user_id == user_id))
+        
+        # Activities
+        await self.db.execute(Activity.__table__.delete().where(Activity.user_id == user_id))
+        
+        # LFG Posts
+        await self.db.execute(LFGPost.__table__.delete().where(LFGPost.user_id == user_id))
+        
+        # Availability
+        await self.db.execute(UserAvailability.__table__.delete().where(UserAvailability.user_id == user_id))
+
+        # Mark privacy as deleted
+        privacy = await self.get_or_create_privacy_settings(user_id)
+        privacy.is_deleted = True
+        await self.db.flush()
+
+        await self.db.commit()
+

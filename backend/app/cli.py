@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.database import async_session
 from app.models import User, Role, UserRole, RoleTier
 from app.services.auth import get_password_hash
+from app.tasks.privacy_tasks import execute_pending_deletions # Import the new task
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
@@ -36,7 +37,7 @@ async def create_admin(email, password, handle, display_name):
         await session.flush() # Get ID
 
         # Assign Admin Role
-        result = await session.execute(select(Role).where(Role.tier == RoleTier.ADMIN))
+        result = await session.db_session.execute(select(Role).where(Role.tier == RoleTier.ADMIN)) # Changed from session.execute to session.db_session.execute
         admin_role = result.scalar_one_or_none()
         
         if not admin_role:
@@ -66,6 +67,12 @@ async def approve_user(email):
         await session.commit()
         logger.info(f"User {email} has been approved.")
 
+async def run_deletion_task():
+    """Run the pending account deletion task."""
+    logger.info("Running pending account deletion task...")
+    await execute_pending_deletions()
+    logger.info("Pending account deletion task finished.")
+
 def main():
     parser = argparse.ArgumentParser(description="Star Citizen Hub CLI Management Tool")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -81,12 +88,17 @@ def main():
     parser_approve = subparsers.add_parser("approve-user", help="Approve a pending user")
     parser_approve.add_argument("email", help="User email address to approve")
 
+    # run-deletions
+    parser_delete = subparsers.add_parser("run-deletions", help="Execute pending account deletions")
+
     args = parser.parse_args()
 
     if args.command == "create-admin":
         asyncio.run(create_admin(args.email, args.password, args.handle, args.name))
     elif args.command == "approve-user":
         asyncio.run(approve_user(args.email))
+    elif args.command == "run-deletions":
+        asyncio.run(run_deletion_task())
     else:
         parser.print_help()
 

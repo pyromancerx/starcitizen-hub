@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.dependencies import get_current_approved_user, get_current_active_user
+from app.dependencies import get_current_approved_user, get_current_active_user, require_permission
 from app.models.user import User
 from app.schemas.system import ThemeSettings
 from app.services.system import SystemService
@@ -30,7 +30,7 @@ async def get_theme(
 async def update_theme(
     settings: ThemeSettings,
     db: Annotated[AsyncSession, Depends(get_db)],
-    admin: Annotated[User, Depends(get_current_approved_user)], # TODO: Strict admin check
+    admin: Annotated[User, Depends(require_permission("admin.manage_settings"))],
 ):
     service = SystemService(db)
     return await service.update_theme_settings(settings)
@@ -39,7 +39,7 @@ async def update_theme(
 async def upload_logo(
     file: Annotated[UploadFile, File()],
     db: Annotated[AsyncSession, Depends(get_db)],
-    admin: Annotated[User, Depends(get_current_approved_user)],
+    admin: Annotated[User, Depends(require_permission("admin.manage_settings"))],
 ):
     # Validate file type
     if not file.content_type.startswith("image/"):

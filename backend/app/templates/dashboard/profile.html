@@ -16,6 +16,7 @@
         <form hx-put="/profile"
               hx-target="#profile-result"
               hx-swap="innerHTML"
+              hx-headers='{"X-CSRF-TOKEN": "{{ csrf_token }}"}'
               class="divide-y divide-gray-200 dark:divide-gray-700">
 
             <div id="profile-result"></div>

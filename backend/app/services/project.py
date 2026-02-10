@@ -100,6 +100,10 @@ class ProjectService:
         result = await self.db.execute(query)
         return result.scalar_one()
 
+    async def get_phase(self, phase_id: int) -> Optional[ProjectPhase]:
+        result = await self.db.execute(select(ProjectPhase).where(ProjectPhase.id == phase_id))
+        return result.scalar_one_or_none()
+
     # --- Tasks ---
     async def create_task(self, phase_id: int, data: TaskCreate) -> Task:
         task = Task(

@@ -63,12 +63,18 @@ async def create_operation(
     estimated_duration: Annotated[Optional[int], Form()] = None,
     max_participants: Annotated[Optional[int], Form()] = None,
     requirements: Annotated[Optional[str], Form()] = None,
+    required_roles_str: Annotated[Optional[str], Form()] = None, # New
+    required_ship_types_str: Annotated[Optional[str], Form()] = None, # New
 ):
     """Handle operation creation."""
     from app.schemas.operation import OperationCreate
     
     # Parse datetime
     dt = datetime.fromisoformat(scheduled_at.replace("Z", "+00:00"))
+
+    # Parse comma-separated strings into lists
+    required_roles = [r.strip() for r in required_roles_str.split(',') if r.strip()] if required_roles_str else []
+    required_ship_types = [s.strip() for s in required_ship_types_str.split(',') if s.strip()] if required_ship_types_str else []
     
     data = OperationCreate(
         title=title,
@@ -77,7 +83,9 @@ async def create_operation(
         description=description,
         estimated_duration=estimated_duration,
         max_participants=max_participants,
-        requirements=requirements
+        requirements=requirements,
+        required_roles=required_roles, # New
+        required_ship_types=required_ship_types, # New
     )
     
     service = OperationService(db)

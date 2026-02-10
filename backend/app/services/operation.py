@@ -3,8 +3,10 @@ from typing import List, Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
+from sqlalchemy.orm import selectinload # Import selectinload
 from app.models.event import Operation, OperationParticipant, OperationStatus
 from app.schemas.operation import OperationCreate, OperationUpdate
+from app.models.ship import Ship # Import Ship model
 
 class OperationService:
     def __init__(self, db: AsyncSession):
@@ -18,9 +20,12 @@ class OperationService:
         return result.scalars().all()
 
     async def get_operation(self, operation_id: int) -> Optional[Operation]:
-        result = await self.db.execute(
-            select(Operation).where(Operation.id == operation_id)
+        query = select(Operation).where(Operation.id == operation_id).options(
+            selectinload(Operation.participants).selectinload(OperationParticipant.user),
+            selectinload(Operation.participants).selectinload(OperationParticipant.ship), # Eager load ship
+            selectinload(Operation.creator)
         )
+        result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def create_operation(self, data: OperationCreate, user_id: int) -> Operation:
@@ -65,3 +70,16 @@ class OperationService:
         self.db.add(participant)
         await self.db.flush()
         return participant
+
+    async def get_user_upcoming_operations(self, user_id: int, limit: int = 3) -> List[Operation]:
+        """Get upcoming operations for a user."""
+        query = (
+            select(Operation)
+            .join(OperationParticipant)
+            .where(OperationParticipant.user_id == user_id)
+            .where(Operation.scheduled_at > datetime.utcnow())
+            .order_by(Operation.scheduled_at.asc())
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()

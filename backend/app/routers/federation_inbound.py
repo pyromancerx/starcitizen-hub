@@ -42,10 +42,8 @@ async def export_events(
     from datetime import datetime, timezone
     
     query = select(Event).where(
-        Event.status != EventStatus.DRAFT
-        # TODO: Add is_public flag to Event model if strictly required, 
-        # or assume all non-draft events are sharable with trusted peers.
-        # For now, let's assume we trust peers with scheduled/active events.
+        Event.status != EventStatus.DRAFT,
+        Event.is_public == True
     )
     
     if since > 0:

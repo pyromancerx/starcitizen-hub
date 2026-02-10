@@ -1,7 +1,7 @@
 # backend/app/schemas/operation.py
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field # Import Field
 from app.models.event import OperationType, OperationStatus
 
 class OperationBase(BaseModel):
@@ -12,6 +12,8 @@ class OperationBase(BaseModel):
     estimated_duration: Optional[int] = None
     max_participants: Optional[int] = None
     requirements: Optional[str] = None
+    required_roles: Optional[List[str]] = Field(default_factory=list) # New field
+    required_ship_types: Optional[List[str]] = Field(default_factory=list) # New field
 
 class OperationCreate(OperationBase):
     pass
@@ -25,6 +27,8 @@ class OperationUpdate(BaseModel):
     status: Optional[OperationStatus] = None
     max_participants: Optional[int] = None
     requirements: Optional[str] = None
+    required_roles: Optional[List[str]] = None # New field
+    required_ship_types: Optional[List[str]] = None # New field
 
 class ParticipantResponse(BaseModel):
     id: int

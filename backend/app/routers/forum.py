@@ -59,9 +59,7 @@ async def create_post(
     if not thread:
         raise HTTPException(status_code=404, detail="Thread not found")
     
-    if thread.is_locked:
-         # TODO: Allow mods to post in locked threads?
-         # if not await has_permission(current_user, "forum.manage", db):
-         raise HTTPException(status_code=403, detail="Thread is locked")
+    if thread.is_locked and not await check_permission(current_user, "forum.manage", db):
+        raise HTTPException(status_code=403, detail="Thread is locked and you do not have permission to post")
 
     return await service.create_post(thread_id, current_user.id, data)

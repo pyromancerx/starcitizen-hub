@@ -2,7 +2,7 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.dependencies import get_current_approved_user
+from app.dependencies import get_current_approved_user, require_permission
 from app.models.user import User
 from app.schemas.announcement import AnnouncementCreate, AnnouncementUpdate, AnnouncementResponse
 from app.services.announcement import AnnouncementService
@@ -13,9 +13,8 @@ router = APIRouter(prefix="/api/announcements", tags=["announcements"])
 async def create_announcement(
     data: AnnouncementCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("org.post_announcements"))],
 ):
-    # TODO: Add role check (only officers/admins should announce)
     service = AnnouncementService(db)
     return await service.create_announcement(data, current_user.id)
 
@@ -41,12 +40,17 @@ async def get_announcement(
         raise HTTPException(status_code=404, detail="Announcement not found")
     return announcement
 
+from app.web_dependencies import get_user_permissions
+
+...
+
 @router.patch("/{announcement_id}", response_model=AnnouncementResponse)
 async def update_announcement(
     announcement_id: int,
     data: AnnouncementUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_approved_user)],
+    user_permissions: Annotated[List[str], Depends(get_user_permissions)],
 ):
     service = AnnouncementService(db)
     announcement = await service.get_announcement(announcement_id)
@@ -54,8 +58,7 @@ async def update_announcement(
         raise HTTPException(status_code=404, detail="Announcement not found")
     
     # Check permission (author or admin)
-    if announcement.author_id != current_user.id:
-        # TODO: Allow admins to edit any
+    if announcement.author_id != current_user.id and "admin.manage_settings" not in user_permissions:
         raise HTTPException(status_code=403, detail="Not authorized to edit this announcement")
 
     return await service.update_announcement(announcement, data)
@@ -65,13 +68,14 @@ async def delete_announcement(
     announcement_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_approved_user)],
+    user_permissions: Annotated[List[str], Depends(get_user_permissions)],
 ):
     service = AnnouncementService(db)
     announcement = await service.get_announcement(announcement_id)
     if not announcement:
         raise HTTPException(status_code=404, detail="Announcement not found")
         
-    if announcement.author_id != current_user.id:
+    if announcement.author_id != current_user.id and "admin.manage_settings" not in user_permissions:
         raise HTTPException(status_code=403, detail="Not authorized to delete this announcement")
 
     await service.delete_announcement(announcement)
