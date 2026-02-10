@@ -79,15 +79,24 @@
       </div>
     </div>
   </div>
+
+  <TransferFundsModal :show="showTransferModal" @close="showTransferModal = false" @transfer-funds="handleTransferFunds" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useWalletStore } from '../stores/assets';
+import TransferFundsModal from '../components/TransferFundsModal.vue';
 
 const walletStore = useWalletStore();
+const showTransferModal = ref(false);
 
 onMounted(() => {
   walletStore.fetchWallet();
 });
+
+const handleTransferFunds = async (transferData) => {
+  await walletStore.transferFunds(transferData);
+  showTransferModal.value = false;
+};
 </script>

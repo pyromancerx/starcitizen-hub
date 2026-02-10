@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Org Stockpiles</h2>
-      <button class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">New Stockpile</button>
+      <button @click="showAddStockpileModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">New Stockpile</button>
     </div>
 
     <div v-if="stockpileStore.isLoading" class="flex justify-center p-12">
@@ -47,15 +47,24 @@
       </div>
     </div>
   </div>
+
+  <AddStockpileModal :show="showAddStockpileModal" @close="showAddStockpileModal = false" @add-stockpile="handleAddStockpile" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useStockpileStore } from '../stores/stockpile';
+import AddStockpileModal from '../components/AddStockpileModal.vue';
 
 const stockpileStore = useStockpileStore();
+const showAddStockpileModal = ref(false);
 
 onMounted(() => {
   stockpileStore.fetchStockpiles();
 });
+
+const handleAddStockpile = async (newStockpileData) => {
+  await stockpileStore.addStockpile(newStockpileData);
+  showAddStockpileModal.value = false;
+};
 </script>

@@ -4,6 +4,9 @@
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Personal Inventory</h2>
       <div class="flex space-x-2">
         <input type="text" placeholder="Search items..." class="bg-black/30 border border-sc-grey/20 rounded px-3 py-1 text-sm text-white focus:outline-none focus:border-sc-blue/50" />
+        <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+          Add Item
+        </button>
       </div>
     </div>
 
@@ -41,15 +44,24 @@
       </table>
     </div>
   </div>
+
+  <AddInventoryItemModal :show="showAddModal" @close="showAddModal = false" @add-item="handleAddItem" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useInventoryStore } from '../stores/assets';
+import AddInventoryItemModal from '../components/AddInventoryItemModal.vue';
 
 const inventoryStore = useInventoryStore();
+const showAddModal = ref(false);
 
 onMounted(() => {
   inventoryStore.fetchInventory();
 });
+
+const handleAddItem = async (newItemData) => {
+  await inventoryStore.addInventoryItem(newItemData);
+  showAddModal.value = false;
+};
 </script>

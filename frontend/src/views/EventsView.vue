@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Upcoming Operations</h2>
-      <button class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Schedule Event</button>
+      <button @click="showAddEventModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Schedule Event</button>
     </div>
 
     <div v-if="eventStore.isLoading" class="flex justify-center p-12">
@@ -42,15 +42,24 @@
       </div>
     </div>
   </div>
+
+  <AddEventModal :show="showAddEventModal" @close="showAddEventModal = false" @add-event="handleAddEvent" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useEventStore } from '../stores/social';
+import AddEventModal from '../components/AddEventModal.vue';
 
 const eventStore = useEventStore();
+const showAddEventModal = ref(false);
 
 onMounted(() => {
   eventStore.fetchEvents();
 });
+
+const handleAddEvent = async (newEventData) => {
+  await eventStore.addEvent(newEventData);
+  showAddEventModal.value = false;
+};
 </script>

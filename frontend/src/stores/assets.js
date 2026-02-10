@@ -39,15 +39,18 @@ export const useInventoryStore = defineStore('inventory', {
     error: null,
   }),
   actions: {
-    async fetchInventory() {
-      this.isLoading = true;
+    async addInventoryItem(itemData) {
       try {
-        const response = await api.get('/inventory/');
-        this.items = response.data;
+        const response = await api.post('/inventory/', itemData);
+        // Assuming the API returns the newly created item
+        this.items.push(response.data);
+        // Optionally refetch to ensure consistent state with backend,
+        // especially if backend applies any transformations or default values
+        await this.fetchInventory();
+        return response.data;
       } catch (err) {
-        this.error = err.response?.data?.detail || 'Failed to fetch inventory';
-      } finally {
-        this.isLoading = false;
+        this.error = err.response?.data?.detail || 'Failed to add inventory item';
+        throw err;
       }
     }
   }
@@ -70,6 +73,18 @@ export const useWalletStore = defineStore('wallet', {
         this.error = err.response?.data?.detail || 'Failed to fetch wallet';
       } finally {
         this.isLoading = false;
+      }
+    },
+    async transferFunds(transferData) {
+      try {
+        // Assuming transferData contains recipient_id, amount, description
+        const response = await api.post('/wallet/transfer', transferData);
+        // Refresh wallet data to reflect the new balance and transactions
+        await this.fetchWallet();
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to transfer funds';
+        throw err;
       }
     }
   }

@@ -37,11 +37,14 @@
       </div>
     </div>
   </div>
+
+  <AddShipModal :show="showAddModal" @close="showAddModal = false" @add-ship="handleAddShip" />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useShipStore } from '../stores/assets';
+import AddShipModal from '../components/AddShipModal.vue';
 
 const shipStore = useShipStore();
 const showAddModal = ref(false);
@@ -49,4 +52,9 @@ const showAddModal = ref(false);
 onMounted(() => {
   shipStore.fetchShips();
 });
+
+const handleAddShip = async (newShipData) => {
+  await shipStore.addShip(newShipData);
+  showAddModal.value = false;
+};
 </script>

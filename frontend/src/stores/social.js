@@ -23,6 +23,16 @@ export const useEventStore = defineStore('events', {
         this.isLoading = false;
       }
     },
+    async addEvent(eventData) {
+      try {
+        const response = await api.post('/events/', eventData);
+        await this.fetchEvents(); // Refresh the list to include the new event
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to add event';
+        throw err;
+      }
+    },
     async fetchEvent(eventId) {
       this.isLoading = true;
       try {
