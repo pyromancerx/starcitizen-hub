@@ -1,10 +1,11 @@
 from typing import Optional, Any
 from pydantic import BaseModel, Field, ConfigDict
+from datetime import datetime
 
 class SystemSettingBase(BaseModel):
     key: str = Field(..., max_length=100)
     value: str
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=255) # Use Field for max_length
     is_public: bool = False
 
 class SystemSettingCreate(SystemSettingBase):
@@ -12,12 +13,12 @@ class SystemSettingCreate(SystemSettingBase):
 
 class SystemSettingUpdate(BaseModel):
     value: Optional[str] = None
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=255)
     is_public: Optional[bool] = None
 
 class SystemSettingResponse(SystemSettingBase):
     model_config = ConfigDict(from_attributes=True)
-    id: int
+    updated_at: datetime
 
 class ThemeSettings(BaseModel):
     # Colors

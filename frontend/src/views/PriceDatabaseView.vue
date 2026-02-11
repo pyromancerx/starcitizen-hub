@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Commodity Price Database</h2>
-      <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+      <button @click="showAddPriceReportModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
         Report Price
       </button>
     </div>
@@ -26,8 +26,88 @@
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="flex gap-4">
+    <!-- Latest Prices by Location -->
+    <div class="bg-sc-panel border border-sc-grey/10 rounded-lg shadow-xl p-8">
+      <h3 class="text-lg font-bold text-white mb-4">Latest Prices by Location</h3>
+      <div class="flex space-x-2 mb-4">
+        <input type="text" v-model="latestPriceLocationInput" placeholder="Enter location (e.g., Port Olisar)"
+               class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none" />
+        <button @click="fetchLatestPricesByLocation" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+          Search
+        </button>
+      </div>
+      <div v-if="latestPricesLoading" class="flex justify-center p-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-sc-blue"></div>
+      </div>
+      <div v-else-if="latestPricesByLocation.length > 0">
+        <table class="w-full text-left border-collapse bg-black/20 rounded-lg overflow-hidden">
+          <thead>
+            <tr class="text-[10px] text-sc-grey/50 uppercase tracking-widest font-bold">
+              <th class="p-4 border-b border-sc-grey/10">Commodity</th>
+              <th class="p-4 border-b border-sc-grey/10">Buy Price</th>
+              <th class="p-4 border-b border-sc-grey/10">Sell Price</th>
+              <th class="p-4 border-b border-sc-grey/10">Reported</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="price in latestPricesByLocation" :key="price.commodity" class="hover:bg-white/5 border-b border-sc-grey/5 transition-colors">
+              <td class="p-4 text-sm text-sc-blue font-bold">{{ price.commodity }}</td>
+              <td class="p-4 text-sm text-white">{{ price.buy_price ? formatAUEC(price.buy_price) : '-' }}</td>
+              <td class="p-4 text-sm text-white">{{ price.sell_price ? formatAUEC(price.sell_price) : '-' }}</td>
+              <td class="p-4 text-sm">
+                <span :class="getFreshnessClass(price.reported_at)">
+                  {{ formatTimeAgo(price.reported_at) }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="text-sc-grey/50 p-4">No prices found for this location.</p>
+    </div>
+
+    <!-- Historical Price Data -->
+    <div class="bg-sc-panel border border-sc-grey/10 rounded-lg shadow-xl p-8 mt-8">
+      <h3 class="text-lg font-bold text-white mb-4">Historical Price Data</h3>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <input type="text" v-model="historyLocationInput" placeholder="Enter location (e.g., Port Olisar)"
+               class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none" />
+        <input type="text" v-model="historyCommodityInput" placeholder="Enter commodity (e.g., Agricium)"
+               class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none" />
+      </div>
+      <div class="flex justify-end mb-4">
+        <button @click="fetchPriceHistory" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+          View History
+        </button>
+      </div>
+      <div v-if="historyLoading" class="flex justify-center p-4">
+        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-sc-blue"></div>
+      </div>
+      <div v-else-if="historicalPrices.length > 0">
+        <table class="w-full text-left border-collapse bg-black/20 rounded-lg overflow-hidden">
+          <thead>
+            <tr class="text-[10px] text-sc-grey/50 uppercase tracking-widest font-bold">
+              <th class="p-4 border-b border-sc-grey/10">Reported Date</th>
+              <th class="p-4 border-b border-sc-grey/10">Buy Price</th>
+              <th class="p-4 border-b border-sc-grey/10">Sell Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="price in historicalPrices" :key="price.reported_at" class="hover:bg-white/5 border-b border-sc-grey/5 transition-colors">
+              <td class="p-4 text-sm text-white">{{ formatDateTime(price.reported_at) }}</td>
+              <td class="p-4 text-sm text-white">{{ price.buy_price ? formatAUEC(price.buy_price) : '-' }}</td>
+              <td class="p-4 text-sm text-white">{{ price.sell_price ? formatAUEC(price.sell_price) : '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p v-else class="text-sc-grey/50 p-4">No historical data available for this commodity/location.</p>
+    </div>
+
+
+    <!-- Filters for All Price Reports -->
+    <h3 class="text-xl font-bold text-white mb-4 mt-8">All Price Reports</h3>
+    <div class="flex gap-4 mb-4">
       <div class="flex-1">
         <input v-model="filters.location" type="text" placeholder="Filter by location..."
           class="w-full bg-sc-panel border border-sc-grey/30 rounded px-4 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
@@ -79,78 +159,35 @@
       </table>
     </div>
 
-    <!-- Add Price Report Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showAddModal = false">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-md shadow-2xl">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">Report Commodity Price</h3>
-        
-        <form @submit.prevent="submitPriceReport" class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Location</label>
-            <input v-model="newReport.location" type="text" required
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="e.g., Port Olisar">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Commodity</label>
-            <input v-model="newReport.commodity" type="text" required
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="e.g., Agricium">
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Buy Price (aUEC)</label>
-              <input v-model.number="newReport.buy_price" type="number" min="0"
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-                placeholder="Optional">
-            </div>
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Sell Price (aUEC)</label>
-              <input v-model.number="newReport.sell_price" type="number" min="0"
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-                placeholder="Optional">
-            </div>
-          </div>
-          
-          <div v-if="tradeStore.error" class="text-red-500 text-sm text-center">
-            {{ tradeStore.error }}
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="showAddModal = false"
-              class="flex-1 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-              Cancel
-            </button>
-            <button type="submit" :disabled="tradeStore.isLoading || (!newReport.buy_price && !newReport.sell_price)"
-              class="flex-1 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue hover:bg-sc-blue/20 transition-all text-xs uppercase tracking-widest disabled:opacity-50">
-              {{ tradeStore.isLoading ? 'Saving...' : 'Report Price' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AddPriceReportModal
+      :show="showAddPriceReportModal"
+      @close="showAddPriceReportModal = false"
+      @price-report-saved="handlePriceReportSaved"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useTradeStore } from '../stores/trade';
+import AddPriceReportModal from '../components/AddPriceReportModal.vue'; // Import the new modal component
 
 const tradeStore = useTradeStore();
-const showAddModal = ref(false);
+
+const showAddPriceReportModal = ref(false); // Renamed from showAddModal
 const filters = ref({
   location: '',
   commodity: ''
 });
 
-const newReport = ref({
-  location: '',
-  commodity: '',
-  buy_price: null,
-  sell_price: null
-});
+const latestPriceLocationInput = ref('');
+const latestPricesByLocation = ref([]);
+const latestPricesLoading = ref(false);
+
+const historyLocationInput = ref('');
+const historyCommodityInput = ref('');
+const historicalPrices = ref([]);
+const historyLoading = ref(false);
 
 let debounceTimer;
 
@@ -179,6 +216,17 @@ const formatTimeAgo = (dateString) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+const formatDateTime = (isoString) => {
+  if (!isoString) return 'N/A';
+  const date = new Date(isoString);
+  const options = {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    hour12: true
+  };
+  return date.toLocaleString(undefined, options);
+};
+
 const getFreshnessClass = (dateString) => {
   if (!dateString) return 'text-sc-grey';
   const date = new Date(dateString);
@@ -203,25 +251,48 @@ const clearFilters = () => {
   tradeStore.fetchPriceReports();
 };
 
-const submitPriceReport = async () => {
-  if (!newReport.value.buy_price && !newReport.value.sell_price) {
+const handlePriceReportSaved = () => {
+  showAddPriceReportModal.value = false;
+  tradeStore.fetchPriceReports(filters.value); // Refresh the main list
+  tradeStore.fetchBestRoutes(); // Refresh best routes after new price report
+  // If user is currently viewing latest prices for a location, refresh that too
+  if (latestPriceLocationInput.value) {
+    fetchLatestPricesByLocation();
+  }
+};
+
+const fetchLatestPricesByLocation = async () => {
+  if (!latestPriceLocationInput.value) {
+    latestPricesByLocation.value = [];
     return;
   }
-  
+  latestPricesLoading.value = true;
   try {
-    await tradeStore.createPriceReport(newReport.value);
-    showAddModal.value = false;
-    // Reset form
-    newReport.value = {
-      location: '',
-      commodity: '',
-      buy_price: null,
-      sell_price: null
-    };
-    // Refresh routes after new price report
-    await tradeStore.fetchBestRoutes();
-  } catch (e) {
-    // Error handled in store
+    latestPricesByLocation.value = await tradeStore.getPricesByLocation(latestPriceLocationInput.value);
+  } catch (error) {
+    console.error('Failed to fetch latest prices by location:', error);
+    latestPricesByLocation.value = [];
+    alert('Failed to fetch prices for this location.');
+  } finally {
+    latestPricesLoading.value = false;
+  }
+};
+
+const fetchPriceHistory = async () => {
+  if (!historyLocationInput.value || !historyCommodityInput.value) {
+    historicalPrices.value = [];
+    alert('Please enter both location and commodity for historical data.');
+    return;
+  }
+  historyLoading.value = true;
+  try {
+    historicalPrices.value = await tradeStore.getPriceHistory(historyLocationInput.value, historyCommodityInput.value);
+  } catch (error) {
+    console.error('Failed to fetch price history:', error);
+    historicalPrices.value = [];
+    alert('Failed to fetch historical prices.');
+  } finally {
+    historyLoading.value = false;
   }
 };
 </script>

@@ -1,9 +1,8 @@
-# app/routers/ship.py
 from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.dependencies import get_current_approved_user
+from app.dependencies import get_current_approved_user, require_permission
 from app.models.user import User
 from app.schemas.ship import ShipCreate, ShipUpdate, ShipResponse
 from app.services.ship import ShipService
@@ -36,6 +35,18 @@ async def list_my_ships(
     ships = await service.get_user_ships(current_user.id, ship_type, skip, limit)
     return ships
 
+@router.get("/all_by_type", response_model=List[ShipResponse])
+async def list_all_ships_by_type(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("admin.view_ships"))],
+    ship_type: Optional[str] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+):
+    """List all ships across all users, optionally filtered by type (admin only)."""
+    service = ShipService(db)
+    ships = await service.get_ships_by_type(ship_type, skip, limit)
+    return ships
 
 @router.get("/expiring-insurance", response_model=List[ShipResponse])
 async def get_expiring_insurance(

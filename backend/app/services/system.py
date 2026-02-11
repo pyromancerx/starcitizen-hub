@@ -52,3 +52,20 @@ class SystemService:
         for key, value in settings.items():
             await self.set_setting(key, str(value))
         return {key: str(value) for key, value in settings.items()}
+
+    async def delete_setting(self, key: str) -> bool:
+        """Delete a system setting by its key."""
+        setting = await self.get_setting(key)
+        if not setting:
+            return False
+        await self.db.delete(setting)
+        await self.db.commit()
+        return True
+
+    async def get_all_settings(self, is_public: Optional[bool] = None) -> List[SystemSetting]:
+        """Retrieve all system settings, optionally filtered by public status."""
+        query = select(SystemSetting)
+        if is_public is not None:
+            query = query.where(SystemSetting.is_public == is_public)
+        result = await self.db.execute(query)
+        return list(result.scalars().all())

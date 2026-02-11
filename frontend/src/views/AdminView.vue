@@ -34,13 +34,27 @@
               >
                 Announcements
               </router-link>
-              <router-link 
-                :to="{ name: 'admin-discord-settings' }" 
-                class="px-4 py-2 text-sm font-bold uppercase tracking-widest border-b-2 transition-all"
-                :class="$route.name === 'admin-discord-settings' ? 'border-sc-blue text-sc-blue' : 'border-transparent text-sc-grey hover:text-white'"
-              >
-                Discord Settings
-              </router-link>    </div>
+                      <router-link 
+                        :to="{ name: 'admin-discord-settings' }" 
+                        class="px-4 py-2 text-sm font-bold uppercase tracking-widest border-b-2 transition-all"
+                        :class="$route.name === 'admin-discord-settings' ? 'border-sc-blue text-sc-blue' : 'border-transparent text-sc-grey hover:text-white'"
+                      >
+                        Discord Settings
+                      </router-link>
+                      <router-link 
+                        :to="{ name: 'admin-audit-log' }" 
+                        class="px-4 py-2 text-sm font-bold uppercase tracking-widest border-b-2 transition-all"
+                        :class="$route.name === 'admin-audit-log' ? 'border-sc-blue text-sc-blue' : 'border-transparent text-sc-grey hover:text-white'"
+                      >
+                        Audit Log
+                      </router-link>
+                      <router-link 
+                        :to="{ name: 'admin-system-settings' }" 
+                        class="px-4 py-2 text-sm font-bold uppercase tracking-widest border-b-2 transition-all"
+                        :class="$route.name === 'admin-system-settings' ? 'border-sc-blue text-sc-blue' : 'border-transparent text-sc-grey hover:text-white'"
+                      >
+                        System Settings
+                      </router-link>    </div>
 
     <!-- Router View for Admin Sub-sections -->
     <router-view></router-view>

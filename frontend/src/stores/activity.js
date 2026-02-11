@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api from '../services/api';
+import ActivityService from '../services/ActivityService'; // Import ActivityService
 
 export const useActivityStore = defineStore('activity', {
   state: () => ({
@@ -16,25 +16,16 @@ export const useActivityStore = defineStore('activity', {
     async fetchActivityFeed(params = {}) {
       this.isLoading = true;
       try {
-        const queryParams = new URLSearchParams();
-        if (params.type) queryParams.append('activity_type', params.type);
-        if (params.userId) queryParams.append('user_id', params.userId);
-        if (params.hours) queryParams.append('hours', params.hours);
-        if (params.limit) queryParams.append('limit', params.limit);
-        if (params.offset) queryParams.append('offset', params.offset);
-        
-        const response = await api.get(`/activity/feed?${queryParams}`);
+        const response = await ActivityService.getActivityFeed(params); // Use ActivityService
         
         if (params.offset && params.offset > 0) {
-          // Append for pagination
-          this.activities = [...this.activities, ...response.data.activities];
+          this.activities = [...this.activities, ...response.activities];
         } else {
-          // Replace for initial load
-          this.activities = response.data.activities;
+          this.activities = response.activities;
         }
         
-        this.totalCount = response.data.total_count;
-        this.hasMore = response.data.has_more;
+        this.totalCount = response.total_count;
+        this.hasMore = response.has_more;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch activity feed';
       } finally {
@@ -44,8 +35,8 @@ export const useActivityStore = defineStore('activity', {
 
     async fetchRecentActivities(hours = 24) {
       try {
-        const response = await api.get(`/activity/recent?hours=${hours}`);
-        this.activities = response.data;
+        const response = await ActivityService.getRecentActivities(hours); // Use ActivityService
+        this.activities = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch recent activities';
       }
@@ -53,8 +44,8 @@ export const useActivityStore = defineStore('activity', {
 
     async fetchActivityTypes() {
       try {
-        const response = await api.get('/activity/types');
-        this.activityTypes = response.data;
+        const response = await ActivityService.getActivityTypes(); // Use ActivityService
+        this.activityTypes = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch activity types';
       }
@@ -62,8 +53,8 @@ export const useActivityStore = defineStore('activity', {
 
     async fetchStats(days = 7) {
       try {
-        const response = await api.get(`/activity/stats?days=${days}`);
-        this.stats = response.data;
+        const response = await ActivityService.getActivityStats(days); // Use ActivityService
+        this.stats = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch activity stats';
       }
@@ -71,15 +62,15 @@ export const useActivityStore = defineStore('activity', {
 
     async addReaction(activityId, emoji) {
       try {
-        const response = await api.post(`/activity/${activityId}/react`, { emoji });
+        const response = await ActivityService.addReaction(activityId, emoji); // Use ActivityService
         // Update the activity in the list
         const activity = this.activities.find(a => a.id === activityId);
         if (activity) {
           if (!activity.reactions) activity.reactions = [];
-          activity.reactions.push(response.data);
+          activity.reactions.push(response); // response is already data
           activity.reaction_count = (activity.reaction_count || 0) + 1;
         }
-        return response.data;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to add reaction';
         throw err;
@@ -88,7 +79,7 @@ export const useActivityStore = defineStore('activity', {
 
     async removeReaction(activityId, emoji) {
       try {
-        await api.delete(`/activity/${activityId}/react/${encodeURIComponent(emoji)}`);
+        await ActivityService.removeReaction(activityId, emoji); // Use ActivityService
         // Update the activity in the list
         const activity = this.activities.find(a => a.id === activityId);
         if (activity && activity.reactions) {

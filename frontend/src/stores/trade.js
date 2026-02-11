@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api from '../services/api';
+import TradeService from '../services/TradeService'; // Import TradeService
 
 export const useTradeStore = defineStore('trade', {
   state: () => ({
@@ -20,8 +20,8 @@ export const useTradeStore = defineStore('trade', {
     async fetchTradeRuns() {
       this.isLoading = true;
       try {
-        const response = await api.get('/trade/runs');
-        this.tradeRuns = response.data;
+        const response = await TradeService.getMyTradeRuns();
+        this.tradeRuns = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch trade runs';
       } finally {
@@ -29,20 +29,47 @@ export const useTradeStore = defineStore('trade', {
       }
     },
 
+    async getTradeRun(runId) {
+      this.isLoading = true;
+      try {
+        const response = await TradeService.getTradeRun(runId);
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to fetch trade run';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     async createTradeRun(runData) {
       try {
-        const response = await api.post('/trade/runs', runData);
-        this.tradeRuns.unshift(response.data);
-        return response.data;
+        const response = await TradeService.createTradeRun(runData);
+        this.tradeRuns.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to create trade run';
         throw err;
       }
     },
 
+    async updateTradeRun(runId, runData) {
+      try {
+        const response = await TradeService.updateTradeRun(runId, runData);
+        const index = this.tradeRuns.findIndex(run => run.id === runId);
+        if (index !== -1) {
+          this.tradeRuns[index] = response;
+        }
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to update trade run';
+        throw err;
+      }
+    },
+
     async deleteTradeRun(runId) {
       try {
-        await api.delete(`/trade/runs/${runId}`);
+        await TradeService.deleteTradeRun(runId);
         this.tradeRuns = this.tradeRuns.filter(r => r.id !== runId);
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to delete trade run';
@@ -52,8 +79,8 @@ export const useTradeStore = defineStore('trade', {
 
     async fetchTradeStats() {
       try {
-        const response = await api.get('/trade/stats/my');
-        this.tradeStats = response.data;
+        const response = await TradeService.getTradeStats();
+        this.tradeStats = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch trade stats';
       }
@@ -61,8 +88,8 @@ export const useTradeStore = defineStore('trade', {
 
     async fetchLeaderboard() {
       try {
-        const response = await api.get('/trade/leaderboard');
-        this.leaderboard = response.data;
+        const response = await TradeService.getTradeLeaderboard();
+        this.leaderboard = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch leaderboard';
       }
@@ -72,12 +99,8 @@ export const useTradeStore = defineStore('trade', {
     async fetchPriceReports(filters = {}) {
       this.isLoading = true;
       try {
-        const params = new URLSearchParams();
-        if (filters.location) params.append('location', filters.location);
-        if (filters.commodity) params.append('commodity', filters.commodity);
-        
-        const response = await api.get(`/trade/prices?${params}`);
-        this.priceReports = response.data;
+        const response = await TradeService.getPriceReports(filters);
+        this.priceReports = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch price reports';
       } finally {
@@ -87,9 +110,9 @@ export const useTradeStore = defineStore('trade', {
 
     async createPriceReport(reportData) {
       try {
-        const response = await api.post('/trade/prices', reportData);
-        this.priceReports.unshift(response.data);
-        return response.data;
+        const response = await TradeService.createPriceReport(reportData);
+        this.priceReports.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to create price report';
         throw err;
@@ -98,8 +121,8 @@ export const useTradeStore = defineStore('trade', {
 
     async fetchBestRoutes() {
       try {
-        const response = await api.get('/trade/routes/best');
-        this.bestRoutes = response.data;
+        const response = await TradeService.getBestRoutes();
+        this.bestRoutes = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch best routes';
       }
@@ -109,8 +132,8 @@ export const useTradeStore = defineStore('trade', {
     async fetchOpenContracts() {
       this.isLoading = true;
       try {
-        const response = await api.get('/trade/contracts/open');
-        this.contracts = response.data;
+        const response = await TradeService.getOpenContracts();
+        this.contracts = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch contracts';
       } finally {
@@ -120,8 +143,8 @@ export const useTradeStore = defineStore('trade', {
 
     async fetchMyContracts() {
       try {
-        const response = await api.get('/trade/contracts/my');
-        this.myContracts = response.data;
+        const response = await TradeService.getMyContracts();
+        this.myContracts = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch my contracts';
       }
@@ -129,8 +152,8 @@ export const useTradeStore = defineStore('trade', {
 
     async fetchMyHaulingContracts() {
       try {
-        const response = await api.get('/trade/contracts/hauling');
-        this.myHaulingContracts = response.data;
+        const response = await TradeService.getMyHaulingContracts();
+        this.myHaulingContracts = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch hauling contracts';
       }
@@ -138,9 +161,9 @@ export const useTradeStore = defineStore('trade', {
 
     async createContract(contractData) {
       try {
-        const response = await api.post('/trade/contracts', contractData);
-        this.myContracts.unshift(response.data);
-        return response.data;
+        const response = await TradeService.createCargoContract(contractData);
+        this.myContracts.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to create contract';
         throw err;
@@ -149,14 +172,14 @@ export const useTradeStore = defineStore('trade', {
 
     async acceptContract(contractId) {
       try {
-        const response = await api.post(`/trade/contracts/${contractId}/accept`);
+        const response = await TradeService.acceptContract(contractId);
         // Update contract in lists
         const idx = this.contracts.findIndex(c => c.id === contractId);
         if (idx !== -1) {
-          this.contracts[idx] = response.data;
+          this.contracts[idx] = response;
         }
-        this.myHaulingContracts.unshift(response.data);
-        return response.data;
+        this.myHaulingContracts.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to accept contract';
         throw err;
@@ -165,29 +188,28 @@ export const useTradeStore = defineStore('trade', {
 
     async completeContract(contractId) {
       try {
-        const response = await api.post(`/trade/contracts/${contractId}/complete`);
+        const response = await TradeService.completeContract(contractId);
         // Update in all lists
         [this.contracts, this.myContracts, this.myHaulingContracts].forEach(list => {
           const idx = list.findIndex(c => c.id === contractId);
-          if (idx !== -1) list[idx] = response.data;
+          if (idx !== -1) list[idx] = response;
         });
-        return response.data;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to complete contract';
         throw err;
       }
     },
 
-    // NEW: startContract action
     async startContract(contractId) {
       try {
-        const response = await api.post(`/trade/contracts/${contractId}/start`);
+        const response = await TradeService.startContract(contractId);
         // Update in all lists
         [this.contracts, this.myContracts, this.myHaulingContracts].forEach(list => {
           const idx = list.findIndex(c => c.id === contractId);
-          if (idx !== -1) list[idx] = response.data;
+          if (idx !== -1) list[idx] = response;
         });
-        return response.data;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to start contract';
         throw err;
@@ -196,23 +218,38 @@ export const useTradeStore = defineStore('trade', {
 
     async cancelContract(contractId) {
       try {
-        const response = await api.post(`/trade/contracts/${contractId}/cancel`);
+        const response = await TradeService.cancelContract(contractId);
         // Update in all lists
         [this.contracts, this.myContracts, this.myHaulingContracts].forEach(list => {
           const idx = list.findIndex(c => c.id === contractId);
-          if (idx !== -1) list[idx] = response.data;
+          if (idx !== -1) list[idx] = response;
         });
-        return response.data;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to cancel contract';
         throw err;
       }
     },
 
+    async disputeContract(contractId) {
+      try {
+        const response = await TradeService.disputeContract(contractId);
+        // Update in all lists
+        [this.contracts, this.myContracts, this.myHaulingContracts].forEach(list => {
+          const idx = list.findIndex(c => c.id === contractId);
+          if (idx !== -1) list[idx] = response;
+        });
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to dispute contract';
+        throw err;
+      }
+    },
+
     async fetchHaulerStats() {
       try {
-        const response = await api.get('/trade/hauler/stats');
-        this.haulerStats = response.data;
+        const response = await TradeService.getHaulerStats();
+        this.haulerStats = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch hauler stats';
       }

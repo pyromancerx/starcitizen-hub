@@ -37,6 +37,11 @@ import OperationsView from '../views/OperationsView.vue';
 import OperationDetailView from '../views/OperationDetailView.vue';
 import OperationCreateEditView from '../views/OperationCreateEditView.vue';
 import AdminDiscordSettingsView from '../views/AdminDiscordSettingsView.vue';
+import TradeRunDetailView from '../views/TradeRunDetailView.vue';
+import TradeRunCreateEditView from '../views/TradeRunCreateEditView.vue';
+import AdminAuditLogView from '../views/AdminAuditLogView.vue';
+import AnnouncementsPublicView from '../views/AnnouncementsPublicView.vue';
+import AdminSystemSettingsView from '../views/AdminSystemSettingsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -176,7 +181,82 @@ const router = createRouter({
               name: 'admin-discord-settings',
               component: AdminDiscordSettingsView,
             },
+            {
+              path: 'audit-log',
+              name: 'admin-audit-log',
+              component: AdminAuditLogView,
+            },
+            {
+              path: 'system-settings',
+              name: 'admin-system-settings',
+              component: AdminSystemSettingsView,
+            },
           ]
+        },
+        {
+          path: 'trade-runs',
+          name: 'trade-runs-list', // Renamed to avoid conflict with child 'trade-runs' name
+          component: TradeView,
+        },
+        {
+          path: 'trade-runs/new',
+          name: 'trade-run-create',
+          component: TradeRunCreateEditView,
+        },
+        {
+          path: 'trade-runs/:id',
+          name: 'trade-run-detail',
+          component: TradeRunDetailView,
+        },
+        {
+          path: 'trade-runs/:id/edit',
+          name: 'trade-run-edit',
+          component: TradeRunCreateEditView,
+        },
+        {
+          path: 'prices',
+          name: 'price-database',
+          component: PriceDatabaseView,
+        },
+        {
+          path: 'contracts',
+          name: 'cargo-contracts',
+          component: CargoContractsView,
+        },
+        {
+          path: 'crew-finder',
+          name: 'crew-finder',
+          component: CrewFinderView,
+        },
+        {
+          path: 'availability',
+          name: 'availability',
+          component: AvailabilityView,
+        },
+        {
+          path: 'crew-loadouts',
+          name: 'crew-loadouts',
+          component: CrewLoadoutsView,
+        },
+        {
+          path: 'notifications',
+          name: 'notifications',
+          component: NotificationsView,
+        },
+        {
+          path: 'achievements',
+          name: 'achievements',
+          component: AchievementsView,
+        },
+        {
+          path: 'messages',
+          name: 'messages',
+          component: MessagesView,
+        },
+        {
+          path: 'messages/:id',
+          name: 'conversation',
+          component: MessagesView,
         },
         {
           path: 'profile',
@@ -194,6 +274,12 @@ const router = createRouter({
           component: PrivacyView,
         },
       ]
+    },
+    {
+      path: '/announcements',
+      name: 'public-announcements',
+      component: AnnouncementsPublicView,
+      meta: { guestOnly: true } // Accessible without authentication
     },
   ],
 });

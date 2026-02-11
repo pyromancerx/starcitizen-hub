@@ -5,7 +5,7 @@
       <button @click="showAddAnnouncementModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Add Announcement</button>
     </div>
 
-    <div v-if="isLoading" class="flex justify-center p-12">
+    <div v-if="announcementStore.isLoading" class="flex justify-center p-12">
       <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sc-blue"></div>
     </div>
 
@@ -21,10 +21,10 @@
           </tr>
         </thead>
         <tbody class="text-sm">
-          <tr v-if="announcements.length === 0">
+          <tr v-if="announcementStore.announcements.length === 0">
             <td colspan="5" class="p-4 text-center text-sc-grey/50">No announcements found.</td>
           </tr>
-          <tr v-for="announcement in announcements" :key="announcement.id" class="hover:bg-white/5 border-b border-sc-grey/5 transition-colors">
+          <tr v-for="announcement in announcementStore.announcements" :key="announcement.id" class="hover:bg-white/5 border-b border-sc-grey/5 transition-colors">
             <td class="p-4">
               <div class="font-bold text-white uppercase tracking-tight">{{ announcement.title }}</div>
             </td>
@@ -43,44 +43,32 @@
     <AddAnnouncementModal 
       :show="showAddAnnouncementModal" 
       @close="showAddAnnouncementModal = false" 
-      @announcement-added="fetchAnnouncements" 
+      @announcement-added="announcementStore.fetchAnnouncements()" 
     />
     <EditAnnouncementModal
       :show="showEditAnnouncementModal"
       :announcement="editingAnnouncement"
       @close="showEditAnnouncementModal = false"
-      @announcement-updated="fetchAnnouncements"
+      @announcement-updated="announcementStore.fetchAnnouncements()"
     />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import AnnouncementsService from '../services/AnnouncementsService';
+import { useAnnouncementStore } from '../stores/announcement'; // Import the store
 import AddAnnouncementModal from '../components/AddAnnouncementModal.vue';
 import EditAnnouncementModal from '../components/EditAnnouncementModal.vue';
 
-const announcements = ref([]);
-const isLoading = ref(true);
+const announcementStore = useAnnouncementStore(); // Use the store
+
 const showAddAnnouncementModal = ref(false);
 const showEditAnnouncementModal = ref(false);
 const editingAnnouncement = ref(null);
 
-const fetchAnnouncements = async () => {
-  isLoading.value = true;
-  try {
-    announcements.value = await AnnouncementsService.getAnnouncements();
-  } catch (error) {
-    console.error('Failed to fetch announcements:', error);
-    // Optionally display an error message to the user
-  } finally {
-    isLoading.value = false;
-  }
-};
-
 const handleAddAnnouncement = () => {
   showAddAnnouncementModal.value = false;
-  fetchAnnouncements();
+  announcementStore.fetchAnnouncements();
 };
 
 const openEditModal = (announcement) => {
@@ -91,8 +79,8 @@ const openEditModal = (announcement) => {
 const handleDeleteAnnouncement = async (id) => {
   if (confirm('Are you sure you want to delete this announcement?')) {
     try {
-      await AnnouncementsService.deleteAnnouncement(id);
-      fetchAnnouncements(); // Refresh the list
+      await announcementStore.deleteAnnouncement(id); // Use store action
+      // fetchAnnouncements is already called by the store after deletion
     } catch (error) {
       console.error('Failed to delete announcement:', error);
       // Optionally display an error message
@@ -109,5 +97,7 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-onMounted(fetchAnnouncements);
+onMounted(() => {
+  announcementStore.fetchAnnouncements(); // Fetch on mount
+});
 </script>

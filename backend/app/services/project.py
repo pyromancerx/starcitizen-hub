@@ -104,6 +104,18 @@ class ProjectService:
         result = await self.db.execute(select(ProjectPhase).where(ProjectPhase.id == phase_id))
         return result.scalar_one_or_none()
 
+    async def update_phase(self, phase: ProjectPhase, data: ProjectPhaseUpdate) -> ProjectPhase:
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(phase, field, value)
+        await self.db.commit()
+        await self.db.refresh(phase)
+        return phase
+
+    async def delete_phase(self, phase: ProjectPhase) -> None:
+        await self.db.delete(phase)
+        await self.db.commit()
+
     # --- Tasks ---
     async def create_task(self, phase_id: int, data: TaskCreate) -> Task:
         task = Task(
@@ -145,6 +157,10 @@ class ProjectService:
         await self.db.refresh(task)
         return task
 
+    async def delete_task(self, task: Task) -> None:
+        await self.db.delete(task)
+        await self.db.commit()
+
     # --- Contribution Goals ---
     async def create_contribution_goal(self, project_id: int, data: ContributionGoalCreate) -> ContributionGoal:
         goal = ContributionGoal(
@@ -161,6 +177,18 @@ class ProjectService:
     async def get_contribution_goal(self, goal_id: int) -> Optional[ContributionGoal]:
         result = await self.db.execute(select(ContributionGoal).where(ContributionGoal.id == goal_id))
         return result.scalar_one_or_none()
+
+    async def update_contribution_goal(self, goal: ContributionGoal, data: ContributionGoalUpdate) -> ContributionGoal:
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(goal, field, value)
+        await self.db.commit()
+        await self.db.refresh(goal)
+        return goal
+
+    async def delete_contribution_goal(self, goal: ContributionGoal) -> None:
+        await self.db.delete(goal)
+        await self.db.commit()
 
     # --- Contributions ---
     async def add_contribution(self, goal_id: int, user_id: int, data: ContributionCreate) -> Contribution:
@@ -190,3 +218,36 @@ class ProjectService:
         )
         result = await self.db.execute(query)
         return result.scalar_one()
+
+    async def get_contribution(self, contribution_id: int) -> Optional[Contribution]:
+        result = await self.db.execute(select(Contribution).where(Contribution.id == contribution_id))
+        return result.scalar_one_or_none()
+
+    async def update_contribution(self, contribution: Contribution, data: ContributionCreate) -> Contribution:
+        # Note: ContributionCreate is used here for simplicity,
+        # consider a specific ContributionUpdate schema if needed.
+        update_data = data.model_dump(exclude_unset=True)
+        
+        # Adjust goal amount if contribution amount changes
+        old_amount = contribution.amount
+        
+        for field, value in update_data.items():
+            setattr(contribution, field, value)
+        
+        if 'amount' in update_data:
+            goal = await self.get_contribution_goal(contribution.goal_id)
+            if goal:
+                goal.current_amount -= old_amount # Subtract old amount
+                goal.current_amount += contribution.amount # Add new amount
+        
+        await self.db.commit()
+        await self.db.refresh(contribution)
+        return contribution
+
+    async def delete_contribution(self, contribution: Contribution) -> None:
+        goal = await self.get_contribution_goal(contribution.goal_id)
+        if goal:
+            goal.current_amount -= contribution.amount
+        
+        await self.db.delete(contribution)
+        await self.db.commit()

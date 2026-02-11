@@ -38,6 +38,16 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
             </button>
+            <button 
+              v-if="isAdmin && treasuryStore.selectedWallet && !treasuryStore.selectedWallet.is_primary"
+              @click="handleDeleteWallet"
+              class="p-2 text-red-500 hover:text-red-400 transition-colors"
+              title="Delete Wallet"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
           </div>
           <p v-if="treasuryStore.selectedWallet?.description" class="text-sm text-sc-grey mt-2">
             {{ treasuryStore.selectedWallet.description }}
@@ -57,7 +67,7 @@
       <!-- Quick Actions -->
       <div class="flex gap-4 mt-6 pt-6 border-t border-sc-grey/10">
         <button 
-          @click="openDepositModal"
+          @click="showCreateDepositModal = true"
           class="flex-1 px-6 py-3 bg-green-600/20 border border-green-500/50 text-green-400 hover:bg-green-600/30 font-bold uppercase tracking-widest text-sm rounded transition-all flex items-center justify-center gap-2"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,7 +76,7 @@
           Deposit
         </button>
         <button 
-          @click="openWithdrawModal"
+          @click="showCreateWithdrawalModal = true"
           class="flex-1 px-6 py-3 bg-red-600/20 border border-red-500/50 text-red-400 hover:bg-red-600/30 font-bold uppercase tracking-widest text-sm rounded transition-all flex items-center justify-center gap-2"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -296,109 +306,20 @@
       </div>
     </div>
 
-    <!-- Deposit Modal -->
-    <div v-if="showDepositModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div class="bg-sc-dark border border-sc-blue/30 rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-bold text-white mb-4">Deposit Funds</h3>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-2">Amount (aUEC)</label>
-            <input 
-              v-model="transactionForm.amount"
-              type="number"
-              min="1"
-              class="w-full px-3 py-2 bg-sc-panel border border-sc-grey/30 rounded-lg text-white focus:border-sc-blue focus:outline-none"
-              placeholder="Enter amount"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-2">Category</label>
-            <select v-model="transactionForm.category" class="w-full px-3 py-2 bg-sc-panel border border-sc-grey/30 rounded-lg text-white focus:border-sc-blue focus:outline-none">
-              <option value="donation">Donation</option>
-              <option value="tax">Tax</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-2">Description</label>
-            <textarea 
-              v-model="transactionForm.description"
-              rows="2"
-              class="w-full px-3 py-2 bg-sc-panel border border-sc-grey/30 rounded-lg text-white focus:border-sc-blue focus:outline-none resize-none"
-              placeholder="Optional description"
-            ></textarea>
-          </div>
-          <div class="flex gap-3 pt-2">
-            <button 
-              @click="showDepositModal = false"
-              class="flex-1 px-4 py-2 text-sc-grey hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="submitDeposit"
-              :disabled="!canSubmitTransaction"
-              class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold uppercase tracking-widest text-sm transition-colors"
-            >
-              Deposit
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CreateDepositModal
+      :show="showCreateDepositModal"
+      :wallet-id="treasuryStore.selectedWallet?.id"
+      @close="showCreateDepositModal = false"
+      @transaction-completed="handleTransactionCompleted"
+    />
 
-    <!-- Withdraw Modal -->
-    <div v-if="showWithdrawModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-      <div class="bg-sc-dark border border-sc-blue/30 rounded-lg p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-bold text-white mb-4">Request Withdrawal</h3>
-        <p class="text-sm text-sc-grey mb-4">Withdrawals require admin approval.</p>
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-2">Amount (aUEC)</label>
-            <input 
-              v-model="transactionForm.amount"
-              type="number"
-              min="1"
-              :max="treasuryStore.selectedWallet?.balance"
-              class="w-full px-3 py-2 bg-sc-panel border border-sc-grey/30 rounded-lg text-white focus:border-sc-blue focus:outline-none"
-              placeholder="Enter amount"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-2">Category</label>
-            <select v-model="transactionForm.category" class="w-full px-3 py-2 bg-sc-panel border border-sc-grey/30 rounded-lg text-white focus:border-sc-blue focus:outline-none">
-              <option value="operation_payout">Operation Payout</option>
-              <option value="stockpile_purchase">Stockpile Purchase</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-2">Description</label>
-            <textarea 
-              v-model="transactionForm.description"
-              rows="2"
-              class="w-full px-3 py-2 bg-sc-panel border border-sc-grey/30 rounded-lg text-white focus:border-sc-blue focus:outline-none resize-none"
-              placeholder="Reason for withdrawal"
-            ></textarea>
-          </div>
-          <div class="flex gap-3 pt-2">
-            <button 
-              @click="showWithdrawModal = false"
-              class="flex-1 px-4 py-2 text-sc-grey hover:text-white transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="submitWithdrawal"
-              :disabled="!canSubmitTransaction"
-              class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded font-bold uppercase tracking-widest text-sm transition-colors"
-            >
-              Request
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CreateWithdrawalModal
+      :show="showCreateWithdrawalModal"
+      :wallet-id="treasuryStore.selectedWallet?.id"
+      :wallet-balance="treasuryStore.selectedWallet?.balance"
+      @close="showCreateWithdrawalModal = false"
+      @transaction-completed="handleTransactionCompleted"
+    />
 
     <!-- Create Wallet Modal -->
     <CreateWalletModal :show="showCreateWalletModal" @close="showCreateWalletModal = false" @create-wallet="handleCreateWallet" />
@@ -413,7 +334,9 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useTreasuryStore } from '../stores/treasury';
 import { useAuthStore } from '../stores/auth';
 import CreateWalletModal from '../components/CreateWalletModal.vue';
-import EditWalletModal from '../components/EditWalletModal.vue'; // NEW
+import EditWalletModal from '../components/EditWalletModal.vue';
+import CreateDepositModal from '../components/CreateDepositModal.vue';
+import CreateWithdrawalModal from '../components/CreateWithdrawalModal.vue';
 
 const treasuryStore = useTreasuryStore();
 const authStore = useAuthStore();
@@ -421,21 +344,16 @@ const authStore = useAuthStore();
 const activeTab = ref('transactions');
 const selectedWalletId = ref(null);
 const reportPeriod = ref(30);
-const showDepositModal = ref(false);
-const showWithdrawModal = ref(false);
+
 const showCreateWalletModal = ref(false);
 const showEditWalletModal = ref(false);
+const showCreateDepositModal = ref(false);
+const showCreateWithdrawalModal = ref(false);
 
 const filters = ref({
   type: '',
   status: '',
   category: '',
-});
-
-const transactionForm = ref({
-  amount: '',
-  category: 'other',
-  description: '',
 });
 
 const tabs = [
@@ -447,10 +365,6 @@ const tabs = [
 const isAdmin = computed(() => {
   // Check if user has treasury management permission
   return authStore.user?.permissions?.includes('org.manage_treasury') || false;
-});
-
-const canSubmitTransaction = computed(() => {
-  return transactionForm.value.amount > 0;
 });
 
 const filteredTransactions = computed(() => {
@@ -493,22 +407,13 @@ const getWalletName = (walletId) => {
 
 const handleWalletChange = () => {
   treasuryStore.selectWallet(selectedWalletId.value);
+  applyFilters(); // Re-apply filters for the new wallet
 };
 
 const applyFilters = () => {
   if (treasuryStore.selectedWallet) {
     treasuryStore.fetchTransactions(treasuryStore.selectedWallet.id, filters.value);
   }
-};
-
-const openDepositModal = () => {
-  transactionForm.value = { amount: '', category: 'donation', description: '' };
-  showDepositModal.value = true;
-};
-
-const openWithdrawModal = () => {
-  transactionForm.value = { amount: '', category: 'operation_payout', description: '' };
-  showWithdrawModal.value = true;
 };
 
 const handleCreateWallet = async (walletData) => {
@@ -529,35 +434,36 @@ const handleUpdateWallet = async ({ id, data }) => {
   }
 };
 
-const submitDeposit = async () => {
-  try {
-    await treasuryStore.createTransaction(
-      treasuryStore.selectedWallet.id,
-      'deposit',
-      parseInt(transactionForm.value.amount),
-      transactionForm.value.category,
-      transactionForm.value.description
-    );
-    showDepositModal.value = false;
-    transactionForm.value = { amount: '', category: 'other', description: '' };
-  } catch (err) {
-    // Error handled in store
+const handleDeleteWallet = async () => {
+  if (!treasuryStore.selectedWallet) return;
+
+  if (confirm(`Are you sure you want to delete the wallet "${treasuryStore.selectedWallet.name}"? This cannot be undone.`)) {
+    try {
+      await treasuryStore.deleteWallet(treasuryStore.selectedWallet.id);
+      alert('Wallet deleted successfully!');
+      // Re-fetch wallets and select a new one (e.g., primary or first available)
+      await treasuryStore.fetchWallets();
+      if (treasuryStore.wallets.length > 0) {
+        treasuryStore.selectWallet(treasuryStore.wallets[0].id);
+        selectedWalletId.value = treasuryStore.wallets[0].id;
+        applyFilters();
+      } else {
+        selectedWalletId.value = null;
+        treasuryStore.setSelectedWallet(null); // Clear selected wallet in store
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to delete wallet.');
+    }
   }
 };
 
-const submitWithdrawal = async () => {
-  try {
-    await treasuryStore.createTransaction(
-      treasuryStore.selectedWallet.id,
-      'withdrawal',
-      parseInt(transactionForm.value.amount),
-      transactionForm.value.category,
-      transactionForm.value.description
-    );
-    showWithdrawModal.value = false;
-    transactionForm.value = { amount: '', category: 'other', description: '' };
-  } catch (err) {
-    // Error handled in store
+const handleTransactionCompleted = () => {
+  showCreateDepositModal.value = false;
+  showCreateWithdrawalModal.value = false;
+  // Refresh wallet data and transactions after a successful transaction
+  treasuryStore.fetchWallets(); // To update balances
+  if (treasuryStore.selectedWallet) {
+    treasuryStore.fetchTransactions(treasuryStore.selectedWallet.id, filters.value);
   }
 };
 
@@ -570,16 +476,24 @@ const fetchReport = async () => {
 const approveTransaction = async (txId) => {
   try {
     await treasuryStore.approveTransaction(txId);
+    alert('Transaction approved!');
+    treasuryStore.fetchPendingTransactions(); // Refresh pending list
+    treasuryStore.fetchWallets(); // Refresh wallet balances
+    if (treasuryStore.selectedWallet) {
+      treasuryStore.fetchTransactions(treasuryStore.selectedWallet.id, filters.value);
+    }
   } catch (err) {
-    // Error handled in store
+    alert(err.message || 'Failed to approve transaction.');
   }
 };
 
 const rejectTransaction = async (txId) => {
   try {
     await treasuryStore.rejectTransaction(txId);
+    alert('Transaction rejected!');
+    treasuryStore.fetchPendingTransactions(); // Refresh pending list
   } catch (err) {
-    // Error handled in store
+    alert(err.message || 'Failed to reject transaction.');
   }
 };
 
@@ -590,13 +504,20 @@ watch(activeTab, (newTab) => {
   } else if (newTab === 'reports') {
     fetchReport();
   }
-});
+}, { immediate: true }); // Fetch initial data for reports/pending if they are default tab
 
 onMounted(async () => {
   await treasuryStore.fetchWallets();
-  if (treasuryStore.selectedWallet) {
-    selectedWalletId.value = treasuryStore.selectedWallet.id;
-    await treasuryStore.fetchTransactions(treasuryStore.selectedWallet.id);
+  if (treasuryStore.wallets.length > 0) {
+    // If no wallet is selected, select the first or primary
+    if (!treasuryStore.selectedWallet) {
+      const primary = treasuryStore.wallets.find(w => w.is_primary) || treasuryStore.wallets[0];
+      treasuryStore.selectWallet(primary.id);
+      selectedWalletId.value = primary.id;
+    } else {
+      selectedWalletId.value = treasuryStore.selectedWallet.id;
+    }
+    applyFilters();
   }
 });
 </script>

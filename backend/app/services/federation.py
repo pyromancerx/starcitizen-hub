@@ -182,6 +182,24 @@ class FederationService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
+    async def get_federated_event(self, event_id: int) -> Optional[FederatedEvent]:
+        result = await self.db.execute(select(FederatedEvent).where(FederatedEvent.id == event_id))
+        return result.scalar_one_or_none()
+
+    async def update_federated_event(self, event: FederatedEvent, data: FederatedEventCreate) -> FederatedEvent:
+        # Note: FederatedEventCreate is used here for simplicity,
+        # consider a specific FederatedEventUpdate schema if needed.
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(event, field, value)
+        await self.db.commit()
+        await self.db.refresh(event)
+        return event
+
+    async def delete_federated_event(self, event: FederatedEvent) -> None:
+        await self.db.delete(event)
+        await self.db.commit()
+
     # --- Trade Requests ---
     async def create_trade_request(self, source_instance_id: int, data: TradeRequestCreate) -> TradeRequest:
         request = TradeRequest(
@@ -215,3 +233,21 @@ class FederationService:
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def get_trade_request(self, request_id: int) -> Optional[TradeRequest]:
+        result = await self.db.execute(select(TradeRequest).where(TradeRequest.id == request_id))
+        return result.scalar_one_or_none()
+
+    async def update_trade_request(self, request: TradeRequest, data: TradeRequestCreate) -> TradeRequest:
+        # Note: TradeRequestCreate is used here for simplicity,
+        # consider a specific TradeRequestUpdate schema if needed.
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(request, field, value)
+        await self.db.commit()
+        await self.db.refresh(request)
+        return request
+
+    async def delete_trade_request(self, request: TradeRequest) -> None:
+        await self.db.delete(request)
+        await self.db.commit()

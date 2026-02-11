@@ -51,3 +51,29 @@ class UserService:
         from datetime import datetime, timezone
         user.last_seen_at = datetime.now(timezone.utc)
         await self.db.commit()
+
+    async def change_password_admin(self, user: User, new_password: str) -> User:
+        """Admin-initiated password change for a user."""
+        user.password_hash = get_password_hash(new_password)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def approve_user(self, user: User) -> User:
+        """Approve a pending user."""
+        user.is_approved = True
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def set_user_active_status(self, user: User, is_active: bool) -> User:
+        """Set a user's active status (activate/deactivate)."""
+        user.is_active = is_active
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def delete_user(self, user: User) -> None:
+        """Permanently delete a user."""
+        await self.db.delete(user)
+        await self.db.commit()

@@ -49,4 +49,14 @@ export default {
       throw error;
     }
   },
+
+  async getPublicAnnouncements() {
+    try {
+      const response = await api.get('/announcements/public');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching public announcements:', error);
+      throw error;
+    }
+  },
 };

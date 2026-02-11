@@ -3,14 +3,16 @@
     <div class="flex justify-between items-center p-4 border-b border-sc-grey/10">
       <h3 class="text-lg font-bold text-white uppercase tracking-widest">Activity Feed</h3>
       <div class="flex items-center gap-3">
-        <select v-model="selectedFilter" @change="applyFilter"
+        <select v-model="filters.activity_type" @change="applyFilters"
           class="bg-black/30 border border-sc-grey/30 rounded px-3 py-1 text-xs text-white focus:border-sc-blue focus:outline-none">
           <option value="">All Activities</option>
           <option v-for="type in activityTypes" :key="type" :value="type">
             {{ formatActivityType(type) }}
           </option>
         </select>
-        <button @click="refreshFeed" :disabled="activityStore.isLoading"
+        <input type="number" v-model.number="filters.user_id" @input="debouncedApplyFilters" placeholder="Filter by User ID"
+          class="bg-black/30 border border-sc-grey/30 rounded px-3 py-1 text-xs text-white focus:border-sc-blue focus:outline-none w-32" />
+        <button @click="applyFilters" :disabled="activityStore.isLoading"
           class="text-sc-blue hover:text-white transition-colors disabled:opacity-50">
           <svg class="w-4 h-4" :class="{'animate-spin': activityStore.isLoading}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -52,32 +54,29 @@
               </div>
 
               <!-- Reactions -->
-              <div v-if="activity.reactions?.length > 0" class="flex flex-wrap gap-1 mt-2">
+              <div v-if="activity.reactions?.length > 0 || authStore.isAuthenticated" class="flex flex-wrap gap-1 mt-2">
                 <button v-for="(count, emoji) in getReactionSummary(activity.reactions)" :key="emoji"
                   @click="toggleReaction(activity.id, emoji)"
                   class="flex items-center gap-1 px-2 py-0.5 bg-sc-blue/10 rounded text-xs hover:bg-sc-blue/20 transition-colors"
-                  :class="hasUserReacted(activity.reactions, emoji) ? 'border border-sc-blue' : ''">
+                  :class="hasUserReacted(activity.reactions, emoji) ? 'border border-sc-blue' : ''"
+                  :disabled="!authStore.isAuthenticated">
                   <span>{{ emoji }}</span>
                   <span class="text-sc-grey">{{ count }}</span>
                 </button>
+                <button v-if="authStore.isAuthenticated" @click="showEmojiPicker = showEmojiPicker === activity.id ? null : activity.id"
+                  class="text-xs text-sc-grey/50 hover:text-sc-blue transition-colors px-2 py-0.5 rounded">
+                  +
+                </button>
               </div>
 
-              <!-- Add Reaction Button -->
-              <div class="mt-2">
-                <button @click="showEmojiPicker = showEmojiPicker === activity.id ? null : activity.id"
-                  class="text-xs text-sc-grey/50 hover:text-sc-blue transition-colors">
-                  + React
+              <!-- Emoji Picker -->
+              <div v-if="showEmojiPicker === activity.id" 
+                class="mt-2 p-2 bg-black/50 rounded border border-sc-grey/30 flex flex-wrap gap-1">
+                <button v-for="emoji in commonEmojis" :key="emoji"
+                  @click="addReaction(activity.id, emoji)"
+                  class="w-8 h-8 hover:bg-sc-blue/20 rounded transition-colors text-lg">
+                  {{ emoji }}
                 </button>
-                
-                <!-- Emoji Picker -->
-                <div v-if="showEmojiPicker === activity.id" 
-                  class="mt-2 p-2 bg-black/50 rounded border border-sc-grey/30 flex flex-wrap gap-1">
-                  <button v-for="emoji in commonEmojis" :key="emoji"
-                    @click="addReaction(activity.id, emoji)"
-                    class="w-8 h-8 hover:bg-sc-blue/20 rounded transition-colors text-lg">
-                    {{ emoji }}
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -98,9 +97,15 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useActivityStore } from '../stores/activity';
+import { useAuthStore } from '../stores/auth'; // Import authStore
 
 const activityStore = useActivityStore();
-const selectedFilter = ref('');
+const authStore = useAuthStore(); // Use authStore
+
+const filters = ref({
+  activity_type: '',
+  user_id: null,
+});
 const showEmojiPicker = ref(null);
 const currentOffset = ref(0);
 
@@ -139,6 +144,8 @@ const activityIcons = {
   lfg_posted: '👥',
   price_reported: '📊',
 };
+
+let debounceTimer;
 
 onMounted(() => {
   activityStore.fetchActivityFeed({ limit: 20 });
@@ -219,9 +226,7 @@ const getReactionSummary = (reactions) => {
 };
 
 const hasUserReacted = (reactions, emoji) => {
-  // This would need the current user ID to check properly
-  // For now, we'll just return false
-  return false;
+  return reactions.some(r => r.emoji === emoji && r.user_id === authStore.user?.id);
 };
 
 const addReaction = async (activityId, emoji) => {
@@ -234,31 +239,37 @@ const addReaction = async (activityId, emoji) => {
 };
 
 const toggleReaction = async (activityId, emoji) => {
-  // In a real implementation, we'd check if the user already reacted
-  // For now, just add
-  await addReaction(activityId, emoji);
+  const activity = activityStore.activities.find(a => a.id === activityId);
+  if (!activity) return;
+
+  if (hasUserReacted(activity.reactions || [], emoji)) {
+    await activityStore.removeReaction(activityId, emoji);
+  } else {
+    await activityStore.addReaction(activityId, emoji);
+  }
 };
 
-const applyFilter = () => {
+const applyFilters = () => {
   currentOffset.value = 0;
   activityStore.fetchActivityFeed({
-    type: selectedFilter.value || undefined,
+    type: filters.value.activity_type || undefined,
+    userId: filters.value.user_id || undefined,
     limit: 20,
   });
 };
 
-const refreshFeed = () => {
-  currentOffset.value = 0;
-  activityStore.fetchActivityFeed({
-    type: selectedFilter.value || undefined,
-    limit: 20,
-  });
+const debouncedApplyFilters = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    applyFilters();
+  }, 300);
 };
 
 const loadMore = () => {
   currentOffset.value += 20;
   activityStore.fetchActivityFeed({
-    type: selectedFilter.value || undefined,
+    type: filters.value.activity_type || undefined,
+    userId: filters.value.user_id || undefined,
     limit: 20,
     offset: currentOffset.value,
   });

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Crew Finder (LFG)</h2>
-      <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+      <button @click="showAddEditModal = true; editingLFGPost = null" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
         Post LFG
       </button>
     </div>
@@ -72,7 +72,7 @@
           </div>
           
           <div class="mb-3">
-            <div class="text-lg font-bold text-white">{{ post.ship_type }}</div>
+            <router-link :to="{ name: 'lfg-post-detail', params: { id: post.id } }" class="text-lg font-bold text-white hover:text-sc-blue">{{ post.ship_type }}</router-link>
             <div class="text-sm text-sc-blue">{{ post.activity_type }}</div>
           </div>
           
@@ -116,6 +116,10 @@
             <span :class="post.status === 'open' ? 'text-green-400' : 'text-sc-grey'" 
               class="text-xs uppercase tracking-widest font-bold">{{ post.status }}</span>
             <div class="flex gap-2">
+              <button v-if="post.status === 'open'" @click="openEditModal(post)"
+                class="text-xs text-yellow-500 hover:text-yellow-400 transition-colors">
+                Edit
+              </button>
               <button v-if="post.status === 'open'" @click="markFilled(post.id)"
                 class="text-xs text-sc-blue hover:text-white transition-colors">
                 Mark Filled
@@ -128,7 +132,7 @@
           </div>
           
           <div class="mb-3">
-            <div class="text-lg font-bold text-white">{{ post.ship_type }}</div>
+            <router-link :to="{ name: 'lfg-post-detail', params: { id: post.id } }" class="text-lg font-bold text-white hover:text-sc-blue">{{ post.ship_type }}</router-link>
             <div class="text-sm text-sc-blue">{{ post.activity_type }}</div>
           </div>
           
@@ -151,158 +155,41 @@
       </div>
     </div>
 
-    <!-- Create LFG Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showAddModal = false">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-md shadow-2xl">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">Post LFG</h3>
-        
-        <form @submit.prevent="submitLfgPost" class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Ship Type</label>
-            <input v-model="newPost.ship_type" type="text" required
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="e.g., Drake Caterpillar">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Activity Type</label>
-            <select v-model="newPost.activity_type" required
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-              <option value="">Select activity...</option>
-              <option value="mining">Mining</option>
-              <option value="cargo">Cargo</option>
-              <option value="combat">Combat</option>
-              <option value="exploration">Exploration</option>
-              <option value="salvage">Salvage</option>
-              <option value="social">Social</option>
-            </select>
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Looking For (comma-separated roles)</label>
-            <input v-model="rolesInput" type="text"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="e.g., pilot, turret gunner, engineer">
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Scheduled Time (Optional)</label>
-              <input v-model="newPost.scheduled_time" type="datetime-local"
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Duration (min)</label>
-              <input v-model.number="newPost.duration_estimate" type="number" min="15" max="480"
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-            </div>
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Expires After (hours)</label>
-            <input v-model.number="newPost.expires_hours" type="number" min="1" max="168" 
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Notes (Optional)</label>
-            <textarea v-model="newPost.notes" rows="2"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="Any additional details..."></textarea>
-          </div>
-          
-          <div v-if="crewStore.error" class="text-red-500 text-sm text-center">
-            {{ crewStore.error }}
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="showAddModal = false"
-              class="flex-1 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-              Cancel
-            </button>
-            <button type="submit" :disabled="crewStore.isLoading"
-              class="flex-1 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue hover:bg-sc-blue/20 transition-all text-xs uppercase tracking-widest disabled:opacity-50">
-              {{ crewStore.isLoading ? 'Posting...' : 'Post LFG' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AddEditLFGPostModal
+      :show="showAddEditModal"
+      :lfg-post="editingLFGPost"
+      @close="showAddEditModal = false"
+      @lfg-post-saved="handleLFGPostSaved"
+    />
 
-    <!-- Respond Modal -->
-    <div v-if="respondModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="respondModal.show = false">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-md shadow-2xl">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">Respond to LFG</h3>
-        
-        <div v-if="respondModal.post" class="mb-4 p-3 bg-black/30 rounded">
-          <div class="text-sm text-sc-blue font-bold">{{ respondModal.post.ship_type }}</div>
-          <div class="text-xs text-sc-grey">{{ respondModal.post.activity_type }}</div>
-        </div>
-        
-        <form @submit.prevent="submitResponse" class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Role You Can Fill</label>
-            <input v-model="response.role_offered" type="text"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="e.g., turret gunner">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Message (Optional)</label>
-            <textarea v-model="response.message" rows="2"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="Introduce yourself..."></textarea>
-          </div>
-          
-          <div v-if="crewStore.error" class="text-red-500 text-sm text-center">
-            {{ crewStore.error }}
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="respondModal.show = false"
-              class="flex-1 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-              Cancel
-            </button>
-            <button type="submit" :disabled="crewStore.isLoading"
-              class="flex-1 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue hover:bg-sc-blue/20 transition-all text-xs uppercase tracking-widest disabled:opacity-50">
-              {{ crewStore.isLoading ? 'Sending...' : 'Respond' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <RespondToLFGModal
+      :show="showRespondModal"
+      :lfg-post="respondingLFGPost"
+      @close="showRespondModal = false"
+      @response-sent="handleResponseSent"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useCrewStore } from '../stores/crew';
+import { useRouter } from 'vue-router'; // Import useRouter
+import AddEditLFGPostModal from '../components/AddEditLFGPostModal.vue';
+import RespondToLFGModal from '../components/RespondToLFGModal.vue';
 
 const crewStore = useCrewStore();
+const router = useRouter(); // Initialize useRouter
+
 const activeTab = ref('open');
-const showAddModal = ref(false);
-const respondModal = ref({ show: false, post: null });
+const showAddEditModal = ref(false);
+const editingLFGPost = ref(null);
+const showRespondModal = ref(false);
+const respondingLFGPost = ref(null); // The post being responded to
 
 const filters = ref({
   activity_type: '',
   ship_type: ''
-});
-
-const newPost = ref({
-  ship_type: '',
-  activity_type: '',
-  looking_for_roles: [],
-  scheduled_time: '',
-  duration_estimate: 60,
-  expires_hours: 24,
-  notes: ''
-});
-
-const rolesInput = ref('');
-
-const response = ref({
-  role_offered: '',
-  message: ''
 });
 
 let debounceTimer;
@@ -349,52 +236,43 @@ const fetchPosts = () => {
   crewStore.fetchLfgPosts(filters.value);
 };
 
-const submitLfgPost = async () => {
-  try {
-    const postData = { ...newPost.value };
-    if (rolesInput.value) {
-      postData.looking_for_roles = rolesInput.value.split(',').map(r => r.trim()).filter(r => r);
-    }
-    
-    await crewStore.createLfgPost(postData);
-    showAddModal.value = false;
-    // Reset form
-    newPost.value = {
-      ship_type: '',
-      activity_type: '',
-      looking_for_roles: [],
-      scheduled_time: '',
-      duration_estimate: 60,
-      expires_hours: 24,
-      notes: ''
-    };
-    rolesInput.value = '';
-    await crewStore.fetchLfgStats();
-  } catch (e) {
-    // Error handled in store
-  }
+const openEditModal = (post) => {
+  editingLFGPost.value = { ...post };
+  showAddEditModal.value = true;
 };
 
 const openRespondModal = (post) => {
-  respondModal.value = { show: true, post };
-  response.value = { role_offered: '', message: '' };
+  respondingLFGPost.value = post;
+  showRespondModal.value = true;
 };
 
-const submitResponse = async () => {
-  try {
-    await crewStore.respondToLfg(respondModal.value.post.id, response.value);
-    respondModal.value.show = false;
-    alert('Response sent successfully!');
-  } catch (e) {
-    // Error handled in store
-  }
+const handleLFGPostSaved = () => {
+  showAddEditModal.value = false;
+  editingLFGPost.value = null; // Clear editing state
+  crewStore.fetchLfgPosts();
+  crewStore.fetchMyLfgPosts();
+  crewStore.fetchLfgStats();
+};
+
+const handleResponseSent = () => {
+  showRespondModal.value = false;
+  respondingLFGPost.value = null; // Clear responding state
+  // Refresh post details if on detail page, or just refresh my LFG posts
+  crewStore.fetchMyLfgPosts(); // To see updated response count
 };
 
 const markFilled = async (postId) => {
-  try {
-    await crewStore.markPostFilled(postId);
-  } catch (e) {
-    // Error handled in store
+  if (confirm('Are you sure you want to mark this LFG post as filled?')) {
+    try {
+      await crewStore.markPostFilled(postId);
+      alert('LFG post marked as filled!');
+      crewStore.fetchLfgPosts(); // Refresh open posts
+      crewStore.fetchMyLfgPosts(); // Refresh my posts
+      crewStore.fetchLfgStats(); // Refresh stats
+    } catch (e) {
+      console.error('Failed to mark LFG post as filled:', e);
+      alert('Failed to mark LFG post as filled.');
+    }
   }
 };
 
@@ -402,8 +280,13 @@ const cancelPost = async (postId) => {
   if (confirm('Are you sure you want to cancel this LFG post?')) {
     try {
       await crewStore.cancelLfgPost(postId);
+      alert('LFG post cancelled!');
+      crewStore.fetchLfgPosts(); // Refresh open posts
+      crewStore.fetchMyLfgPosts(); // Refresh my posts
+      crewStore.fetchLfgStats(); // Refresh stats
     } catch (e) {
-      // Error handled in store
+      console.error('Failed to cancel LFG post:', e);
+      alert('Failed to cancel LFG post.');
     }
   }
 };

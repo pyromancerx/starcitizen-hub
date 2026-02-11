@@ -1,4 +1,4 @@
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -6,9 +6,9 @@ from app.dependencies import get_current_approved_user, require_permission
 from app.models.user import User
 from app.schemas.project import (
     ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetail,
-    ProjectPhaseCreate, ProjectPhaseResponse,
+    ProjectPhaseCreate, ProjectPhaseResponse, ProjectPhaseUpdate,
     TaskCreate, TaskUpdate, TaskResponse,
-    ContributionGoalCreate, ContributionGoalResponse,
+    ContributionGoalCreate, ContributionGoalResponse, ContributionGoalUpdate,
     ContributionCreate, ContributionResponse
 )
 from app.services.project import ProjectService
@@ -60,19 +60,69 @@ async def update_project(
         raise HTTPException(status_code=404, detail="Project not found")
     return await service.update_project(project, data)
 
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    project_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("org.manage_operations"))],
+):
+    service = ProjectService(db)
+    project = await service.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    await service.delete_project(project)
+
+
 # --- Phases ---
 @router.post("/{project_id}/phases", response_model=ProjectPhaseResponse, status_code=status.HTTP_201_CREATED)
 async def create_phase(
     project_id: int,
     data: ProjectPhaseCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_approved_user)],
+    current_user: Annotated[User, Depends(require_permission("org.manage_operations"))],
 ):
     service = ProjectService(db)
     project = await service.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     return await service.create_phase(project_id, data)
+
+@router.get("/phases/{phase_id}", response_model=ProjectPhaseResponse)
+async def get_phase(
+    phase_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    phase = await service.get_phase(phase_id)
+    if not phase:
+        raise HTTPException(status_code=404, detail="Phase not found")
+    return phase
+
+@router.patch("/phases/{phase_id}", response_model=ProjectPhaseResponse)
+async def update_phase(
+    phase_id: int,
+    data: ProjectPhaseUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("org.manage_operations"))],
+):
+    service = ProjectService(db)
+    phase = await service.get_phase(phase_id)
+    if not phase:
+        raise HTTPException(status_code=404, detail="Phase not found")
+    return await service.update_phase(phase, data)
+
+@router.delete("/phases/{phase_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_phase(
+    phase_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("org.manage_operations"))],
+):
+    service = ProjectService(db)
+    phase = await service.get_phase(phase_id)
+    if not phase:
+        raise HTTPException(status_code=404, detail="Phase not found")
+    await service.delete_phase(phase)
 
 # --- Tasks ---
 @router.post("/phases/{phase_id}/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -89,6 +139,18 @@ async def create_task(
         raise HTTPException(status_code=404, detail="Phase not found")
     return await service.create_task(phase_id, data)
 
+@router.get("/tasks/{task_id}", response_model=TaskResponse)
+async def get_task(
+    task_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    task = await service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
 @router.patch("/tasks/{task_id}", response_model=TaskResponse)
 async def update_task(
     task_id: int,
@@ -101,6 +163,19 @@ async def update_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return await service.update_task(task, data)
+
+@router.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task(
+    task_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    task = await service.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    await service.delete_task(task)
+
 
 # --- Contribution Goals ---
 @router.post("/{project_id}/goals", response_model=ContributionGoalResponse, status_code=status.HTTP_201_CREATED)
@@ -116,6 +191,43 @@ async def create_goal(
         raise HTTPException(status_code=404, detail="Project not found")
     return await service.create_contribution_goal(project_id, data)
 
+@router.get("/goals/{goal_id}", response_model=ContributionGoalResponse)
+async def get_goal(
+    goal_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    goal = await service.get_contribution_goal(goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return goal
+
+@router.patch("/goals/{goal_id}", response_model=ContributionGoalResponse)
+async def update_goal(
+    goal_id: int,
+    data: ContributionGoalUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    goal = await service.get_contribution_goal(goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    return await service.update_contribution_goal(goal, data)
+
+@router.delete("/goals/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_goal(
+    goal_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    goal = await service.get_contribution_goal(goal_id)
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    await service.delete_contribution_goal(goal)
+
 # --- Contributions ---
 @router.post("/goals/{goal_id}/contribute", response_model=ContributionResponse, status_code=status.HTTP_201_CREATED)
 async def add_contribution(
@@ -129,3 +241,40 @@ async def add_contribution(
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     return await service.add_contribution(goal_id, current_user.id, data)
+
+@router.get("/contributions/{contribution_id}", response_model=ContributionResponse)
+async def get_contribution(
+    contribution_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    contribution = await service.get_contribution(contribution_id)
+    if not contribution:
+        raise HTTPException(status_code=404, detail="Contribution not found")
+    return contribution
+
+@router.patch("/contributions/{contribution_id}", response_model=ContributionResponse)
+async def update_contribution(
+    contribution_id: int,
+    data: ContributionCreate, # Re-using for simplicity, consider ContributionUpdate schema
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    contribution = await service.get_contribution(contribution_id)
+    if not contribution:
+        raise HTTPException(status_code=404, detail="Contribution not found")
+    return await service.update_contribution(contribution, data)
+
+@router.delete("/contributions/{contribution_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_contribution(
+    contribution_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+):
+    service = ProjectService(db)
+    contribution = await service.get_contribution(contribution_id)
+    if not contribution:
+        raise HTTPException(status_code=404, detail="Contribution not found")
+    await service.delete_contribution(contribution)

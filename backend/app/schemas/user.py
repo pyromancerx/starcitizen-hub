@@ -41,3 +41,6 @@ class UserResponse(UserBase):
 class UserWithRoles(UserResponse):
     roles: list[str] = []
     permissions: list[str] = []
+
+class PasswordUpdateAdmin(BaseModel):
+    new_password: str = Field(..., min_length=8, max_length=100)

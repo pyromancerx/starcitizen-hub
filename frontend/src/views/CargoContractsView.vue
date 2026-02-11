@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Cargo Contracts</h2>
-      <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+      <button @click="showAddEditContractModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
         Post Contract
       </button>
     </div>
@@ -131,6 +131,10 @@
                 class="flex-1 py-2 bg-green-500/10 border border-green-500 text-green-500 hover:bg-green-500/20 transition-all text-xs uppercase tracking-widest">
                 Complete
               </button>
+              <button v-if="['accepted', 'in_progress'].includes(contract.status)" @click="disputeContract(contract.id)"
+                class="flex-1 py-2 border border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 transition-all text-xs uppercase tracking-widest">
+                Dispute
+              </button>
             </div>
           </div>
         </div>
@@ -176,103 +180,32 @@
                 class="px-3 py-2 border border-red-500/50 text-red-500 hover:bg-red-500/10 transition-all text-xs uppercase tracking-widest">
                 Cancel
               </button>
+              <button v-if="['accepted', 'in_progress'].includes(contract.status) || contract.status === 'completed'" @click="disputeContract(contract.id)"
+                class="flex-1 py-2 border border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10 transition-all text-xs uppercase tracking-widest">
+                Dispute
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Post Contract Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showAddModal = false">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">Post Cargo Contract</h3>
-        
-        <form @submit.prevent="submitContract" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Origin</label>
-              <input v-model="newContract.origin" type="text" required
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-                placeholder="Pickup location">
-            </div>
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Destination</label>
-              <input v-model="newContract.destination" type="text" required
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-                placeholder="Drop-off location">
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Commodity</label>
-              <input v-model="newContract.commodity" type="text" required
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-                placeholder="e.g., Agricium">
-            </div>
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Quantity (SCU)</label>
-              <input v-model.number="newContract.quantity" type="number" required min="1"
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-            </div>
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Payment (aUEC)</label>
-            <input v-model.number="newContract.payment_amount" type="number" required min="1"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Deadline (Optional)</label>
-            <input v-model="newContract.deadline" type="datetime-local"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Description (Optional)</label>
-            <textarea v-model="newContract.description" rows="2"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="Any special requirements or details..."></textarea>
-          </div>
-          
-          <div v-if="tradeStore.error" class="text-red-500 text-sm text-center">
-            {{ tradeStore.error }}
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="showAddModal = false"
-              class="flex-1 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-              Cancel
-            </button>
-            <button type="submit" :disabled="tradeStore.isLoading"
-              class="flex-1 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue hover:bg-sc-blue/20 transition-all text-xs uppercase tracking-widest disabled:opacity-50">
-              {{ tradeStore.isLoading ? 'Posting...' : 'Post Contract' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AddEditCargoContractModal
+      :show="showAddEditContractModal"
+      @close="showAddEditContractModal = false"
+      @contract-saved="handleContractSaved"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useTradeStore } from '../stores/trade';
+import AddEditCargoContractModal from '../components/AddEditCargoContractModal.vue';
 
 const tradeStore = useTradeStore();
-const showAddModal = ref(false);
+const showAddEditContractModal = ref(false);
 const activeTab = ref('open');
-
-const newContract = ref({
-  origin: '',
-  destination: '',
-  commodity: '',
-  quantity: null,
-  payment_amount: null,
-  deadline: '',
-  description: ''
-});
 
 onMounted(() => {
   tradeStore.fetchOpenContracts();
@@ -303,32 +236,17 @@ const getStatusClass = (status) => {
     case 'in_progress': return 'text-sc-blue';
     case 'completed': return 'text-green-400';
     case 'cancelled': return 'text-red-500';
+    case 'disputed': return 'text-orange-500';
     default: return 'text-sc-grey';
   }
 };
 
-const submitContract = async () => {
-  try {
-    const contractData = { ...newContract.value };
-    if (contractData.deadline) {
-      contractData.deadline = new Date(contractData.deadline).toISOString();
-    }
-    
-    await tradeStore.createContract(contractData);
-    showAddModal.value = false;
-    // Reset form
-    newContract.value = {
-      origin: '',
-      destination: '',
-      commodity: '',
-      quantity: null,
-      payment_amount: null,
-      deadline: '',
-      description: ''
-    };
-  } catch (e) {
-    // Error handled in store
-  }
+const handleContractSaved = () => {
+  showAddEditContractModal.value = false;
+  // Refresh relevant lists based on active tab or all
+  tradeStore.fetchOpenContracts();
+  tradeStore.fetchMyContracts();
+  tradeStore.fetchMyHaulingContracts();
 };
 
 const acceptContract = async (contractId) => {
@@ -370,6 +288,21 @@ const cancelContract = async (contractId) => {
       await tradeStore.fetchOpenContracts();
     } catch (e) {
       // Error handled in store
+    }
+  }
+};
+
+const disputeContract = async (contractId) => {
+  if (confirm('Are you sure you want to dispute this contract? This will flag it for admin review.')) {
+    try {
+      await tradeStore.disputeContract(contractId);
+      alert('Contract disputed successfully! An admin will review it shortly.');
+      // Refresh relevant lists
+      tradeStore.fetchMyContracts();
+      tradeStore.fetchMyHaulingContracts();
+    } catch (e) {
+      console.error('Failed to dispute contract:', e);
+      alert('Failed to dispute contract.');
     }
   }
 };

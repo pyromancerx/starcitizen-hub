@@ -1,13 +1,13 @@
 # app/routers/admin.py
 from typing import Annotated, Optional, List
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import APIRouter, Depends, Request, Form, HTTPException, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, delete
 
 from app.database import get_db
-from app.templates_config import templates, get_template_context
+from app.templates_config import templates, get_template_context, flash
 from app.models.user import User
 from app.models.role import Role, UserRole, RoleTier
 from app.models.audit import AuditLog
@@ -17,8 +17,9 @@ from app.web_dependencies import (
     get_user_permissions,
 )
 from app.config import get_settings
-from app.schemas.user import UserInviteCreate, UserResponse
+from app.schemas.user import UserInviteCreate, UserResponse, PasswordUpdateAdmin # Import PasswordUpdateAdmin
 from app.services.admin import AdminService
+from app.services.user import UserService # Import UserService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 settings = get_settings()
@@ -36,7 +37,7 @@ async def set_admin_request(
 
 
 # ============================================================
-# USER MANAGEMENT
+# USER MANAGEMENT (HTML Endpoints - kept for web interface)
 # ============================================================
 
 @router.post("/invite-user", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -72,6 +73,7 @@ async def users_list(
     """List all users with optional filtering."""
     await set_admin_request(request, user, db)
 
+    user_service = UserService(db) # For potential future use
     query = select(User).order_by(User.created_at.desc())
 
     if search:
@@ -111,20 +113,20 @@ async def users_list(
 
 
 @router.post("/users/{user_id}/approve", response_class=HTMLResponse)
-async def approve_user(
+async def approve_user_html( # Renamed to avoid conflict
     request: Request,
     user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
     admin: Annotated[User, Depends(check_admin_permission)],
 ):
     """Approve a pending user."""
-    result = await db.execute(select(User).where(User.id == user_id))
-    target_user = result.scalar_one_or_none()
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
 
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    target_user.is_approved = True
+    await user_service.approve_user(target_user)
     
     # Audit Log
     logger = AuditLogger(db)
@@ -136,17 +138,11 @@ async def approve_user(
         details={"admin_id": admin.id}
     )
     
-    await db.commit()
-    await db.refresh(target_user)
-
-    return templates.TemplateResponse(
-        "admin/partials/users_table.html",
-        {"request": request, "users": [target_user]},
-    )
+    return RedirectResponse(url="/admin/users", status_code=303)
 
 
 @router.post("/users/{user_id}/ban", response_class=HTMLResponse)
-async def ban_user(
+async def ban_user_html( # Renamed to avoid conflict
     request: Request,
     user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -156,13 +152,13 @@ async def ban_user(
     if user_id == admin.id:
         raise HTTPException(status_code=400, detail="Cannot ban yourself")
 
-    result = await db.execute(select(User).where(User.id == user_id))
-    target_user = result.scalar_one_or_none()
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
 
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    target_user.is_active = False
+    await user_service.set_user_active_status(target_user, False)
     
     # Audit Log
     logger = AuditLogger(db)
@@ -173,30 +169,24 @@ async def ban_user(
         target_id=user_id
     )
     
-    await db.commit()
-    await db.refresh(target_user)
-
-    return templates.TemplateResponse(
-        "admin/partials/users_table.html",
-        {"request": request, "users": [target_user]},
-    )
+    return RedirectResponse(url="/admin/users", status_code=303)
 
 
 @router.post("/users/{user_id}/unban", response_class=HTMLResponse)
-async def unban_user(
+async def unban_user_html( # Renamed to avoid conflict
     request: Request,
     user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
     admin: Annotated[User, Depends(check_admin_permission)],
 ):
     """Unban a user."""
-    result = await db.execute(select(User).where(User.id == user_id))
-    target_user = result.scalar_one_or_none()
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
 
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    target_user.is_active = True
+    await user_service.set_user_active_status(target_user, True)
     
     # Audit Log
     logger = AuditLogger(db)
@@ -207,13 +197,7 @@ async def unban_user(
         target_id=user_id
     )
     
-    await db.commit()
-    await db.refresh(target_user)
-
-    return templates.TemplateResponse(
-        "admin/partials/users_table.html",
-        {"request": request, "users": [target_user]},
-    )
+    return RedirectResponse(url="/admin/users", status_code=303)
 
 
 @router.get("/users/{user_id}/roles", response_class=HTMLResponse)
@@ -224,8 +208,8 @@ async def user_roles_modal(
     admin: Annotated[User, Depends(check_admin_permission)],
 ):
     """Show modal for managing user roles."""
-    result = await db.execute(select(User).where(User.id == user_id))
-    target_user = result.scalar_one_or_none()
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
 
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -236,9 +220,9 @@ async def user_roles_modal(
 
     # Get user's current roles
     user_roles_result = await db.execute(
-        select(UserRole.role_id).where(UserRole.user_id == user_id)
+        select(UserRole).where(UserRole.user_id == user_id) # Corrected select
     )
-    user_role_ids = [r for r in user_roles_result.scalars().all()]
+    user_role_ids = [r.role_id for r in user_roles_result.scalars().all()] # Extract role_id
 
     return templates.TemplateResponse(
         "admin/partials/user_roles_modal.html",
@@ -260,21 +244,16 @@ async def update_user_roles(
     roles: Annotated[List[int], Form()] = [],
 ):
     """Update user's roles."""
-    result = await db.execute(select(User).where(User.id == user_id))
-    target_user = result.scalar_one_or_none()
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
 
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
 
     # Remove existing roles
     await db.execute(
-        select(UserRole).where(UserRole.user_id == user_id)
+        delete(UserRole).where(UserRole.user_id == user_id)
     )
-    existing = await db.execute(
-        select(UserRole).where(UserRole.user_id == user_id)
-    )
-    for ur in existing.scalars().all():
-        await db.delete(ur)
 
     # Add new roles
     for role_id in roles:
@@ -300,6 +279,128 @@ async def update_user_roles(
     # Return empty to close modal
     return HTMLResponse("")
 
+
+# ============================================================
+# USER MANAGEMENT (JSON API Endpoints - for frontend)
+# ============================================================
+
+@router.post("/users/{user_id}/change-password", response_model=UserResponse)
+async def admin_change_user_password(
+    user_id: int,
+    password_data: PasswordUpdateAdmin,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(check_admin_permission)],
+    request: Request,
+):
+    """Admin-initiated password change for a user."""
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    updated_user = await user_service.change_password_admin(target_user, password_data.new_password)
+
+    logger = AuditLogger(db)
+    await logger.log(
+        request,
+        action="user.change_password_admin",
+        target_type="user",
+        target_id=user_id,
+        details={"admin_id": admin.id}
+    )
+    
+    return updated_user
+
+@router.post("/users/{user_id}/approve-json", response_model=UserResponse)
+async def admin_approve_user_json(
+    user_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(check_admin_permission)],
+    request: Request,
+):
+    """Approve a pending user (JSON API)."""
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    updated_user = await user_service.approve_user(target_user)
+
+    logger = AuditLogger(db)
+    await logger.log(
+        request,
+        action="user.approve",
+        target_type="user",
+        target_id=user_id,
+        details={"admin_id": admin.id}
+    )
+    
+    return updated_user
+
+
+@router.patch("/users/{user_id}/status", response_model=UserResponse)
+async def admin_set_user_status(
+    user_id: int,
+    is_active: bool = Query(...), # Use Query for query parameters
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(check_admin_permission)],
+    request: Request,
+):
+    """Activate or deactivate a user (JSON API)."""
+    if user_id == admin.id and not is_active:
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    updated_user = await user_service.set_user_active_status(target_user, is_active)
+
+    logger = AuditLogger(db)
+    await logger.log(
+        request,
+        action=f"user.{'deactivate' if not is_active else 'activate'}",
+        target_type="user",
+        target_id=user_id,
+        details={"admin_id": admin.id, "is_active": is_active}
+    )
+    
+    return updated_user
+
+
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def admin_delete_user(
+    user_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(check_admin_permission)],
+    request: Request,
+):
+    """Permanently delete a user (JSON API)."""
+    if user_id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+
+    user_service = UserService(db)
+    target_user = await user_service.get_user_by_id(user_id)
+
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    await user_service.delete_user(target_user)
+
+    logger = AuditLogger(db)
+    await logger.log(
+        request,
+        action="user.delete",
+        target_type="user",
+        target_id=user_id,
+        details={"admin_id": admin.id, "email": target_user.email}
+    )
+    
+    return # No content
 
 # ============================================================
 # ROLE MANAGEMENT
@@ -576,7 +677,7 @@ async def settings_page(
 
 from app.services.system import SystemService
 
-...
+# Assuming SystemService is defined elsewhere
 
 @router.put("/settings", response_class=HTMLResponse)
 async def update_settings(

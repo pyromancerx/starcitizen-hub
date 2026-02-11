@@ -24,7 +24,11 @@
           <div class="flex -space-x-2">
             <div class="h-6 w-6 rounded-full bg-sc-blue/20 border border-sc-blue/50 flex items-center justify-center text-[8px] text-sc-blue font-bold">M</div>
           </div>
-          <router-link :to="{ name: 'project-detail', params: { id: project.id } }" class="text-[10px] text-sc-blue font-bold uppercase tracking-widest border-b border-sc-blue/30 hover:border-sc-blue transition-all pb-0.5">Project Overview</router-link>
+          <div class="flex items-center gap-2">
+            <button @click="openEditModal(project)" class="px-3 py-1 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase tracking-widest rounded hover:bg-sc-blue hover:text-sc-dark transition-all">Edit</button>
+            <button @click="handleDeleteProject(project.id)" class="px-3 py-1 bg-red-500/10 border border-red-500 text-red-500 text-[10px] font-black uppercase tracking-widest rounded hover:bg-red-500 hover:text-sc-dark transition-all">Delete</button>
+            <router-link :to="{ name: 'project-detail', params: { id: project.id } }" class="text-[10px] text-sc-blue font-bold uppercase tracking-widest border-b border-sc-blue/30 hover:border-sc-blue transition-all pb-0.5">Project Overview</router-link>
+          </div>
         </div>
       </div>
       
@@ -34,23 +38,55 @@
     </div>
   </div>
 
-  <AddProjectModal :show="showAddProjectModal" @close="showAddProjectModal = false" @add-project="handleAddProject" />
+  <AddProjectModal :show="showAddProjectModal" @close="showAddProjectModal = false" @project-added="handleAddProject" />
+  <EditProjectModal :show="showEditProjectModal" :project="editingProject" @close="showEditProjectModal = false" @project-updated="handleEditProject" />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useProjectStore } from '../stores/project';
 import AddProjectModal from '../components/AddProjectModal.vue';
+import EditProjectModal from '../components/EditProjectModal.vue'; // Import EditProjectModal
 
 const projectStore = useProjectStore();
 const showAddProjectModal = ref(false);
+const showEditProjectModal = ref(false); // New ref for edit modal
+const editingProject = ref(null); // New ref for project being edited
 
 onMounted(() => {
   projectStore.fetchProjects();
 });
 
 const handleAddProject = async (newProjectData) => {
-  await projectStore.addProject(newProjectData);
-  showAddProjectModal.value = false;
+  try {
+    await projectStore.createProject(newProjectData); // Corrected to createProject
+    showAddProjectModal.value = false;
+  } catch (error) {
+    alert(error.message || 'Failed to create project.');
+  }
+};
+
+const openEditModal = (project) => {
+  editingProject.value = { ...project }; // Clone project data for editing
+  showEditProjectModal.value = true;
+};
+
+const handleEditProject = async (updatedProjectData) => {
+  try {
+    await projectStore.updateProject(editingProject.value.id, updatedProjectData);
+    showEditProjectModal.value = false;
+  } catch (error) {
+    alert(error.message || 'Failed to update project.');
+  }
+};
+
+const handleDeleteProject = async (projectId) => {
+  if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+    try {
+      await projectStore.deleteProject(projectId);
+    } catch (error) {
+      alert(error.message || 'Failed to delete project.');
+    }
+  }
 };
 </script>

@@ -28,6 +28,15 @@ async def list_announcements(
     service = AnnouncementService(db)
     return await service.get_announcements(skip, limit)
 
+@router.get("/public", response_model=List[AnnouncementResponse])
+async def list_public_announcements(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+):
+    service = AnnouncementService(db)
+    return await service.get_announcements(skip, limit, include_public_only=True)
+
 @router.get("/{announcement_id}", response_model=AnnouncementResponse)
 async def get_announcement(
     announcement_id: int,

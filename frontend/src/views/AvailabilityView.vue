@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Availability & Sessions</h2>
-      <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+      <button @click="showAddEditAvailabilityModal = true; editingAvailabilitySlot = null" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
         Set Availability
       </button>
     </div>
@@ -46,9 +46,14 @@
             class="bg-sc-panel border border-sc-grey/10 rounded-lg p-4">
             <div class="flex justify-between items-start mb-3">
               <span class="text-lg font-bold text-sc-blue">{{ dayNames[slot.day_of_week] }}</span>
-              <button @click="deleteAvailability(slot.id)" class="text-red-500 hover:text-red-400 text-xs uppercase">
-                Remove
-              </button>
+              <div class="flex gap-2">
+                <button @click="openEditAvailabilityModal(slot)" class="text-yellow-500 hover:text-yellow-400 text-xs uppercase">
+                  Edit
+                </button>
+                <button @click="deleteAvailability(slot.id)" class="text-red-500 hover:text-red-400 text-xs uppercase">
+                  Remove
+                </button>
+              </div>
             </div>
             
             <div class="space-y-2">
@@ -153,92 +158,27 @@
       </div>
     </div>
 
-    <!-- Add Availability Modal -->
-    <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showAddModal = false">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-md shadow-2xl">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">Set Availability</h3>
-        
-        <form @submit.prevent="submitAvailability" class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Day of Week</label>
-            <select v-model="newAvailability.day_of_week" required
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-              <option :value="0">Monday</option>
-              <option :value="1">Tuesday</option>
-              <option :value="2">Wednesday</option>
-              <option :value="3">Thursday</option>
-              <option :value="4">Friday</option>
-              <option :value="5">Saturday</option>
-              <option :value="6">Sunday</option>
-            </select>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Start Time</label>
-              <input v-model="newAvailability.start_time" type="time" required
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-            </div>
-            <div>
-              <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">End Time</label>
-              <input v-model="newAvailability.end_time" type="time" required
-                class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-            </div>
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Timezone</label>
-            <select v-model="newAvailability.timezone"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">Eastern Time (ET)</option>
-              <option value="America/Chicago">Central Time (CT)</option>
-              <option value="America/Denver">Mountain Time (MT)</option>
-              <option value="America/Los_Angeles">Pacific Time (PT)</option>
-              <option value="Europe/London">London (GMT)</option>
-              <option value="Europe/Paris">Paris (CET)</option>
-              <option value="Asia/Tokyo">Tokyo (JST)</option>
-              <option value="Australia/Sydney">Sydney (AEST)</option>
-            </select>
-          </div>
-          
-          <div v-if="crewStore.error" class="text-red-500 text-sm text-center">
-            {{ crewStore.error }}
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="showAddModal = false"
-              class="flex-1 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-              Cancel
-            </button>
-            <button type="submit" :disabled="crewStore.isLoading"
-              class="flex-1 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue hover:bg-sc-blue/20 transition-all text-xs uppercase tracking-widest disabled:opacity-50">
-              {{ crewStore.isLoading ? 'Saving...' : 'Set Availability' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AddEditAvailabilityModal
+      :show="showAddEditAvailabilityModal"
+      :availability-slot="editingAvailabilitySlot"
+      @close="showAddEditAvailabilityModal = false"
+      @availability-saved="handleAvailabilitySaved"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useCrewStore } from '../stores/crew';
+import AddEditAvailabilityModal from '../components/AddEditAvailabilityModal.vue';
 
 const crewStore = useCrewStore();
 const activeTab = ref('my');
-const showAddModal = ref(false);
 
 const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const newAvailability = ref({
-  day_of_week: 0,
-  start_time: '18:00',
-  end_time: '22:00',
-  timezone: 'UTC',
-  is_active: true
-});
+const showAddEditAvailabilityModal = ref(false);
+const editingAvailabilitySlot = ref(null);
 
 const suggestionParams = ref({
   min_participants: 2,
@@ -255,26 +195,37 @@ const sortedAvailability = computed(() => {
   return [...crewStore.availability].sort((a, b) => a.day_of_week - b.day_of_week);
 });
 
-const submitAvailability = async () => {
-  try {
-    await crewStore.setAvailability(newAvailability.value);
-    showAddModal.value = false;
-  } catch (e) {
-    // Error handled in store
-  }
+const openEditAvailabilityModal = (slot) => {
+  editingAvailabilitySlot.value = { ...slot };
+  showAddEditAvailabilityModal.value = true;
 };
 
 const deleteAvailability = async (id) => {
   if (confirm('Are you sure you want to remove this availability slot?')) {
     try {
       await crewStore.deleteAvailability(id);
+      alert('Availability slot removed successfully!');
+      crewStore.fetchMyAvailability(); // Refresh list
     } catch (e) {
-      // Error handled in store
+      console.error('Failed to remove availability slot:', e);
+      alert('Failed to remove availability slot.');
     }
   }
+};
+
+const handleAvailabilitySaved = () => {
+  showAddEditAvailabilityModal.value = false;
+  editingAvailabilitySlot.value = null; // Clear editing state
+  crewStore.fetchMyAvailability();
+  crewStore.fetchAvailabilityOverlaps();
+  crewStore.fetchSessionSuggestions(suggestionParams.value);
 };
 
 const fetchSuggestions = () => {
   crewStore.fetchSessionSuggestions(suggestionParams.value);
 };
 </script>
+
+<style scoped>
+/* Specific styles for AvailabilityView */
+</style>

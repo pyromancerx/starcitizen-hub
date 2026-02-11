@@ -3,10 +3,10 @@
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Crew Loadouts</h2>
       <div class="flex gap-3">
-        <button @click="showTemplateModal = true" class="px-4 py-2 border border-sc-grey/30 text-sc-grey text-xs font-bold uppercase tracking-widest hover:text-white hover:border-sc-grey transition-all">
+        <button @click="showCrewLoadoutTemplatesModal = true" class="px-4 py-2 border border-sc-grey/30 text-sc-grey text-xs font-bold uppercase tracking-widest hover:text-white hover:border-sc-grey transition-all">
           Templates
         </button>
-        <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+        <button @click="showAddEditCrewLoadoutModal = true; editingLoadout = null" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
           Create Loadout
         </button>
       </div>
@@ -73,157 +73,37 @@
       </div>
     </div>
 
-    <!-- Create/Edit Loadout Modal -->
-    <div v-if="showAddModal || editModal.show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="closeModal">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">
-          {{ editModal.show ? 'Edit Loadout' : 'Create Loadout' }}
-        </h3>
-        
-        <form @submit.prevent="submitLoadout" class="space-y-4">
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Loadout Name</label>
-            <input v-model="loadoutForm.name" type="text" required
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none"
-              placeholder="e.g., Mining Team Alpha">
-          </div>
-          
-          <div>
-            <label class="block text-xs text-sc-grey uppercase tracking-widest mb-1">Ship (Optional)</label>
-            <select v-model="loadoutForm.ship_id"
-              class="w-full bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-              <option :value="null">No ship assigned</option>
-              <option v-for="ship in ships" :key="ship.id" :value="ship.id">
-                {{ ship.name || ship.ship_type }}
-              </option>
-            </select>
-          </div>
-          
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <label class="block text-xs text-sc-grey uppercase tracking-widest">Crew Positions</label>
-              <button type="button" @click="addPosition" class="text-xs text-sc-blue hover:text-white transition-colors">
-                + Add Position
-              </button>
-            </div>
-            
-            <div v-for="(position, idx) in loadoutForm.positions" :key="idx" 
-              class="flex gap-2 mb-2">
-              <input v-model="position.role" type="text" required placeholder="Role (e.g., Pilot)"
-                class="flex-1 bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-              <select v-model="position.user_id"
-                class="flex-1 bg-black/50 border border-sc-grey/30 rounded px-3 py-2 text-white text-sm focus:border-sc-blue focus:outline-none">
-                <option :value="null">Unassigned</option>
-                <option v-for="member in members" :key="member.id" :value="member.id">
-                  {{ member.display_name || member.email }}
-                </option>
-              </select>
-              <button type="button" @click="removePosition(idx)" 
-                class="px-2 text-red-500 hover:text-red-400">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
-            </div>
-          </div>
-          
-          <div class="flex items-center gap-2">
-            <input v-model="loadoutForm.is_template" type="checkbox" id="is_template"
-              class="bg-black/50 border border-sc-grey/30 rounded">
-            <label for="is_template" class="text-sm text-sc-grey">Save as template</label>
-          </div>
-          
-          <div v-if="crewStore.error" class="text-red-500 text-sm text-center">
-            {{ crewStore.error }}
-          </div>
-          
-          <div class="flex gap-3 pt-4">
-            <button type="button" @click="closeModal"
-              class="flex-1 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-              Cancel
-            </button>
-            <button type="submit" :disabled="crewStore.isLoading"
-              class="flex-1 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue hover:bg-sc-blue/20 transition-all text-xs uppercase tracking-widest disabled:opacity-50">
-              {{ crewStore.isLoading ? 'Saving...' : (editModal.show ? 'Update' : 'Create') }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <AddEditCrewLoadoutModal
+      :show="showAddEditCrewLoadoutModal"
+      :loadout="editingLoadout"
+      @close="showAddEditCrewLoadoutModal = false"
+      @loadout-saved="handleLoadoutSaved"
+    />
 
-    <!-- Templates Modal -->
-    <div v-if="showTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showTemplateModal = false">
-      <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
-        <h3 class="text-xl font-bold text-white uppercase tracking-widest mb-4">Loadout Templates</h3>
-        
-        <div v-if="crewStore.loadoutTemplates.length === 0" class="text-center py-8">
-          <p class="text-sc-grey">No templates available.</p>
-        </div>
-        
-        <div v-else class="space-y-3">
-          <div v-for="template in crewStore.loadoutTemplates" :key="template.id" 
-            class="bg-black/20 rounded p-3">
-            <div class="flex justify-between items-start mb-2">
-              <div class="font-bold text-white">{{ template.name }}</div>
-              <button @click="useTemplate(template)" 
-                class="text-xs text-sc-blue hover:text-white transition-colors">
-                Use Template
-              </button>
-            </div>
-            <div class="text-xs text-sc-grey">
-              {{ template.positions.length }} positions • by {{ template.creator_name || 'Unknown' }}
-            </div>
-          </div>
-        </div>
-        
-        <div class="mt-6 flex justify-end">
-          <button @click="showTemplateModal = false"
-            class="px-4 py-2 border border-sc-grey/30 text-sc-grey hover:text-white hover:border-sc-grey transition-all text-xs uppercase tracking-widest">
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+    <CrewLoadoutTemplatesModal
+      :show="showCrewLoadoutTemplatesModal"
+      @close="showCrewLoadoutTemplatesModal = false"
+      @use-template="handleUseTemplate"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useCrewStore } from '../stores/crew';
-import api from '../services/api';
+import AddEditCrewLoadoutModal from '../components/AddEditCrewLoadoutModal.vue';
+import CrewLoadoutTemplatesModal from '../components/CrewLoadoutTemplatesModal.vue';
+// Ensure memberStore is properly imported and used where needed in modals
 
 const crewStore = useCrewStore();
-const showAddModal = ref(false);
-const showTemplateModal = ref(false);
-const editModal = ref({ show: false, loadout: null });
-const ships = ref([]);
-const members = ref([]);
-
-const loadoutForm = ref({
-  name: '',
-  ship_id: null,
-  positions: [{ role: '', user_id: null }],
-  is_template: false
-});
+const showAddEditCrewLoadoutModal = ref(false);
+const editingLoadout = ref(null);
+const showCrewLoadoutTemplatesModal = ref(false);
 
 onMounted(() => {
   crewStore.fetchLoadouts();
-  crewStore.fetchLoadoutTemplates();
-  fetchShips();
-  fetchMembers();
+  crewStore.fetchLoadoutTemplates(); // Ensure templates are fetched for the modal
 });
-
-const fetchShips = async () => {
-  try {
-    const response = await api.get('/ships/');
-    ships.value = response.data;
-  } catch (err) {
-    console.error('Failed to fetch ships:', err);
-  }
-};
-
-const fetchMembers = async () => {
-  // Use members already fetched by memberStore
-  members.value = memberStore.members;
-};
 
 const formatTimeAgo = (dateString) => {
   if (!dateString) return '';
@@ -237,55 +117,16 @@ const formatTimeAgo = (dateString) => {
   return `${diffDays} days ago`;
 };
 
-const addPosition = () => {
-  loadoutForm.value.positions.push({ role: '', user_id: null });
-};
-
-const removePosition = (idx) => {
-  loadoutForm.value.positions.splice(idx, 1);
-};
-
-const closeModal = () => {
-  showAddModal.value = false;
-  editModal.value = { show: false, loadout: null };
-  resetForm();
-};
-
-const resetForm = () => {
-  loadoutForm.value = {
-    name: '',
-    ship_id: null,
-    positions: [{ role: '', user_id: null }],
-    is_template: false
-  };
-};
-
 const openEditModal = (loadout) => {
-  editModal.value = { show: true, loadout };
-  loadoutForm.value = {
-    name: loadout.name,
-    ship_id: loadout.ship_id,
-    positions: loadout.positions.map(p => ({ ...p })),
-    is_template: loadout.is_template
-  };
+  editingLoadout.value = { ...loadout };
+  showAddEditCrewLoadoutModal.value = true;
 };
 
-const submitLoadout = async () => {
-  try {
-    const formData = {
-      ...loadoutForm.value,
-      positions: loadoutForm.value.positions.filter(p => p.role.trim())
-    };
-    
-    if (editModal.value.show) {
-      await crewStore.updateLoadout(editModal.value.loadout.id, formData);
-    } else {
-      await crewStore.createLoadout(formData);
-    }
-    closeModal();
-  } catch (e) {
-    // Error handled in store
-  }
+const handleLoadoutSaved = () => {
+  showAddEditCrewLoadoutModal.value = false;
+  editingLoadout.value = null; // Clear editing state
+  crewStore.fetchLoadouts(); // Refresh the list of loadouts
+  crewStore.fetchLoadoutTemplates(); // Also refresh templates in case a new template was saved
 };
 
 const duplicateLoadout = async (loadout) => {
@@ -293,8 +134,11 @@ const duplicateLoadout = async (loadout) => {
   if (newName) {
     try {
       await crewStore.duplicateLoadout(loadout.id, newName);
+      alert('Loadout duplicated successfully!');
+      crewStore.fetchLoadouts(); // Refresh list
     } catch (e) {
-      // Error handled in store
+      console.error('Failed to duplicate loadout:', e);
+      alert('Failed to duplicate loadout.');
     }
   }
 };
@@ -303,8 +147,11 @@ const deleteLoadout = async (id) => {
   if (confirm('Are you sure you want to delete this loadout?')) {
     try {
       await crewStore.deleteLoadout(id);
+      alert('Loadout deleted successfully!');
+      crewStore.fetchLoadouts(); // Refresh list
     } catch (e) {
-      // Error handled in store
+      console.error('Failed to delete loadout:', e);
+      alert('Failed to delete loadout.');
     }
   }
 };
@@ -314,20 +161,22 @@ const deployLoadout = async (loadout) => {
     try {
       await crewStore.deployLoadout(loadout.id);
       alert('Loadout deployed successfully!');
+      // Optionally refresh loadouts or show a notification that it's deployed
     } catch (e) {
-      // Error handled in store
+      console.error('Failed to deploy loadout:', e);
+      alert('Failed to deploy loadout.');
     }
   }
 };
 
-const useTemplate = (template) => {
-  showTemplateModal.value = false;
-  showAddModal.value = true;
-  loadoutForm.value = {
+const handleUseTemplate = (template) => {
+  showCrewLoadoutTemplatesModal.value = false;
+  showAddEditCrewLoadoutModal.value = true;
+  editingLoadout.value = {
     name: `${template.name} (Copy)`,
-    ship_id: null,
-    positions: template.positions.map(p => ({ role: p.role, user_id: null })),
-    is_template: false
+    ship_id: null, // User will assign a ship
+    positions: template.positions.map(p => ({ role: p.role, user_id: null })), // Clear assigned users
+    is_template: false // Not a template anymore when using it
   };
 };
 </script>

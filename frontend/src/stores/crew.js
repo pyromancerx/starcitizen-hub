@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import api from '../services/api';
+import CrewService from '../services/CrewService'; // Import CrewService
 
 export const useCrewStore = defineStore('crew', {
   state: () => ({
@@ -19,12 +19,8 @@ export const useCrewStore = defineStore('crew', {
     async fetchLfgPosts(filters = {}) {
       this.isLoading = true;
       try {
-        const params = new URLSearchParams();
-        if (filters.activity_type) params.append('activity_type', filters.activity_type);
-        if (filters.ship_type) params.append('ship_type', filters.ship_type);
-        
-        const response = await api.get(`/crew/lfg?${params}`);
-        this.lfgPosts = response.data;
+        const response = await CrewService.getLFGPosts(filters); // Use CrewService
+        this.lfgPosts = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch LFG posts';
       } finally {
@@ -35,8 +31,8 @@ export const useCrewStore = defineStore('crew', {
     async fetchMyLfgPosts() {
       this.isLoading = true;
       try {
-        const response = await api.get('/crew/lfg/my');
-        this.myLfgPosts = response.data;
+        const response = await CrewService.getMyLFGPosts(); // Use CrewService
+        this.myLfgPosts = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch my LFG posts';
       } finally {
@@ -44,21 +40,48 @@ export const useCrewStore = defineStore('crew', {
       }
     },
 
+    async getLfgPost(postId) {
+      this.isLoading = true;
+      try {
+        const response = await CrewService.getLFGPost(postId);
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to fetch LFG post';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     async createLfgPost(postData) {
       try {
-        const response = await api.post('/crew/lfg', postData);
-        this.lfgPosts.unshift(response.data);
-        return response.data;
+        const response = await CrewService.createLFGPost(postData); // Use CrewService
+        this.lfgPosts.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to create LFG post';
         throw err;
       }
     },
 
+    async updateLfgPost(postId, postData) {
+      try {
+        const response = await CrewService.updateLFGPost(postId, postData);
+        const idx = this.lfgPosts.findIndex(p => p.id === postId);
+        if (idx !== -1) this.lfgPosts[idx] = response;
+        const myIdx = this.myLfgPosts.findIndex(p => p.id === postId);
+        if (myIdx !== -1) this.myLfgPosts[myIdx] = response;
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to update LFG post';
+        throw err;
+      }
+    },
+
     async respondToLfg(postId, responseData) {
       try {
-        const response = await api.post(`/crew/lfg/${postId}/respond`, responseData);
-        return response.data;
+        const response = await CrewService.respondToLFGPost(postId, responseData); // Use CrewService
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to respond to LFG post';
         throw err;
@@ -67,13 +90,12 @@ export const useCrewStore = defineStore('crew', {
 
     async markPostFilled(postId) {
       try {
-        const response = await api.post(`/crew/lfg/${postId}/filled`);
-        // Update in lists
+        const response = await CrewService.markLFGPostFilled(postId); // Use CrewService
         const idx = this.lfgPosts.findIndex(p => p.id === postId);
-        if (idx !== -1) this.lfgPosts[idx] = response.data;
+        if (idx !== -1) this.lfgPosts[idx] = response;
         const myIdx = this.myLfgPosts.findIndex(p => p.id === postId);
-        if (myIdx !== -1) this.myLfgPosts[myIdx] = response.data;
-        return response.data;
+        if (myIdx !== -1) this.myLfgPosts[myIdx] = response;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to mark post as filled';
         throw err;
@@ -82,13 +104,12 @@ export const useCrewStore = defineStore('crew', {
 
     async cancelLfgPost(postId) {
       try {
-        const response = await api.post(`/crew/lfg/${postId}/cancel`);
-        // Update in lists
+        const response = await CrewService.cancelLFGPost(postId); // Use CrewService
         const idx = this.lfgPosts.findIndex(p => p.id === postId);
         if (idx !== -1) this.lfgPosts.splice(idx, 1);
         const myIdx = this.myLfgPosts.findIndex(p => p.id === postId);
-        if (myIdx !== -1) this.myLfgPosts[myIdx] = response.data;
-        return response.data;
+        if (myIdx !== -1) this.myLfgPosts[myIdx] = response;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to cancel LFG post';
         throw err;
@@ -97,10 +118,20 @@ export const useCrewStore = defineStore('crew', {
 
     async fetchLfgStats() {
       try {
-        const response = await api.get('/crew/lfg/stats/overview');
-        this.lfgStats = response.data;
+        const response = await CrewService.getLFGStats(); // Use CrewService
+        this.lfgStats = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch LFG stats';
+      }
+    },
+
+    async getLfgPostResponses(postId) {
+      try {
+        const response = await CrewService.getLFGPostResponses(postId);
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to fetch LFG post responses';
+        throw err;
       }
     },
 
@@ -108,8 +139,8 @@ export const useCrewStore = defineStore('crew', {
     async fetchMyAvailability() {
       this.isLoading = true;
       try {
-        const response = await api.get('/crew/availability/my');
-        this.availability = response.data;
+        const response = await CrewService.getMyAvailability(); // Use CrewService
+        this.availability = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch availability';
       } finally {
@@ -119,25 +150,38 @@ export const useCrewStore = defineStore('crew', {
 
     async setAvailability(availabilityData) {
       try {
-        const response = await api.post('/crew/availability', availabilityData);
-        // Replace or add to availability list
-        const idx = this.availability.findIndex(a => a.day_of_week === response.data.day_of_week);
+        const response = await CrewService.setAvailability(availabilityData); // Use CrewService
+        const idx = this.availability.findIndex(a => a.day_of_week === response.day_of_week);
         if (idx !== -1) {
-          this.availability[idx] = response.data;
+          this.availability[idx] = response;
         } else {
-          this.availability.push(response.data);
+          this.availability.push(response);
           this.availability.sort((a, b) => a.day_of_week - b.day_of_week);
         }
-        return response.data;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to set availability';
         throw err;
       }
     },
 
+    async updateAvailability(availabilityId, availabilityData) {
+      try {
+        const response = await CrewService.updateAvailability(availabilityId, availabilityData);
+        const idx = this.availability.findIndex(a => a.id === availabilityId);
+        if (idx !== -1) {
+          this.availability[idx] = response;
+        }
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to update availability';
+        throw err;
+      }
+    },
+
     async deleteAvailability(availabilityId) {
       try {
-        await api.delete(`/crew/availability/${availabilityId}`);
+        await CrewService.deleteAvailability(availabilityId); // Use CrewService
         this.availability = this.availability.filter(a => a.id !== availabilityId);
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to delete availability';
@@ -147,8 +191,8 @@ export const useCrewStore = defineStore('crew', {
 
     async fetchAvailabilityOverlaps() {
       try {
-        const response = await api.get('/crew/availability/overlaps');
-        this.availabilityOverlaps = response.data;
+        const response = await CrewService.getAvailabilityOverlaps(); // Use CrewService
+        this.availabilityOverlaps = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch availability overlaps';
       }
@@ -156,12 +200,8 @@ export const useCrewStore = defineStore('crew', {
 
     async fetchSessionSuggestions(params = {}) {
       try {
-        const queryParams = new URLSearchParams();
-        if (params.min_participants) queryParams.append('min_participants', params.min_participants);
-        if (params.min_duration) queryParams.append('min_duration', params.min_duration);
-        
-        const response = await api.get(`/crew/availability/suggestions?${queryParams}`);
-        this.sessionSuggestions = response.data;
+        const response = await CrewService.getSessionSuggestions(params.min_participants, params.min_duration); // Use CrewService
+        this.sessionSuggestions = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch session suggestions';
       }
@@ -171,8 +211,8 @@ export const useCrewStore = defineStore('crew', {
     async fetchLoadouts() {
       this.isLoading = true;
       try {
-        const response = await api.get('/crew/loadouts');
-        this.loadouts = response.data;
+        const response = await CrewService.getMyLoadouts(); // Use CrewService
+        this.loadouts = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch loadouts';
       } finally {
@@ -182,8 +222,8 @@ export const useCrewStore = defineStore('crew', {
 
     async fetchLoadoutTemplates() {
       try {
-        const response = await api.get('/crew/loadouts/templates');
-        this.loadoutTemplates = response.data;
+        const response = await CrewService.getLoadoutTemplates(); // Use CrewService
+        this.loadoutTemplates = response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch loadout templates';
       }
@@ -191,9 +231,9 @@ export const useCrewStore = defineStore('crew', {
 
     async createLoadout(loadoutData) {
       try {
-        const response = await api.post('/crew/loadouts', loadoutData);
-        this.loadouts.unshift(response.data);
-        return response.data;
+        const response = await CrewService.createLoadout(loadoutData); // Use CrewService
+        this.loadouts.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to create loadout';
         throw err;
@@ -202,10 +242,10 @@ export const useCrewStore = defineStore('crew', {
 
     async updateLoadout(loadoutId, updateData) {
       try {
-        const response = await api.put(`/crew/loadouts/${loadoutId}`, updateData);
+        const response = await CrewService.updateLoadout(loadoutId, updateData); // Use CrewService
         const idx = this.loadouts.findIndex(l => l.id === loadoutId);
-        if (idx !== -1) this.loadouts[idx] = response.data;
-        return response.data;
+        if (idx !== -1) this.loadouts[idx] = response;
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to update loadout';
         throw err;
@@ -214,7 +254,7 @@ export const useCrewStore = defineStore('crew', {
 
     async deleteLoadout(loadoutId) {
       try {
-        await api.delete(`/crew/loadouts/${loadoutId}`);
+        await CrewService.deleteLoadout(loadoutId); // Use CrewService
         this.loadouts = this.loadouts.filter(l => l.id !== loadoutId);
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to delete loadout';
@@ -224,9 +264,9 @@ export const useCrewStore = defineStore('crew', {
 
     async duplicateLoadout(loadoutId, newName) {
       try {
-        const response = await api.post(`/crew/loadouts/${loadoutId}/duplicate?new_name=${encodeURIComponent(newName)}`);
-        this.loadouts.unshift(response.data);
-        return response.data;
+        const response = await CrewService.duplicateLoadout(loadoutId, newName); // Use CrewService
+        this.loadouts.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to duplicate loadout';
         throw err;
@@ -235,9 +275,9 @@ export const useCrewStore = defineStore('crew', {
 
     async deployLoadout(loadoutId, substitutions = {}) {
       try {
-        const response = await api.post(`/crew/loadouts/${loadoutId}/deploy`, { substitutions });
-        this.loadouts.unshift(response.data);
-        return response.data;
+        const response = await CrewService.quickDeployLoadout(loadoutId, substitutions); // Use CrewService
+        this.loadouts.unshift(response);
+        return response;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to deploy loadout';
         throw err;
