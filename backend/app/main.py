@@ -32,6 +32,7 @@ from app.routers import (
     operation_router,
     role_router,
     audit_router, # NEW
+    stats_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -113,6 +114,7 @@ app.include_router(user_profile_router)
 app.include_router(operation_router)
 app.include_router(role_router)
 app.include_router(audit_router) # NEW: Include the audit_router
+app.include_router(stats_router)
 
 # Web routes (templates)
 app.include_router(web_router)

@@ -36,6 +36,17 @@ class OperationService:
         )
         self.db.add(operation)
         await self.db.flush()
+        
+        # Track activity
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        await activity_service.track_operation_created(
+            user_id=user_id,
+            operation_id=operation.id,
+            title=operation.title,
+            operation_type=operation.type
+        )
+        
         return operation
 
     async def update_operation(self, operation_id: int, data: OperationUpdate) -> Optional[Operation]:
@@ -88,15 +99,24 @@ class OperationService:
         )
         await self.db.flush()
 
-    async def get_user_upcoming_operations(self, user_id: int, limit: int = 3) -> List[Operation]:
-        """Get upcoming operations for a user."""
-        query = (
-            select(Operation)
-            .join(OperationParticipant)
-            .where(OperationParticipant.user_id == user_id)
-            .where(Operation.scheduled_at > datetime.utcnow())
-            .order_by(Operation.scheduled_at.asc())
-            .limit(limit)
+    async def track_operation_completed(self, user_id: int, operation_id: int, title: str):
+        """Track when an operation is completed."""
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        await activity_service.track_operation_completed(
+            user_id=user_id,
+            operation_id=operation_id,
+            title=title
         )
-        result = await self.db.execute(query)
-        return result.scalars().all()
+
+    async def complete_operation(self, operation_id: int, user_id: int) -> Optional[Operation]:
+        """Mark an operation as completed and track activity."""
+        operation = await self.get_operation(operation_id)
+        if not operation:
+            return None
+        
+        operation.status = OperationStatus.COMPLETED
+        await self.db.flush()
+        
+        await self.track_operation_completed(user_id, operation.id, operation.title)
+        return operation

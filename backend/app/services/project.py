@@ -31,6 +31,15 @@ class ProjectService:
         self.db.add(project)
         await self.db.commit()
         
+        # Track activity
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        await activity_service.track_project_created(
+            user_id=manager_id,
+            project_id=project.id,
+            name=project.title
+        )
+
         # Fetch with relationships loaded to avoid lazy load errors
         query = (
             select(Project)
@@ -79,6 +88,25 @@ class ProjectService:
     async def delete_project(self, project: Project) -> None:
         await self.db.delete(project)
         await self.db.commit()
+
+    async def complete_project(self, project_id: int, user_id: int) -> Optional[Project]:
+        """Mark a project as completed and track activity."""
+        project = await self.get_project(project_id)
+        if not project:
+            return None
+        
+        project.status = "completed"
+        await self.db.commit()
+        await self.db.refresh(project)
+        
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        await activity_service.track_project_completed(
+            user_id=user_id,
+            project_id=project.id,
+            name=project.title
+        )
+        return project
 
     # --- Phases ---
     async def create_phase(self, project_id: int, data: ProjectPhaseCreate) -> ProjectPhase:
@@ -207,6 +235,25 @@ class ProjectService:
         
         await self.db.commit()
         
+        # Track activity
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        # We need the project name for the activity tracking
+        query = (
+            select(Project.title)
+            .join(ContributionGoal)
+            .where(ContributionGoal.id == goal_id)
+        )
+        result = await self.db.execute(query)
+        project_name = result.scalar() or "Unknown Project"
+
+        await activity_service.track_contribution_made(
+            user_id=user_id,
+            project_id=goal.project_id if goal else 0,
+            project_name=project_name,
+            amount=data.amount
+        )
+
         # Fetch with relationships
         query = (
             select(Contribution)

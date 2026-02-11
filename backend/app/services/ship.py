@@ -25,6 +25,17 @@ class ShipService:
         self.db.add(ship)
         await self.db.commit()
         await self.db.refresh(ship)
+        
+        # Track activity
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        await activity_service.track_ship_added(
+            user_id=user_id,
+            ship_id=ship.id,
+            ship_name=ship.name or "",
+            ship_type=ship.ship_type
+        )
+        
         return ship
 
     async def get_ship_by_id(self, ship_id: int) -> Optional[Ship]:

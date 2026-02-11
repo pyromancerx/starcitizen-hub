@@ -73,6 +73,20 @@ async def delete_project(
     await service.delete_project(project)
 
 
+@router.post("/{project_id}/complete", response_model=ProjectResponse)
+async def complete_project_endpoint(
+    project_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("org.manage_operations"))],
+):
+    """Mark a project as completed."""
+    service = ProjectService(db)
+    project = await service.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return await service.complete_project(project_id, current_user.id)
+
 # --- Phases ---
 @router.post("/{project_id}/phases", response_model=ProjectPhaseResponse, status_code=status.HTTP_201_CREATED)
 async def create_phase(

@@ -2,7 +2,7 @@ from typing import Annotated, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.auth_dependencies import require_auth
+from app.dependencies import get_current_approved_user
 from app.models.user import User
 from app.models.event import Operation, OperationStatus
 from app.schemas.operation import OperationCreate, OperationUpdate, OperationSignupCreate
@@ -36,7 +36,7 @@ async def get_operation_by_id(
 async def create_new_operation(
     operation: OperationCreate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User, Depends(require_auth)]
+    user: Annotated[User, Depends(get_current_approved_user)]
 ):
     """Create a new operation."""
     service = OperationService(db)
@@ -49,7 +49,7 @@ async def update_existing_operation(
     operation_id: int,
     operation: OperationUpdate,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User, Depends(require_auth)]
+    user: Annotated[User, Depends(get_current_approved_user)]
 ):
     """Update an existing operation."""
     service = OperationService(db)
@@ -69,7 +69,7 @@ async def update_existing_operation(
 async def delete_existing_operation(
     operation_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User, Depends(require_auth)]
+    user: Annotated[User, Depends(get_current_approved_user)]
 ):
     """Delete an existing operation."""
     service = OperationService(db)
@@ -85,12 +85,31 @@ async def delete_existing_operation(
     await db.commit()
     return
 
+@router.post("/{operation_id}/complete", response_model=Operation)
+async def complete_operation_endpoint(
+    operation_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    user: Annotated[User, Depends(get_current_approved_user)]
+):
+    """Mark an operation as completed."""
+    service = OperationService(db)
+    operation = await service.get_operation(operation_id)
+    if not operation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Operation not found")
+    
+    if operation.created_by_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the creator can complete the operation")
+        
+    updated_operation = await service.complete_operation(operation_id, user.id)
+    await db.commit()
+    return updated_operation
+
 @router.post("/{operation_id}/signup", response_model=Operation)
 async def signup_for_operation_endpoint(
     operation_id: int,
     signup_data: Optional[OperationSignupCreate] = None,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User, Depends(require_auth)]
+    user: Annotated[User, Depends(get_current_approved_user)]
 ):
     """Sign up for an operation."""
     service = OperationService(db)
@@ -117,7 +136,7 @@ async def signup_for_operation_endpoint(
 async def cancel_operation_signup_endpoint(
     operation_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    user: Annotated[User, Depends(require_auth)]
+    user: Annotated[User, Depends(get_current_approved_user)]
 ):
     """Cancel signup for an operation."""
     service = OperationService(db)

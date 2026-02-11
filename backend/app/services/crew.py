@@ -26,7 +26,7 @@ class CrewService:
         user_id: int,
         data: LFGPostCreate,
     ) -> LFGPost:
-        """Create a new LFG post."""
+        """Create a new LFG post and track activity."""
         expires_at = None
         if data.expires_hours:
             expires_at = datetime.utcnow() + timedelta(hours=data.expires_hours)
@@ -45,6 +45,17 @@ class CrewService:
         self.db.add(post)
         await self.db.commit()
         await self.db.refresh(post)
+        
+        # Track activity
+        from app.services.activity import ActivityService
+        activity_service = ActivityService(self.db)
+        await activity_service.track_lfg_posted(
+            user_id=user_id,
+            post_id=post.id,
+            ship_type=post.ship_type,
+            activity_type=post.activity_type
+        )
+        
         return post
 
     async def get_lfg_post_by_id(self, post_id: int) -> Optional[LFGPost]:

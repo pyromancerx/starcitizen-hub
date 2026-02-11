@@ -22,6 +22,11 @@ from app.routers.discord import router as discord_router
 from app.routers.rsi import rsi_router
 from app.routers.treasury import router as treasury_router
 from app.routers.privacy import router as privacy_router
+from app.routers.user_profile import router as user_profile_router
+from app.routers.operation import router as operation_router
+from app.routers.role import router as role_router
+from app.routers.audit import router as audit_router
+from app.routers.stats import router as stats_router
 
 __all__ = [
     "auth_router",
@@ -47,4 +52,9 @@ __all__ = [
     "rsi_router",
     "treasury_router",
     "privacy_router",
+    "user_profile_router",
+    "operation_router",
+    "role_router",
+    "audit_router",
+    "stats_router",
 ]
