@@ -2,7 +2,7 @@
   <div class="space-y-12">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Federation Peering</h2>
-      <button class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Establish Link</button>
+      <button @click="showEstablishLinkModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Establish Link</button>
     </div>
 
     <!-- Active Peers -->
@@ -72,16 +72,25 @@
       </div>
     </section>
   </div>
+
+  <EstablishLinkModal :show="showEstablishLinkModal" @close="showEstablishLinkModal = false" @establish-link="handleEstablishLink" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useFederationStore } from '../stores/federation';
+import EstablishLinkModal from '../components/EstablishLinkModal.vue';
 
 const fedStore = useFederationStore();
+const showEstablishLinkModal = ref(false);
 
 onMounted(() => {
   fedStore.fetchPeers();
   fedStore.fetchFederatedEvents();
 });
+
+const handleEstablishLink = async (linkData) => {
+  await fedStore.establishLink(linkData);
+  showEstablishLinkModal.value = false;
+};
 </script>

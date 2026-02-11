@@ -223,7 +223,7 @@ watch(() => messageStore.messages, () => {
 
 const fetchUsers = async () => {
   try {
-    const response = await api.get('/members/');
+    const response = await api.get('/admin/members_json'); // Changed API endpoint
     users.value = response.data;
   } catch (err) {
     console.error('Failed to fetch users:', err);

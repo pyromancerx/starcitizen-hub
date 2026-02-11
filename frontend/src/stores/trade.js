@@ -178,6 +178,22 @@ export const useTradeStore = defineStore('trade', {
       }
     },
 
+    // NEW: startContract action
+    async startContract(contractId) {
+      try {
+        const response = await api.post(`/trade/contracts/${contractId}/start`);
+        // Update in all lists
+        [this.contracts, this.myContracts, this.myHaulingContracts].forEach(list => {
+          const idx = list.findIndex(c => c.id === contractId);
+          if (idx !== -1) list[idx] = response.data;
+        });
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to start contract';
+        throw err;
+      }
+    },
+
     async cancelContract(contractId) {
       try {
         const response = await api.post(`/trade/contracts/${contractId}/cancel`);

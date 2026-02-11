@@ -21,6 +21,19 @@ export const useFederationStore = defineStore('federation', {
         this.isLoading = false;
       }
     },
+    async establishLink(linkData) {
+      this.isLoading = true;
+      try {
+        const response = await api.post('/federation/peers', linkData);
+        await this.fetchPeers(); // Refresh the list to include the new link
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to establish federation link';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
     async fetchFederatedEvents() {
       this.isLoading = true;
       try {

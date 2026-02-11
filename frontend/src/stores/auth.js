@@ -39,21 +39,35 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     
-    async register(email, password, rsiHandle) {
-        this.isLoading = true;
-        this.error = null;
-        try {
-            await api.post('/auth/register', {
-                email,
-                password,
-                rsi_handle: rsiHandle
-            });
-        } catch (err) {
-            this.error = err.response?.data?.detail || 'Registration failed';
-            throw err;
-        } finally {
-            this.isLoading = false;
-        }
+    async fetchUser() {
+      if (!this.token) return;
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await api.get('/users/me');
+        this.user = response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to fetch user data';
+        this.logout(); // Logout if fetching user fails (e.g., token expired)
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async updateProfile(userData) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await api.patch('/users/me', userData);
+        this.user = response.data; // Update local user state
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to update profile';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
     },
 
     logout() {

@@ -1,15 +1,9 @@
-from datetime import datetime
-from typing import Dict, Any, List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, and_
-from sqlalchemy.orm import aliased # Moved to top-level imports
-
 from app.models.user import User
 from app.models.role import Role, UserRole, RoleTier
 from app.models.ship import Ship
 from app.models.stockpile import Stockpile, StockpileItem # Assuming these are org stockpiles
 from app.models.treasury import TreasuryTransaction # Assuming this is for org treasury
-from app.models.event import Operation, OperationParticipant # For operations
+from app.models.event import Event, EventParticipant # For events
 from app.models.announcement import Announcement
 from app.models.forum import ForumPost # For forum posts
 from app.models.trade import CargoContract
@@ -27,11 +21,62 @@ from app.schemas.admin import (
     OrgForumPost,
     OrgCargoContract,
 )
+from app.schemas.user import UserInviteCreate, UserResponse # Import UserInviteCreate and UserResponse
+from app.services.auth import AuthService # Import AuthService
+from fastapi import HTTPException, status # Import HTTPException
 
 
 class AdminService:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def invite_user(self, invite_data: UserInviteCreate, admin_id: int) -> User:
+        # Check if user with this email already exists
+        existing_user = await self.db.scalar(select(User).where(User.email == invite_data.email))
+        if existing_user:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User with this email already exists")
+
+        # Generate a temporary password (or send invitation link later)
+        # For now, let's create a user with a placeholder password
+        # In a real app, this would be an invitation flow with a link, not a direct password.
+        temporary_password = AuthService.generate_random_password()
+        hashed_password = AuthService.get_password_hash(temporary_password)
+
+        new_user = User(
+            email=invite_data.email,
+            hashed_password=hashed_password,
+            is_active=True, # Active but not yet approved or with confirmed email
+            is_approved=False, # Requires approval
+        )
+        self.db.add(new_user)
+        await self.db.flush() # Flush to get new_user.id
+
+        # Assign role
+        role_to_assign = None
+        if invite_data.role_id:
+            role_to_assign = await self.db.scalar(select(Role).where(Role.id == invite_data.role_id))
+            if not role_to_assign:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Specified role not found")
+        else:
+            # Assign a default role if no role_id is provided
+            # Assuming there's a default role in your system, e.g., 'member'
+            role_to_assign = await self.db.scalar(select(Role).where(Role.is_default == True))
+            if not role_to_assign:
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No default role configured")
+        
+        user_role = UserRole(
+            user_id=new_user.id,
+            role_id=role_to_assign.id,
+            granted_by=admin_id,
+        )
+        self.db.add(user_role)
+        
+        await self.db.commit()
+        await self.db.refresh(new_user)
+        
+        # In a real application, you would send an email with the temporary password or an invitation link here.
+        # For now, we'll just return the user.
+        return new_user
 
     async def export_org_data(self) -> OrgDataExportResponse:
         """
@@ -137,13 +182,13 @@ class AdminService:
 
         # --- 7. Operations ---
         operations_data: List[OrgOperation] = []
-        operation_results = await self.db.execute(select(Operation, User).join(User, Operation.created_by_id == User.id))
+        operation_results = await self.db.execute(select(Event, User).join(User, Event.organizer_id == User.id))
         for op, created_by_user in operation_results.all():
             # Fetch participants for this operation
             participant_results = await self.db.execute(
                 select(User.display_name)
-                .join(OperationParticipant, OperationParticipant.user_id == User.id)
-                .where(OperationParticipant.operation_id == op.id)
+                .join(EventParticipant, EventParticipant.user_id == User.id)
+                .where(EventParticipant.event_id == op.id)
             )
             participants = [name for name, in participant_results.all()]
 
@@ -151,10 +196,10 @@ class AdminService:
                 id=op.id,
                 title=op.title,
                 description=op.description,
-                operation_type=op.operation_type.value if hasattr(op.operation_type, 'value') else str(op.operation_type),
-                scheduled_at=op.scheduled_at,
+                operation_type=op.event_type.value if hasattr(op.event_type, 'value') else str(op.event_type),
+                scheduled_at=op.start_time,
                 status=op.status.value if hasattr(op.status, 'value') else str(op.status),
-                created_by_id=op.created_by_id,
+                created_by_id=op.organizer_id,
                 created_by_display_name=created_by_user.display_name,
                 participants=participants,
             ))

@@ -2,6 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Personnel Manifest</h2>
+      <button @click="showInviteMemberModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Invite Member</button>
     </div>
 
     <div v-if="memberStore.isLoading" class="flex justify-center p-12">
@@ -39,15 +40,24 @@
       </div>
     </div>
   </div>
+
+  <InviteMemberModal :show="showInviteMemberModal" @close="showInviteMemberModal = false" @invite-member="handleInviteMember" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMemberStore } from '../stores/members';
+import InviteMemberModal from '../components/InviteMemberModal.vue';
 
 const memberStore = useMemberStore();
+const showInviteMemberModal = ref(false);
 
 onMounted(() => {
   memberStore.fetchMembers();
 });
+
+const handleInviteMember = async (inviteData) => {
+  await memberStore.inviteMember(inviteData);
+  showInviteMemberModal.value = false;
+};
 </script>

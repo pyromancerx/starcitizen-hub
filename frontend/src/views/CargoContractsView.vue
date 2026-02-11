@@ -343,7 +343,7 @@ const acceptContract = async (contractId) => {
 
 const startContract = async (contractId) => {
   try {
-    await tradeStore.acceptContract(contractId);
+    await tradeStore.startContract(contractId);
     await tradeStore.fetchMyHaulingContracts();
   } catch (e) {
     // Error handled in store

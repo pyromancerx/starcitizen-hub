@@ -16,6 +16,7 @@ class WalletCreate(WalletBase):
 class WalletUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
+    is_primary: Optional[bool] = None
 
 
 class WalletResponse(WalletBase):

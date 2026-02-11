@@ -1,7 +1,8 @@
 <template>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Spectrum Forum</h2>
+      <h2 class="2xl font-bold text-white tracking-wide uppercase italic">Spectrum Forum</h2>
+      <button @click="showAddCategoryModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Create Category</button>
     </div>
 
     <div v-if="socialStore.isLoading" class="flex justify-center p-12">
@@ -26,15 +27,24 @@
       </div>
     </div>
   </div>
+
+  <AddForumCategoryModal :show="showAddCategoryModal" @close="showAddCategoryModal = false" @add-category="handleAddCategory" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useSocialStore } from '../stores/social';
+import AddForumCategoryModal from '../components/AddForumCategoryModal.vue';
 
 const socialStore = useSocialStore();
+const showAddCategoryModal = ref(false);
 
 onMounted(() => {
   socialStore.fetchCategories();
 });
+
+const handleAddCategory = async (newCategoryData) => {
+  await socialStore.addCategory(newCategoryData);
+  showAddCategoryModal.value = false;
+};
 </script>

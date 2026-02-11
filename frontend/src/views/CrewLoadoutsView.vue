@@ -221,12 +221,8 @@ const fetchShips = async () => {
 };
 
 const fetchMembers = async () => {
-  try {
-    const response = await api.get('/members/');
-    members.value = response.data;
-  } catch (err) {
-    console.error('Failed to fetch members:', err);
-  }
+  // Use members already fetched by memberStore
+  members.value = memberStore.members;
 };
 
 const formatTimeAgo = (dateString) => {

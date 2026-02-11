@@ -35,9 +35,12 @@
         </div>
       </div>
 
-      <h3 class="text-xs text-sc-grey/50 uppercase font-black tracking-widest flex items-center">
-        <span class="mr-2 h-px w-8 bg-sc-blue/30"></span> Personnel Authorization
-      </h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xs text-sc-grey/50 uppercase font-black tracking-widest flex items-center">
+          <span class="mr-2 h-px w-8 bg-sc-blue/30"></span> Personnel Authorization
+        </h3>
+        <button @click="showInviteUserModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">Invite User</button>
+      </div>
       
       <div class="bg-sc-panel border border-sc-grey/10 rounded-lg overflow-hidden shadow-2xl">
         <table class="w-full text-left border-collapse">
@@ -141,6 +144,8 @@
       </div>
     </section>
   </div>
+
+  <InviteUserModal :show="showInviteUserModal" @close="showInviteUserModal = false" @invite-user="handleInviteUser" />
 </template>
 
 <script setup>

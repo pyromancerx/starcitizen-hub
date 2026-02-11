@@ -55,8 +55,14 @@ class TreasuryService:
         await self.db.refresh(wallet)
         return wallet
 
-    async def update_wallet(self, wallet_id: int, name: Optional[str] = None, description: Optional[str] = None) -> OrgTreasury:
-        """Update wallet name and description."""
+    async def update_wallet(
+        self, 
+        wallet_id: int, 
+        name: Optional[str] = None, 
+        description: Optional[str] = None, 
+        is_primary: Optional[bool] = None # NEW: is_primary parameter
+    ) -> OrgTreasury:
+        """Update wallet name, description, and primary status."""
         wallet = await self.db.get(OrgTreasury, wallet_id)
         if not wallet:
             raise ValueError("Wallet not found")
@@ -65,6 +71,17 @@ class TreasuryService:
             wallet.name = name
         if description is not None:
             wallet.description = description
+        
+        # NEW: Handle is_primary flag
+        if is_primary is not None:
+            if is_primary:
+                # Unmark current primary wallet if another one is set as primary
+                current_primary = await self.db.scalar(
+                    select(OrgTreasury).where(OrgTreasury.is_primary == True, OrgTreasury.id != wallet_id)
+                )
+                if current_primary:
+                    current_primary.is_primary = False
+            wallet.is_primary = is_primary
             
         await self.db.commit()
         await self.db.refresh(wallet)

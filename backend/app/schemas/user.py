@@ -14,6 +14,12 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=8, max_length=100)
 
 
+# NEW SCHEMA FOR INVITE
+class UserInviteCreate(BaseModel):
+    email: EmailStr
+    role_id: Optional[int] = None # Optional role to assign
+
+
 class UserUpdate(BaseModel):
     rsi_handle: Optional[str] = Field(None, max_length=100)
     display_name: Optional[str] = Field(None, max_length=100)

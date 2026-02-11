@@ -5,6 +5,7 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
       </button>
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Spectrum Channels</h2>
+      <button @click="showAddThreadModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all ml-auto">New Thread</button>
     </div>
 
     <div v-if="socialStore.isLoading" class="flex justify-center p-12">
@@ -41,17 +42,27 @@
       </div>
     </div>
   </div>
+
+  <AddForumThreadModal :show="showAddThreadModal" @close="showAddThreadModal = false" @add-thread="handleAddThread" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useSocialStore } from '../stores/social';
+import AddForumThreadModal from '../components/AddForumThreadModal.vue';
 
 const route = useRoute();
 const socialStore = useSocialStore();
+const showAddThreadModal = ref(false);
 
 onMounted(() => {
   socialStore.fetchThreads(route.params.id);
 });
+
+const handleAddThread = async (newThreadData) => {
+  // Pass the current category ID along with new thread data
+  await socialStore.addThread(route.params.id, newThreadData);
+  showAddThreadModal.value = false;
+};
 </script>

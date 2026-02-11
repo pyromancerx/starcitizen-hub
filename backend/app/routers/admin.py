@@ -2,7 +2,7 @@
 from typing import Annotated, Optional, List
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
@@ -17,6 +17,8 @@ from app.web_dependencies import (
     get_user_permissions,
 )
 from app.config import get_settings
+from app.schemas.user import UserInviteCreate, UserResponse
+from app.services.admin import AdminService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 settings = get_settings()
@@ -36,6 +38,28 @@ async def set_admin_request(
 # ============================================================
 # USER MANAGEMENT
 # ============================================================
+
+@router.post("/invite-user", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def invite_user(
+    invite_data: UserInviteCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(check_admin_permission)],
+):
+    """Invite a new user by email and assign an optional role."""
+    admin_service = AdminService(db)
+    new_user = await admin_service.invite_user(invite_data, admin.id)
+    return new_user
+
+@router.get("/members_json", response_model=List[UserResponse]) # New JSON endpoint
+async def list_all_members_json(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(check_admin_permission)],
+):
+    """List all users as JSON (admin only)."""
+    query = select(User).order_by(User.display_name.asc())
+    result = await db.execute(query)
+    users = result.scalars().all()
+    return users # FastAPI will convert list of User models to List[UserResponse]
 
 @router.get("/users", response_class=HTMLResponse)
 async def users_list(

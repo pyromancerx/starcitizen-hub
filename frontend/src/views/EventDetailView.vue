@@ -76,12 +76,15 @@
       </div>
     </div>
   </div>
+
+  <EventSignupModal :show="showSignupModal" @close="showSignupModal = false" @signup="handleSignup" />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useEventStore } from '../stores/social';
+import EventSignupModal from '../components/EventSignupModal.vue'; // NEW
 
 const route = useRoute();
 const eventStore = useEventStore();
@@ -90,4 +93,14 @@ const showSignupModal = ref(false);
 onMounted(() => {
   eventStore.fetchEvent(route.params.id);
 });
+
+const handleSignup = async (signupData) => {
+  try {
+    await eventStore.signup(eventStore.currentEvent.id, signupData.role);
+    showSignupModal.value = false;
+  } catch (err) {
+    // Error handling is done in the store action
+    alert(err.message || 'Failed to sign up for event');
+  }
+};
 </script>

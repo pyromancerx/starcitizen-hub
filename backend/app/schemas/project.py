@@ -12,6 +12,7 @@ class TaskBase(BaseModel):
     priority: int = 0
 
 class TaskCreate(TaskBase):
+    assignee_id: Optional[int] = None
     pass
 
 class TaskUpdate(BaseModel):

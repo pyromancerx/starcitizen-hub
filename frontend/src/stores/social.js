@@ -65,6 +65,17 @@ export const useEventStore = defineStore('events', {
         this.isLoading = false;
       }
     },
+    async addCategory(categoryData) {
+      try {
+        const response = await api.post('/forum/categories', categoryData);
+        this.categories.push(response.data);
+        await this.fetchCategories(); // Refresh the list to include the new category
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to add forum category';
+        throw err;
+      }
+    },
     async fetchThreads(categoryId) {
       this.isLoading = true;
       try {
@@ -72,6 +83,20 @@ export const useEventStore = defineStore('events', {
         this.threads = response.data;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch threads';
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    async addThread(categoryId, threadData) {
+      this.isLoading = true;
+      try {
+        const response = await api.post(`/forum/categories/${categoryId}/threads`, threadData);
+        // Refresh the list to include the new thread
+        await this.fetchThreads(categoryId);
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to add forum thread';
+        throw err;
       } finally {
         this.isLoading = false;
       }
@@ -85,6 +110,17 @@ export const useEventStore = defineStore('events', {
         this.error = err.response?.data?.detail || 'Failed to fetch thread details';
       } finally {
         this.isLoading = false;
+      }
+    },
+    async addPost(threadId, postData) {
+      try {
+        const response = await api.post(`/forum/threads/${threadId}/posts`, postData);
+        // After adding a post, refresh the current thread details to include the new post
+        await this.fetchThreadDetail(threadId);
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to add forum post';
+        throw err;
       }
     }
   }

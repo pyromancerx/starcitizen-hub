@@ -71,7 +71,7 @@ async def get_wallet(
     )
 
 
-@router.put("/wallets/{wallet_id}", response_model=WalletResponse)
+@router.patch("/wallets/{wallet_id}", response_model=WalletResponse)
 async def update_wallet(
     wallet_id: int,
     data: WalletUpdate,
@@ -84,7 +84,8 @@ async def update_wallet(
         wallet = await service.update_wallet(
             wallet_id=wallet_id,
             name=data.name,
-            description=data.description
+            description=data.description,
+            is_primary=data.is_primary
         )
         return wallet
     except ValueError as e:

@@ -45,12 +45,13 @@
         <span class="mr-2 h-px w-8 bg-sc-blue/30"></span> New Transmission
       </h3>
       <textarea 
+        v-model="newPostContent"
         rows="4" 
         class="w-full bg-black/30 border border-sc-grey/20 rounded p-4 text-white text-sm focus:outline-none focus:border-sc-blue/50 transition-colors"
         placeholder="Enter response data..."
       ></textarea>
       <div class="mt-4 flex justify-end">
-        <button class="px-8 py-3 bg-sc-blue/10 border border-sc-blue text-sc-blue font-bold uppercase tracking-widest text-xs rounded hover:bg-sc-blue hover:text-sc-dark transition-all duration-300">Transmit Reply</button>
+        <button @click="handleNewPost" class="px-8 py-3 bg-sc-blue/10 border border-sc-blue text-sc-blue font-bold uppercase tracking-widest text-xs rounded hover:bg-sc-blue hover:text-sc-dark transition-all duration-300">Transmit Reply</button>
       </div>
     </div>
     
@@ -61,14 +62,22 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useSocialStore } from '../stores/social';
 
 const route = useRoute();
 const socialStore = useSocialStore();
+const newPostContent = ref('');
 
 onMounted(() => {
   socialStore.fetchThreadDetail(route.params.id);
 });
+
+const handleNewPost = async () => {
+  if (newPostContent.value.trim()) {
+    await socialStore.addPost(route.params.id, { content: newPostContent.value });
+    newPostContent.value = ''; // Clear the input
+  }
+};
 </script>

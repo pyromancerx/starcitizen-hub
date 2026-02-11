@@ -399,6 +399,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Create Wallet Modal -->
+    <CreateWalletModal :show="showCreateWalletModal" @close="showCreateWalletModal = false" @create-wallet="handleCreateWallet" />
+
+    <!-- Edit Wallet Modal -->
+    <EditWalletModal :show="showEditWalletModal" :wallet="treasuryStore.selectedWallet" @close="showEditWalletModal = false" @update-wallet="handleUpdateWallet" />
   </div>
 </template>
 
@@ -406,6 +412,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useTreasuryStore } from '../stores/treasury';
 import { useAuthStore } from '../stores/auth';
+import CreateWalletModal from '../components/CreateWalletModal.vue';
+import EditWalletModal from '../components/EditWalletModal.vue'; // NEW
 
 const treasuryStore = useTreasuryStore();
 const authStore = useAuthStore();
@@ -501,6 +509,24 @@ const openDepositModal = () => {
 const openWithdrawModal = () => {
   transactionForm.value = { amount: '', category: 'operation_payout', description: '' };
   showWithdrawModal.value = true;
+};
+
+const handleCreateWallet = async (walletData) => {
+  try {
+    await treasuryStore.createWallet(walletData);
+    showCreateWalletModal.value = false;
+  } catch (err) {
+    alert(err.message || 'Failed to create wallet');
+  }
+};
+
+const handleUpdateWallet = async ({ id, data }) => {
+  try {
+    await treasuryStore.updateWallet(id, data);
+    showEditWalletModal.value = false;
+  } catch (err) {
+    alert(err.message || 'Failed to update wallet');
+  }
 };
 
 const submitDeposit = async () => {

@@ -16,13 +16,21 @@
       <div class="lg:col-span-3 space-y-8">
         <!-- Phases and Tasks -->
         <div class="space-y-6">
-          <h3 class="text-xs text-sc-grey/50 uppercase font-black tracking-widest flex items-center">
-            <span class="mr-2 h-px w-8 bg-sc-blue/30"></span> Operational Phases
-          </h3>
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xs text-sc-grey/50 uppercase font-black tracking-widest flex items-center">
+              <span class="mr-2 h-px w-8 bg-sc-blue/30"></span> Operational Phases
+            </h3>
+            <button @click="showAddPhaseModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+              Add Phase
+            </button>
+          </div>
           
           <div v-for="phase in projectStore.currentProject.phases" :key="phase.id" class="bg-sc-panel border border-sc-grey/10 rounded-lg overflow-hidden shadow-lg">
             <div class="bg-black/20 p-4 border-b border-sc-grey/10 flex justify-between items-center">
               <h4 class="text-sm font-bold text-white uppercase">{{ phase.name }}</h4>
+              <button @click="openAddTaskModal(phase.id)" class="ml-4 px-3 py-1 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+                Add Task
+              </button>
               <span class="text-[10px] text-sc-grey/50 uppercase">{{ phase.tasks?.length || 0 }} Objectives</span>
             </div>
             <div class="divide-y divide-sc-grey/5">
@@ -39,7 +47,7 @@
                 </div>
                 <div class="flex items-center space-x-4">
                   <span v-if="task.assignee" class="text-[10px] text-sc-blue/70 uppercase font-bold tracking-tighter">{{ task.assignee.display_name }}</span>
-                  <button class="text-sc-grey/20 group-hover:text-sc-blue transition-colors">
+                  <button @click="openEditTaskModal(task)" class="text-sc-grey/20 group-hover:text-sc-blue transition-colors"> <!-- MODIFIED -->
                     <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path></svg>
                   </button>
                 </div>
@@ -58,7 +66,12 @@
       <div class="space-y-6">
         <!-- Contribution Goals -->
         <div class="bg-sc-panel border border-sc-grey/10 rounded-lg p-6 space-y-6">
-          <h3 class="text-xs text-sc-grey font-black uppercase tracking-widest mb-4">Contribution Goals</h3>
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xs text-sc-grey font-black uppercase tracking-widest">Contribution Goals</h3>
+            <button @click="showAddGoalModal = true" class="px-3 py-1 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+              Add Goal
+            </button>
+          </div>
           
           <div v-for="goal in projectStore.currentProject.contribution_goals" :key="goal.id" class="space-y-2">
             <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-tighter">
@@ -68,7 +81,7 @@
             <div class="w-full bg-black/30 h-1.5 rounded-full overflow-hidden">
               <div class="bg-sc-blue h-full transition-all duration-1000 shadow-[0_0_10px_rgba(102,252,241,0.5)]" :style="{ width: Math.min((goal.current_amount / goal.target_amount) * 100, 100) + '%' }"></div>
             </div>
-            <button class="w-full mt-2 py-2 bg-white/5 hover:bg-sc-blue/10 text-[8px] text-sc-blue font-bold uppercase tracking-widest border border-sc-blue/20 rounded transition-all">Contribute</button>
+            <button @click="openContributeModal(goal.id)" class="w-full mt-2 py-2 bg-white/5 hover:bg-sc-blue/10 text-[8px] text-sc-blue font-bold uppercase tracking-widest border border-sc-blue/20 rounded transition-all">Contribute</button> <!-- MODIFIED -->
           </div>
           
           <div v-if="projectStore.currentProject.contribution_goals?.length === 0" class="text-center py-4 text-sc-grey/30 text-[10px] italic uppercase tracking-widest">No active funding goals.</div>
@@ -90,17 +103,79 @@
       </div>
     </div>
   </div>
+
+  <AddPhaseModal :show="showAddPhaseModal" @close="showAddPhaseModal = false" @add-phase="handleAddPhase" />
+  <AddTaskModal :show="showAddTaskModal" @close="showAddTaskModal = false" @add-task="handleAddTask" :phase-id="currentPhaseId" />
+  <AddContributionGoalModal :show="showAddGoalModal" @close="showAddGoalModal = false" @add-goal="handleAddGoal" />
+  <ContributeModal :show="showContributeModal" @close="showContributeModal = false" @contribute="handleContribute" :goal-id="currentGoalId" />
+  <EditTaskModal :show="showEditTaskModal" @close="showEditTaskModal = false" @update-task="handleUpdateTask" @delete-task="handleDeleteTask" :task="taskToEdit" /> <!-- NEW -->
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '../stores/project';
+import AddPhaseModal from '../components/AddPhaseModal.vue';
+import AddTaskModal from '../components/AddTaskModal.vue';
+import AddContributionGoalModal from '../components/AddContributionGoalModal.vue';
+import ContributeModal from '../components/ContributeModal.vue';
 
 const route = useRoute();
 const projectStore = useProjectStore();
+const showAddPhaseModal = ref(false);
+const showAddTaskModal = ref(false);
+const currentPhaseId = ref(null);
+const showAddGoalModal = ref(false);
+const showContributeModal = ref(false);
+const currentGoalId = ref(null);
 
 onMounted(() => {
   projectStore.fetchProjectDetail(route.params.id);
 });
+
+const handleAddPhase = async (phaseData) => {
+  try {
+    await projectStore.addPhase(projectStore.currentProject.id, phaseData);
+    showAddPhaseModal.value = false;
+  } catch (err) {
+    alert(err.message || 'Failed to add project phase');
+  }
+};
+
+const handleAddTask = async (taskData) => {
+  try {
+    await projectStore.addTask(currentPhaseId.value, taskData);
+    showAddTaskModal.value = false;
+  } catch (err) {
+    alert(err.message || 'Failed to add task');
+  }
+};
+
+const handleAddGoal = async (goalData) => {
+  try {
+    await projectStore.addContributionGoal(projectStore.currentProject.id, goalData);
+    showAddGoalModal.value = false;
+  } catch (err) {
+    alert(err.message || 'Failed to add contribution goal');
+  }
+};
+
+const handleContribute = async (contributionData) => {
+  try {
+    await projectStore.addContribution(currentGoalId.value, contributionData);
+    showContributeModal.value = false;
+  } catch (err) {
+    alert(err.message || 'Failed to add contribution');
+  }
+};
+
+const openAddTaskModal = (phaseId) => {
+  currentPhaseId.value = phaseId;
+  showAddTaskModal.value = true;
+};
+
+const openContributeModal = (goalId) => {
+  currentGoalId.value = goalId;
+  showContributeModal.value = true;
+};
 </script>

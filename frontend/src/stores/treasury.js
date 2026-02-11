@@ -37,17 +37,13 @@ export const useTreasuryStore = defineStore('treasury', {
       }
     },
 
-    async createWallet(name, description = '', isPrimary = false) {
+    async createWallet(walletData) {
       this.isLoading = true;
       this.error = null;
       try {
-        const response = await api.post('/treasury/wallets', {
-          name,
-          description,
-          is_primary: isPrimary,
-        });
+        const response = await api.post('/treasury/wallets', walletData);
         this.wallets.push(response.data);
-        if (isPrimary || this.wallets.length === 1) {
+        if (response.data.is_primary || this.wallets.length === 1) {
           this.selectedWallet = response.data;
         }
         return response.data;
@@ -59,14 +55,20 @@ export const useTreasuryStore = defineStore('treasury', {
       }
     },
 
-    async renameWallet(walletId, name, description) {
+    async updateWallet(walletId, walletData) { // Renamed and changed params
       this.isLoading = true;
       this.error = null;
       try {
-        const response = await api.put(`/treasury/wallets/${walletId}`, {
-          name,
-          description,
-        });
+        // If the updated wallet is set as primary, unmark others locally (backend handles db)
+        if (walletData.is_primary) {
+          this.wallets.forEach(w => {
+            if (w.id !== walletId) {
+              w.is_primary = false;
+            }
+          });
+        }
+
+        const response = await api.patch(`/treasury/wallets/${walletId}`, walletData); // Changed to patch and pass data object
         const index = this.wallets.findIndex(w => w.id === walletId);
         if (index !== -1) {
           this.wallets[index] = response.data;

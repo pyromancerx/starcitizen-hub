@@ -27,6 +27,15 @@ export const useAdminStore = defineStore('admin', {
         this.error = err.response?.data?.detail || 'Failed to approve user';
         throw err;
       }
+    },
+    async inviteUser(inviteData) {
+      try {
+        const response = await api.post('/admin/invite-user', inviteData);
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to invite user';
+        throw err;
+      }
     }
   }
 });

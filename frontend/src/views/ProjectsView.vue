@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Organization Logistics</h2>
-      <button class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Launch New Project</button>
+      <button @click="showAddProjectModal = true" class="px-4 py-2 bg-sc-blue text-sc-dark text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">Launch New Project</button>
     </div>
 
     <div v-if="projectStore.isLoading" class="flex justify-center p-12">
@@ -33,15 +33,24 @@
       </div>
     </div>
   </div>
+
+  <AddProjectModal :show="showAddProjectModal" @close="showAddProjectModal = false" @add-project="handleAddProject" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useProjectStore } from '../stores/project';
+import AddProjectModal from '../components/AddProjectModal.vue';
 
 const projectStore = useProjectStore();
+const showAddProjectModal = ref(false);
 
 onMounted(() => {
   projectStore.fetchProjects();
 });
+
+const handleAddProject = async (newProjectData) => {
+  await projectStore.addProject(newProjectData);
+  showAddProjectModal.value = false;
+};
 </script>
