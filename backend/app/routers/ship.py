@@ -108,22 +108,94 @@ async def update_ship(
 
 
 @router.delete("/{ship_id}", status_code=status.HTTP_204_NO_CONTENT)
+
+
 async def delete_ship(
+
+
     ship_id: int,
+
+
     db: Annotated[AsyncSession, Depends(get_db)],
+
+
     current_user: Annotated[User, Depends(get_current_approved_user)],
+
+
 ):
+
+
     """Delete a ship."""
+
+
     service = ShipService(db)
+
+
     ship = await service.get_ship_by_id(ship_id)
+
+
     if not ship:
+
+
         raise HTTPException(
+
+
             status_code=status.HTTP_404_NOT_FOUND,
+
+
             detail="Ship not found",
+
+
         )
+
+
     if ship.user_id != current_user.id:
+
+
         raise HTTPException(
+
+
             status_code=status.HTTP_403_FORBIDDEN,
+
+
             detail="Not authorized to delete this ship",
+
+
         )
+
+
     await service.delete_ship(ship)
+
+
+
+
+
+@router.post("/import-hangarxplorer")
+
+
+async def import_hangarxplorer(
+
+
+    hangar_data: List[dict],
+
+
+    db: Annotated[AsyncSession, Depends(get_db)],
+
+
+    current_user: Annotated[User, Depends(get_current_approved_user)],
+
+
+):
+
+
+    """Import ships from HangarXPLORER JSON data."""
+
+
+    service = ShipService(db)
+
+
+    count = await service.import_from_hangarxplorer(current_user.id, hangar_data)
+
+
+    return {"message": f"Successfully imported {count} ships", "count": count}
+

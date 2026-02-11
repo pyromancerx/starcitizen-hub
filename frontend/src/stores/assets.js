@@ -41,6 +41,19 @@ export const useShipStore = defineStore('ships', {
         this.error = err.response?.data?.detail || 'Failed to update ship';
         throw err;
       }
+    },
+    async importHangarXPLORER(hangarData) {
+      this.isLoading = true;
+      try {
+        const response = await api.post('/ships/import-hangarxplorer', hangarData);
+        await this.fetchShips();
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to import ships';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
     }
   }
 });

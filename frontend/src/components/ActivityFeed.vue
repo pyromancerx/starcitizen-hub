@@ -126,6 +126,7 @@ const activityTypes = [
   'contribution_made',
   'lfg_posted',
   'price_reported',
+  'fleet_imported',
 ];
 
 const activityIcons = {
@@ -143,6 +144,7 @@ const activityIcons = {
   contribution_made: '💎',
   lfg_posted: '👥',
   price_reported: '📊',
+  fleet_imported: '🚢',
 };
 
 let debounceTimer;
@@ -192,6 +194,8 @@ const getActivityDescription = (activity) => {
       return `is looking for crew on a ${content.ship_type || 'ship'} for ${content.activity_type || 'activity'}`;
     case 'price_reported':
       return `reported prices at ${content.location || 'a location'}`;
+    case 'fleet_imported':
+      return `imported ${content.count || 0} vessels from their RSI hangar`;
     default:
       return 'did something';
   }

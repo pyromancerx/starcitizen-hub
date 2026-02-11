@@ -102,3 +102,44 @@ class ShipService:
             )
         )
         return list(result.scalars().all())
+
+    async def import_from_hangarxplorer(self, user_id: int, hangar_data: List[dict]) -> int:
+        """Import ships from HangarXPLORER JSON data. Returns count of ships imported."""
+        imported_count = 0
+        
+        for pledge in hangar_data:
+            # Each pledge can have multiple items, some of which are ships
+            insurance = pledge.get("insurance", "Unknown")
+            items = pledge.get("items", [])
+            
+            for item in items:
+                # HangarXPLORER identifies ships by type "Ship"
+                if item.get("type") == "Ship":
+                    ship_type = item.get("name")
+                    if not ship_type:
+                        continue
+                        
+                    # Create the ship
+                    ship = Ship(
+                        user_id=user_id,
+                        ship_type=ship_type,
+                        name=pledge.get("name") if len(items) == 1 else None, # Use pledge name if single ship package
+                        insurance_status=insurance,
+                        notes=f"Imported from HangarXPLORER. Pledge ID: {pledge.get('id')}",
+                        status="ready"
+                    )
+                    self.db.add(ship)
+                    imported_count += 1
+        
+        if imported_count > 0:
+            await self.db.commit()
+            
+            # Track bulk activity
+            from app.services.activity import ActivityService
+            activity_service = ActivityService(self.db)
+            await activity_service.track_fleet_imported(
+                user_id=user_id,
+                count=imported_count
+            )
+            
+        return imported_count

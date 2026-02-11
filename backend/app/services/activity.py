@@ -273,6 +273,18 @@ class ActivityService:
             related_type="price_report",
         )
 
+    async def track_fleet_imported(
+        self,
+        user_id: int,
+        count: int,
+    ) -> Activity:
+        """Track when a user imports their fleet from RSI."""
+        return await self.create_activity(
+            activity_type=ActivityType.FLEET_IMPORTED,
+            user_id=user_id,
+            content={"count": count},
+        )
+
     # === Activity Feed Retrieval ===
 
     async def get_activity_feed(

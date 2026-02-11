@@ -24,6 +24,7 @@ class ActivityType(str, Enum):
     ACHIEVEMENT_EARNED = "achievement_earned"
     LFG_POSTED = "lfg_posted"
     PRICE_REPORTED = "price_reported"
+    FLEET_IMPORTED = "fleet_imported"
 
 
 class Activity(Base):

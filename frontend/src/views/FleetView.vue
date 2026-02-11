@@ -2,9 +2,16 @@
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">Fleet Registry</h2>
-      <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
-        Register Vessel
-      </button>
+      <div class="flex items-center space-x-3">
+        <button @click="triggerFileInput" class="px-4 py-2 bg-sc-grey/10 border border-sc-grey/30 text-sc-grey text-xs font-bold uppercase tracking-widest hover:bg-sc-grey/20 transition-all flex items-center">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          Import RSI Hangar
+        </button>
+        <input type="file" ref="fileInput" @change="handleFileUpload" accept=".json" class="hidden" />
+        <button @click="showAddModal = true" class="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all">
+          Register Vessel
+        </button>
+      </div>
     </div>
 
     <div v-if="shipStore.isLoading" class="flex justify-center p-12">
@@ -66,10 +73,33 @@ import AddShipModal from '../components/AddShipModal.vue';
 
 const shipStore = useShipStore();
 const showAddModal = ref(false);
+const fileInput = ref(null);
 
 onMounted(() => {
   shipStore.fetchShips();
 });
+
+const triggerFileInput = () => {
+  fileInput.value.click();
+};
+
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const json = JSON.parse(e.target.result);
+      const res = await shipStore.importHangarXPLORER(json);
+      alert(res.message);
+    } catch (err) {
+      console.error('Failed to import hangar', err);
+      alert('Error parsing JSON file. Please ensure it is a valid HangarXPLORER export.');
+    }
+  };
+  reader.readAsText(file);
+};
 
 const handleAddShip = async (newShipData) => {
   await shipStore.addShip(newShipData);

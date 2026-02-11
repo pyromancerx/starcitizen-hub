@@ -15,37 +15,40 @@ A self-hosted, full-stack logistics and community platform for Star Citizen orga
 ## Features
 
 ### 🚀 Asset Management
-- **Fleet Registry:** Track organization and member ships with loadout details.
+- **Fleet Registry:** Track organization and member ships with loadout details and real-time readiness status (Ready, Damaged, etc.).
+- **Bulk Import:** Seamlessly import your entire RSI hangar using HangarXPLORER JSON exports.
 - **Inventory Tracking:** Manage personal and shared items across the verse.
 - **Financial Terminal:** Track aUEC balances and transactions securely.
 
 ### 📦 Logistics
 - **Org Stockpiles:** Shared resource management with transaction history.
-- **Project Management:** Organize construction, mining, or combat operations with phases and tasks.
-- **Crowdfunding:** Create contribution goals for projects (e.g., "Fund a Javelin").
+- **Project Management:** Organize construction, mining, or combat operations with phases, tasks, and completion tracking.
+- **Crowdfunding:** Create contribution goals for projects (e.g., "Fund a Javelin") with automatic progress tracking.
 
 ### 📡 Communications
+- **Global Search:** Quickly find members, ships, projects, and forum threads from the universal search bar.
 - **Spectrum Forum:** Secure, hierarchical discussion boards.
-- **Operations Calendar:** Event scheduling with role-based signups.
+- **Operations Calendar:** Event scheduling with role-based signups and participant notifications.
 - **Direct Messaging:** Private 1-on-1 messaging between members with real-time delivery.
-- **Activity Feed:** Organization timeline showing member activities (new ships, completed operations, trades, achievements).
-- **Notification Center:** In-app notifications for mentions, operation invites, contract updates, and achievements.
+- **Activity Feed:** Organization timeline showing member activities (imports, new ships, completed operations, trades, achievements).
+- **Notification Center:** In-app notifications for mentions, operation invites, contract updates, and project contributions.
 - **Federation:** Securely peer with allied organizations to share event data and trade requests via HMAC-signed APIs.
 
 ### 🎮 Social & Engagement
 - **Achievement System:** Gamification with auto-awarded and custom achievements (Common, Rare, Epic, Legendary).
+- **Service Records:** View comprehensive career stats on member profiles (lifetime profit, contributions, operations).
 - **Crew Finder (LFG):** Post "Looking For Group" requests to find crewmates for ships and activities.
-- **Availability Scheduler:** Weekly availability tracking to coordinate play sessions with overlapping schedules.
+- **Availability Scheduler:** Weekly availability tracking to coordinate play sessions.
 - **Crew Loadouts:** Save and deploy named crew configurations for multi-crew ships.
 
 ### 🌐 Integrations
-- **Discord Integration:** OAuth login, automatic announcements to Discord channels, role synchronization between hub and Discord server.
-- **RSI Integration:** Star Citizen account verification (handle verification with screenshot approval).
+- **Discord Integration:** OAuth login, automatic announcements to Discord channels, role synchronization.
+- **RSI Integration:** Star Citizen account verification (manual approval with screenshot).
 
 ### 📊 Trading & Economy
+- **Cargo Contracts:** Member-to-member hauling jobs with **automatic escrow** (funds are held securely and released upon delivery).
 - **Trade Run Tracker:** Log trade runs with auto-calculated profit tracking.
-- **Commodity Price Database:** Crowdsourced market data with best route calculations.
-- **Cargo Contracts:** Member-to-member hauling jobs with escrow and reputation tracking.
+- **Commodity Price Database:** Crowdsourced market data with best route calculations and price history.
 
 ---
 
@@ -57,11 +60,12 @@ cd backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-# Run Migrations & Seed
+# Run Migrations & Seed (Rich sample data provided)
 alembic upgrade head
 python -m app.tasks.seed
 # Start Server
 uvicorn app.main:app --reload
+# OR use standalone script from root: ./scripts/start_backend.sh
 ```
 
 ### 2. Frontend Setup
@@ -71,6 +75,41 @@ npm install
 npm run dev
 ```
 Access the app at `http://localhost:5173`.
+
+---
+
+## 🚢 Bulk Fleet Import
+
+You can quickly populate your fleet by importing data from your RSI Hangar.
+
+1.  **Install HangarXPLORER:** Use the [HangarXPLORER](https://github.com/dolkensp/HangarXPLOR) browser extension on the RSI website.
+2.  **Export JSON:** Navigate to your hangar on the RSI site and use the extension to export your hangar as a JSON file.
+3.  **Import to Hub:**
+    *   Navigate to **Fleet Registry** in the Hub.
+    *   Click **Import RSI Hangar**.
+    *   Select your exported `.json` file.
+    *   Your ships and their insurance status will be automatically added.
+
+---
+
+## 💰 Financial Escrow
+
+The Cargo Contract system uses a secure escrow mechanism to protect both parties.
+
+1.  **Posting a Contract:** When you post a contract, the payment amount is immediately deducted from your wallet and held by the system.
+2.  **Acceptance:** A hauler accepts the contract.
+3.  **Completion:** Once the cargo is delivered and the contract is marked as **Completed**, the system automatically releases the held funds to the hauler's wallet.
+4.  **Cancellation:** If a contract is cancelled, the escrowed funds are automatically refunded to the poster's wallet.
+
+---
+
+## 🔍 Search & Discovery
+
+The Hub features a global search bar in the header (on desktop) that scans multiple databases simultaneously:
+- **Members:** Search by display name, RSI handle, or email.
+- **Vessels:** Find specific ships by name or ship type across the organization.
+- **Projects:** Locate active logistics or combat operations.
+- **Spectrum:** Search forum thread titles for discussions.
 
 ---
 
@@ -139,8 +178,8 @@ sudo -u starcitizen-hub /opt/starcitizen-hub/venv/bin/python -m app.cli approve-
 The Activity Feed provides a real-time timeline of organization activities, creating community engagement and awareness.
 
 ### Features
-- **Activity Types:** Tracks member joins, operations, ship additions, trade completions, contract updates, LFG posts, and price reports.
-- **Real-time Updates:** HTMX polling every 30 seconds for live updates.
+- **Activity Types:** Tracks member joins, member approvals, fleet imports, ship additions, trade completions, contract updates (posted/completed), project updates, LFG posts, and price reports.
+- **Real-time Updates:** Automatic updates via polling.
 - **Reactions:** Emoji reactions (👍, ❤️, 🎉, etc.) on activities.
 - **Filtering:** Filter by activity type or view all.
 - **Dashboard Widget:** Integrated into the main dashboard.
@@ -391,6 +430,17 @@ Once linked, the hubs will automatically perform the following:
 ---
 
 ## 🔄 Maintenance
+
+### Managing the Backend (Standalone)
+If you are not using systemd (e.g., in development), use the following scripts:
+
+```bash
+# Start backend in background
+./scripts/start_backend.sh
+
+# Stop backend gracefully
+./scripts/stop_backend.sh
+```
 
 ### Updating the Hub
 To pull the latest changes, rebuild the frontend, and run migrations:
