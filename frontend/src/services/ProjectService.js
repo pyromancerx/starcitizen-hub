@@ -51,6 +51,16 @@ export default {
     }
   },
 
+  async completeProject(projectId) {
+    try {
+      const response = await api.post(`/projects/${projectId}/complete`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error completing project ${projectId}:`, error);
+      throw error;
+    }
+  },
+
   // --- Phases ---
   async createPhase(projectId, phaseData) {
     try {

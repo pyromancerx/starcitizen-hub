@@ -237,22 +237,40 @@ class ProjectService:
         
         # Track activity
         from app.services.activity import ActivityService
+        from app.services.notification import NotificationService
+        from app.models.user import User
         activity_service = ActivityService(self.db)
-        # We need the project name for the activity tracking
-        query = (
-            select(Project.title)
+        notification_service = NotificationService(self.db)
+
+        # We need the project info for the activity tracking and notification
+        project_query = (
+            select(Project)
             .join(ContributionGoal)
             .where(ContributionGoal.id == goal_id)
         )
-        result = await self.db.execute(query)
-        project_name = result.scalar() or "Unknown Project"
+        result = await self.db.execute(project_query)
+        project = result.scalar_one()
+        project_name = project.title
 
         await activity_service.track_contribution_made(
             user_id=user_id,
-            project_id=goal.project_id if goal else 0,
+            project_id=project.id,
             project_name=project_name,
             amount=data.amount
         )
+
+        # Notify project manager
+        if project.manager_id != user_id:
+            result = await self.db.execute(select(User).where(User.id == user_id))
+            contributor = result.scalar_one()
+            
+            await notification_service.create_notification(
+                user_id=project.manager_id,
+                notification_type=NotificationType.MENTION, # Or generic
+                title="New Project Contribution",
+                message=f"{contributor.display_name or f'User {user_id}'} contributed {data.amount} aUEC to '{project_name}'",
+                link=f"/projects/{project.id}"
+            )
 
         # Fetch with relationships
         query = (

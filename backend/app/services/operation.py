@@ -80,6 +80,25 @@ class OperationService:
         )
         self.db.add(participant)
         await self.db.flush()
+
+        # Notify creator
+        operation = await self.get_operation(operation_id)
+        from app.services.notification import NotificationService
+        from app.models.user import User
+        notification_service = NotificationService(self.db)
+        
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        signup_user = result.scalar_one()
+
+        if operation.created_by_id != user_id:
+            await notification_service.create_notification(
+                user_id=operation.created_by_id,
+                notification_type=NotificationType.OP_INVITE, # Or a generic type
+                title="New Operation Signup",
+                message=f"{signup_user.display_name or f'User {user_id}'} signed up for '{operation.title}'",
+                link=f"/events/{operation_id}"
+            )
+
         return participant
 
     async def cancel_signup(self, operation_id: int, user_id: int):
@@ -100,14 +119,29 @@ class OperationService:
         await self.db.flush()
 
     async def track_operation_completed(self, user_id: int, operation_id: int, title: str):
-        """Track when an operation is completed."""
+        """Track when an operation is completed and notify participants."""
         from app.services.activity import ActivityService
+        from app.services.notification import NotificationService
         activity_service = ActivityService(self.db)
+        notification_service = NotificationService(self.db)
+
         await activity_service.track_operation_completed(
             user_id=user_id,
             operation_id=operation_id,
             title=title
         )
+
+        # Notify participants
+        operation = await self.get_operation(operation_id)
+        for participant in operation.participants:
+            if participant.user_id != user_id: # Don't notify the person who completed it
+                await notification_service.create_notification(
+                    user_id=participant.user_id,
+                    notification_type=NotificationType.OP_REMINDER, # Or completion type
+                    title="Operation Completed",
+                    message=f"The operation '{title}' has been marked as completed. Thank you for your service!",
+                    link=f"/events/{operation_id}"
+                )
 
     async def complete_operation(self, operation_id: int, user_id: int) -> Optional[Operation]:
         """Mark an operation as completed and track activity."""

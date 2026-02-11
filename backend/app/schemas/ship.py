@@ -12,6 +12,7 @@ class ShipBase(BaseModel):
     insurance_expires_at: Optional[datetime] = None
     loadout: Optional[dict] = None
     notes: Optional[str] = None
+    status: str = Field("ready", max_length=50)
     custom_attributes: Optional[dict] = None
 
 
@@ -27,6 +28,7 @@ class ShipUpdate(BaseModel):
     insurance_expires_at: Optional[datetime] = None
     loadout: Optional[dict] = None
     notes: Optional[str] = None
+    status: Optional[str] = Field(None, max_length=50)
     custom_attributes: Optional[dict] = None
 
 

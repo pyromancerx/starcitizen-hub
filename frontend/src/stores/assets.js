@@ -28,6 +28,19 @@ export const useShipStore = defineStore('ships', {
         this.error = err.response?.data?.detail || 'Failed to add ship';
         throw err;
       }
+    },
+    async updateShip(shipId, shipData) {
+      try {
+        const response = await api.patch(`/ships/${shipId}`, shipData);
+        const index = this.ships.findIndex(s => s.id === shipId);
+        if (index !== -1) {
+          this.ships[index] = response.data;
+        }
+        return response.data;
+      } catch (err) {
+        this.error = err.response?.data?.detail || 'Failed to update ship';
+        throw err;
+      }
     }
   }
 });

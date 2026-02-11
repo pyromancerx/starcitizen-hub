@@ -432,11 +432,28 @@ from app.models.user import User # Import User
         if contract.poster_id == hauler_id:
             raise ValueError("Cannot accept your own contract")
         
+        from app.models.user import User
+        result = await self.db.execute(select(User).where(User.id == hauler_id))
+        hauler = result.scalar_one()
+
         contract.hauler_id = hauler_id
         contract.status = ContractStatus.ACCEPTED
         
         await self.db.commit()
         await self.db.refresh(contract)
+
+        # Notify poster
+        from app.services.notification import NotificationService
+        notification_service = NotificationService(self.db)
+        await notification_service.notify_contract_accepted(
+            poster_id=contract.poster_id,
+            hauler_name=hauler.display_name or f"User {hauler.id}",
+            hauler_id=hauler.id,
+            contract_origin=contract.origin_location,
+            contract_destination=contract.destination_location,
+            contract_id=contract.id
+        )
+
         return contract
 
     async def start_contract(self, contract: CargoContract) -> CargoContract:
@@ -456,9 +473,11 @@ from app.models.user import User # Import User
         
         from app.services.wallet import WalletService
         from app.services.activity import ActivityService
+        from app.services.notification import NotificationService
         
         wallet_service = WalletService(self.db)
         activity_service = ActivityService(self.db)
+        notification_service = NotificationService(self.db)
         
         hauler_wallet = await wallet_service.get_or_create_wallet(contract.hauler_id)
         
@@ -483,6 +502,15 @@ from app.models.user import User # Import User
             origin=contract.origin_location,
             destination=contract.destination_location,
             payment=contract.payment_amount
+        )
+
+        # Notify hauler
+        await notification_service.notify_contract_completed(
+            user_id=contract.hauler_id,
+            contract_origin=contract.origin_location,
+            contract_destination=contract.destination_location,
+            payment=contract.payment_amount,
+            contract_id=contract.id
         )
         
         return contract
@@ -512,9 +540,26 @@ from app.models.user import User # Import User
             description=f"Refund for cancelled cargo contract #{contract.id}"
         )
 
+        old_status = contract.status
         contract.status = ContractStatus.CANCELLED
         await self.db.commit()
         await self.db.refresh(contract)
+
+        # Notify other party if it was already accepted
+        if old_status == ContractStatus.ACCEPTED or old_status == ContractStatus.IN_PROGRESS:
+            from app.services.notification import NotificationService
+            notification_service = NotificationService(self.db)
+            
+            other_party_id = contract.hauler_id if cancelled_by_id == contract.poster_id else contract.poster_id
+            if other_party_id:
+                await notification_service.create_notification(
+                    user_id=other_party_id,
+                    notification_type=NotificationType.CONTRACT_COMPLETED, # Use generic or create new type
+                    title="Contract Cancelled",
+                    message=f"Cargo contract #{contract.id} was cancelled by the other party.",
+                    link=f"/contracts/{contract.id}"
+                )
+
         return contract
 
     async def dispute_contract(self, contract: CargoContract) -> CargoContract:

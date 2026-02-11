@@ -30,6 +30,24 @@
             <span class="text-sc-grey/50 uppercase">Insurance</span>
             <span :class="ship.insurance_status === 'active' ? 'text-green-400' : 'text-yellow-500'">{{ ship.insurance_status || 'Unknown' }}</span>
           </div>
+          <div class="flex justify-between text-xs items-center">
+            <span class="text-sc-grey/50 uppercase">Status</span>
+            <select 
+              :value="ship.status" 
+              @change="updateShipStatus(ship, $event.target.value)"
+              class="bg-black/30 border border-sc-grey/30 rounded px-2 py-0.5 text-[10px] text-white focus:border-sc-blue focus:outline-none"
+              :class="{
+                'text-green-400': ship.status === 'ready',
+                'text-yellow-400': ship.status === 'damaged',
+                'text-red-400': ship.status === 'destroyed'
+              }"
+            >
+              <option value="ready">READY</option>
+              <option value="damaged">DAMAGED</option>
+              <option value="destroyed">DESTROYED</option>
+              <option value="stored">STORED</option>
+            </select>
+          </div>
           <div class="pt-2 border-t border-sc-grey/5 flex justify-end">
             <button class="text-[10px] text-sc-blue/70 hover:text-sc-blue uppercase font-bold tracking-widest">View Loadout</button>
           </div>
@@ -56,5 +74,13 @@ onMounted(() => {
 const handleAddShip = async (newShipData) => {
   await shipStore.addShip(newShipData);
   showAddModal.value = false;
+};
+
+const updateShipStatus = async (ship, newStatus) => {
+  try {
+    await shipStore.updateShip(ship.id, { status: newStatus });
+  } catch (e) {
+    console.error('Failed to update ship status', e);
+  }
 };
 </script>

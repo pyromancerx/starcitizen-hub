@@ -115,6 +115,7 @@ app.include_router(operation_router)
 app.include_router(role_router)
 app.include_router(audit_router) # NEW: Include the audit_router
 app.include_router(stats_router)
+app.include_router(search_router)
 
 # Web routes (templates)
 app.include_router(web_router)

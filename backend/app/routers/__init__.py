@@ -27,6 +27,7 @@ from app.routers.operation import router as operation_router
 from app.routers.role import router as role_router
 from app.routers.audit import router as audit_router
 from app.routers.stats import router as stats_router
+from app.routers.search import router as search_router
 
 __all__ = [
     "auth_router",
@@ -57,4 +58,5 @@ __all__ = [
     "role_router",
     "audit_router",
     "stats_router",
+    "search_router",
 ]

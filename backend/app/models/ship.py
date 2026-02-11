@@ -21,6 +21,7 @@ class Ship(Base):
 
     loadout: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="ready", server_default="ready")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)

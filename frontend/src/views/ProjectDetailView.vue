@@ -9,6 +9,17 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
       </button>
       <h2 class="text-2xl font-bold text-white tracking-wide uppercase italic">{{ projectStore.selectedProject.title }}</h2>
+      <div v-if="projectStore.selectedProject.status === 'completed'" class="px-2 py-0.5 bg-green-500/20 text-green-500 border border-green-500/30 rounded text-[10px] font-black uppercase tracking-widest">Completed</div>
+      
+      <div class="flex-1"></div>
+      
+      <button 
+        v-if="projectStore.selectedProject.status !== 'completed' && isManager" 
+        @click="handleCompleteProject"
+        class="px-4 py-2 bg-green-500/10 border border-green-500 text-green-500 text-xs font-bold uppercase tracking-widest hover:bg-green-500/20 transition-all"
+      >
+        Mark as Completed
+      </button>
     </div>
 
     <!-- Project Meta -->
@@ -157,9 +168,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useProjectStore } from '../stores/project';
+import { useAuthStore } from '../stores/auth';
 import AddPhaseModal from '../components/AddPhaseModal.vue';
 import EditPhaseModal from '../components/EditPhaseModal.vue';
 import AddTaskModal from '../components/AddTaskModal.vue';
@@ -171,6 +183,21 @@ import EditContributionModal from '../components/EditContributionModal.vue';
 
 const route = useRoute();
 const projectStore = useProjectStore();
+const authStore = useAuthStore();
+
+const isManager = computed(() => {
+  return projectStore.selectedProject?.manager_id === authStore.user?.id;
+});
+
+const handleCompleteProject = async () => {
+  if (confirm('Are you sure you want to mark this project as completed? This will archive the operational phases.')) {
+    try {
+      await projectStore.completeProject(projectStore.selectedProject.id);
+    } catch (err) {
+      alert(err.message || 'Failed to complete project');
+    }
+  }
+};
 
 const showAddPhaseModal = ref(false);
 const showEditPhaseModal = ref(false);

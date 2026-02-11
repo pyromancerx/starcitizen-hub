@@ -79,12 +79,41 @@
            <span class="text-xl font-bold text-sc-blue uppercase">{{ themeStore.settings.org_name }}</span>
         </div>
         
-        <div class="hidden md:flex items-center space-x-2 text-sc-grey/30 text-[10px] font-bold uppercase tracking-widest">
-          <span class="text-sc-blue">System</span>
-          <span class="h-1 w-1 rounded-full bg-sc-grey/30"></span>
-          <span>Stanton</span>
-          <span class="h-1 w-1 rounded-full bg-sc-grey/30"></span>
-          <span>Online</span>
+        <div class="hidden md:flex items-center flex-1 max-w-md mx-8 relative">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="h-4 w-4 text-sc-grey/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <input 
+            v-model="searchQuery" 
+            @input="handleSearch"
+            @focus="showSearchResults = true"
+            @blur="setTimeout(() => showSearchResults = false, 200)"
+            type="text" 
+            placeholder="Search Hub..." 
+            class="bg-sc-dark/50 border border-sc-grey/10 rounded w-full py-1.5 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all placeholder-sc-grey/20"
+          />
+          
+          <!-- Search Results Dropdown -->
+          <div v-if="showSearchResults && (hasResults || isSearching)" class="absolute top-full left-0 right-0 mt-2 bg-sc-panel border border-sc-blue/20 rounded shadow-2xl z-50 max-h-96 overflow-y-auto custom-scrollbar">
+            <div v-if="isSearching" class="p-4 text-center text-xs text-sc-grey/50 italic">Scanning database...</div>
+            <div v-else-if="!hasResults" class="p-4 text-center text-xs text-sc-grey/50">No signals found.</div>
+            <div v-else class="py-2">
+              <div v-for="(group, type) in searchResults" :key="type">
+                <div v-if="group.length > 0">
+                  <div class="px-4 py-1 text-[8px] font-black text-sc-blue uppercase tracking-widest bg-sc-blue/5">{{ type }}</div>
+                  <router-link 
+                    v-for="item in group" 
+                    :key="item.id" 
+                    :to="item.link"
+                    class="block px-4 py-2 hover:bg-white/5 transition-colors group"
+                  >
+                    <div class="text-xs font-bold text-white group-hover:text-sc-blue">{{ item.title }}</div>
+                    <div v-if="item.subtitle" class="text-[10px] text-sc-grey/40">{{ item.subtitle }}</div>
+                  </router-link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
          <div class="flex items-center space-x-6 ml-auto">
@@ -115,7 +144,8 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import api from '../services/api';
 import { useAuthStore } from '../stores/auth';
 import { useThemeStore } from '../stores/theme';
 import { useMessageStore } from '../stores/message';
@@ -128,6 +158,41 @@ const messageStore = useMessageStore();
 
 const messageUnreadCount = ref(0);
 let messagePolling = null;
+
+const searchQuery = ref('');
+const isSearching = ref(false);
+const showSearchResults = ref(false);
+const searchResults = ref({
+  members: [],
+  ships: [],
+  projects: [],
+  threads: []
+});
+
+const hasResults = computed(() => {
+  return Object.values(searchResults.value).some(group => group.length > 0);
+});
+
+let searchTimeout = null;
+const handleSearch = () => {
+  if (searchQuery.value.length < 2) {
+    searchResults.value = { members: [], ships: [], projects: [], threads: [] };
+    return;
+  }
+
+  clearTimeout(searchTimeout);
+  isSearching.value = true;
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await api.get('/search', { params: { q: searchQuery.value } });
+      searchResults.value = res.data;
+    } catch (e) {
+      console.error('Search failed', e);
+    } finally {
+      isSearching.value = false;
+    }
+  }, 300);
+};
 
 onMounted(() => {
   // Fetch initial unread count

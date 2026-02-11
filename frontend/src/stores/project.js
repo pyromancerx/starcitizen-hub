@@ -82,6 +82,26 @@ export const useProjectStore = defineStore('project', {
         this.isLoading = false;
       }
     },
+    async completeProject(projectId) {
+      this.isLoading = true;
+      try {
+        const updatedProject = await ProjectService.completeProject(projectId);
+        const index = this.projects.findIndex(p => p.id === projectId);
+        if (index !== -1) {
+          this.projects[index] = updatedProject;
+        }
+        if (this.selectedProject?.id === projectId) {
+          this.selectedProject = updatedProject;
+        }
+        return updatedProject;
+      } catch (error) {
+        this.error = error;
+        console.error(`Failed to complete project ${projectId}:`, error);
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
     // --- Phases ---
     async createPhase(projectId, phaseData) {
