@@ -19,6 +19,7 @@ from app.schemas.discord import (
     DiscordCallbackRequest,
     DiscordTestWebhookRequest,
     AutoPostSettingsUpdate,
+    DiscordRoleMappingUpdate, # NEW
 )
 from app.services.discord import DiscordService
 
@@ -332,6 +333,33 @@ async def list_role_mappings(
         select(DiscordRoleMapping).where(DiscordRoleMapping.is_active == True)
     )
     return list(result.scalars().all())
+
+@router.put("/role-mappings/{mapping_id}", response_model=DiscordRoleMappingResponse)
+async def update_role_mapping(
+    mapping_id: int,
+    data: DiscordRoleMappingUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("admin.manage_roles"))],
+):
+    """Update a Discord role mapping (admin only)."""
+    service = DiscordService(db)
+    updated_mapping = await service.update_role_mapping(mapping_id, data)
+    if not updated_mapping:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role mapping not found")
+    return updated_mapping
+
+@router.delete("/role-mappings/{mapping_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_role_mapping(
+    mapping_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(require_permission("admin.manage_roles"))],
+):
+    """Delete a Discord role mapping (admin only)."""
+    service = DiscordService(db)
+    success = await service.delete_role_mapping(mapping_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role mapping not found")
+    return
 
 
 @router.post("/sync-roles/{user_id}")

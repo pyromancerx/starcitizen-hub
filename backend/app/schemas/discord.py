@@ -81,11 +81,41 @@ class DiscordRoleMappingBase(BaseModel):
 
 
 class DiscordRoleMappingCreate(DiscordRoleMappingBase):
+
+
     pass
 
 
+
+
+
+class DiscordRoleMappingUpdate(BaseModel):
+
+
+    hub_role_id: Optional[int] = None
+
+
+    discord_role_id: Optional[str] = Field(None, max_length=30)
+
+
+    discord_role_name: Optional[str] = Field(None, max_length=100)
+
+
+    sync_direction: Optional[str] = None
+
+
+    is_active: Optional[bool] = None
+
+
+
+
+
 class DiscordRoleMappingResponse(DiscordRoleMappingBase):
+
+
     id: int
+
+
     is_active: bool
     created_at: datetime
 

@@ -30,6 +30,13 @@ import RSIAdminView from '../views/RSIAdminView.vue';
 import ProfileView from '../views/ProfileView.vue';
 import TreasuryView from '../views/TreasuryView.vue';
 import PrivacyView from '../views/PrivacyView.vue';
+import AnnouncementAdminView from '../views/AnnouncementAdminView.vue';
+import AdminPersonnelView from '../views/AdminPersonnelView.vue';
+import AdminThemeView from '../views/AdminThemeView.vue';
+import OperationsView from '../views/OperationsView.vue';
+import OperationDetailView from '../views/OperationDetailView.vue';
+import OperationCreateEditView from '../views/OperationCreateEditView.vue';
+import AdminDiscordSettingsView from '../views/AdminDiscordSettingsView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -111,69 +118,65 @@ const router = createRouter({
           component: MembersView,
         },
         {
+          path: 'operations',
+          name: 'operations',
+          component: OperationsView,
+        },
+        {
+          path: 'operations/new',
+          name: 'operation-create',
+          component: OperationCreateEditView,
+        },
+        {
+          path: 'operations/:id',
+          name: 'operation-detail',
+          component: OperationDetailView,
+        },
+        {
+          path: 'operations/:id/edit',
+          name: 'operation-edit',
+          component: OperationCreateEditView,
+        },
+        {
           path: 'federation',
           name: 'federation',
           component: FederationView,
         },
         {
           path: 'admin',
-          name: 'admin',
           component: AdminView,
-        },
-        {
-          path: 'trade-runs',
-          name: 'trade-runs',
-          component: TradeView,
-        },
-        {
-          path: 'prices',
-          name: 'price-database',
-          component: PriceDatabaseView,
-        },
-        {
-          path: 'contracts',
-          name: 'cargo-contracts',
-          component: CargoContractsView,
-        },
-        {
-          path: 'crew-finder',
-          name: 'crew-finder',
-          component: CrewFinderView,
-        },
-        {
-          path: 'availability',
-          name: 'availability',
-          component: AvailabilityView,
-        },
-        {
-          path: 'crew-loadouts',
-          name: 'crew-loadouts',
-          component: CrewLoadoutsView,
-        },
-        {
-          path: 'notifications',
-          name: 'notifications',
-          component: NotificationsView,
-        },
-        {
-          path: 'achievements',
-          name: 'achievements',
-          component: AchievementsView,
-        },
-        {
-          path: 'messages',
-          name: 'messages',
-          component: MessagesView,
-        },
-        {
-          path: 'messages/:id',
-          name: 'conversation',
-          component: MessagesView,
-        },
-        {
-          path: 'admin/rsi-verification',
-          name: 'rsi-admin',
-          component: RSIAdminView,
+          children: [
+            {
+              path: '',
+              name: 'admin', // Keep the 'admin' name for the parent route if needed for navigation to the parent itself
+              redirect: { name: 'admin-personnel' } // Redirect to personnel by default
+            },
+            {
+              path: 'personnel',
+              name: 'admin-personnel',
+              component: AdminPersonnelView
+            },
+            {
+              path: 'theme',
+              name: 'admin-theme',
+              component: AdminThemeView
+            },
+            {
+              path: 'rsi-verification',
+              name: 'rsi-admin',
+              component: RSIAdminView,
+            },
+            {
+              path: 'announcements',
+              name: 'admin-announcements',
+              component: AnnouncementAdminView,
+            },
+            {
+              path: 'discord-settings',
+              name: 'admin-discord-settings',
+              component: AdminDiscordSettingsView,
+            },
+          ]
         },
         {
           path: 'profile',

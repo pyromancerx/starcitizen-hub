@@ -71,6 +71,23 @@ class OperationService:
         await self.db.flush()
         return participant
 
+    async def cancel_signup(self, operation_id: int, user_id: int):
+        """Cancel signup for an operation."""
+        await self.db.execute(
+            delete(OperationParticipant).where(
+                OperationParticipant.operation_id == operation_id,
+                OperationParticipant.user_id == user_id
+            )
+        )
+        await self.db.flush()
+
+    async def delete_operation(self, operation_id: int):
+        """Delete an operation."""
+        await self.db.execute(
+            delete(Operation).where(Operation.id == operation_id)
+        )
+        await self.db.flush()
+
     async def get_user_upcoming_operations(self, user_id: int, limit: int = 3) -> List[Operation]:
         """Get upcoming operations for a user."""
         query = (

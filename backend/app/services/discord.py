@@ -404,3 +404,35 @@ class DiscordService:
         except Exception as e:
             print(f"Error adding user to guild: {e}")
             return False
+
+    async def get_role_mapping(self, mapping_id: int) -> Optional[DiscordRoleMapping]:
+        """Get a single Discord role mapping by ID."""
+        result = await self.db.execute(
+            select(DiscordRoleMapping).where(DiscordRoleMapping.id == mapping_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def update_role_mapping(
+        self, mapping_id: int, data: "DiscordRoleMappingUpdate"
+    ) -> Optional[DiscordRoleMapping]:
+        """Update an existing Discord role mapping."""
+        mapping = await self.get_role_mapping(mapping_id)
+        if not mapping:
+            return None
+
+        update_data = data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(mapping, key, value)
+        
+        await self.db.commit()
+        await self.db.refresh(mapping)
+        return mapping
+
+    async def delete_role_mapping(self, mapping_id: int) -> bool:
+        """Delete a Discord role mapping."""
+        mapping = await self.get_role_mapping(mapping_id)
+        if mapping:
+            await self.db.delete(mapping)
+            await self.db.commit()
+            return True
+        return False

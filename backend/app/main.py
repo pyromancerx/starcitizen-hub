@@ -28,7 +28,9 @@ from app.routers import (
     rsi_router,
     treasury_router,
     privacy_router,
-    user_profile_router, # NEW
+    user_profile_router,
+    operation_router, # NEW
+    role_router, # NEW
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router
@@ -106,7 +108,9 @@ app.include_router(discord_router)
 app.include_router(rsi_router)
 app.include_router(treasury_router)
 app.include_router(privacy_router)
-app.include_router(user_profile_router) # NEW: Include the user_profile_router
+app.include_router(user_profile_router)
+app.include_router(operation_router)
+app.include_router(role_router) # NEW: Include the role_router
 
 # Web routes (templates)
 app.include_router(web_router)

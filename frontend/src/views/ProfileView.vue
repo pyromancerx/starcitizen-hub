@@ -5,6 +5,9 @@
     <!-- RSI Verification Section -->
     <RSIVerification />
 
+    <!-- Discord Account Link Section -->
+    <DiscordAccountLink class="mt-6" />
+
     <!-- Profile Settings -->
     <div class="bg-sc-panel border border-sc-blue/30 rounded-lg p-6 mt-6">
       <h2 class="text-xl font-bold text-sc-light-blue mb-4">Profile Settings</h2>
@@ -38,6 +41,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import RSIVerification from '../components/RSIVerification.vue';
+import DiscordAccountLink from '../components/DiscordAccountLink.vue';
 import { useAuthStore } from '../stores/auth'; // NEW
 
 const authStore = useAuthStore(); // NEW

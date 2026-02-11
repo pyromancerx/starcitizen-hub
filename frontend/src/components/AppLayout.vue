@@ -20,7 +20,8 @@
         <div class="pt-4 pb-2">
           <span class="text-[10px] font-black text-sc-grey/30 uppercase px-4 tracking-widest">Social</span>
         </div>
-        <router-link to="/events" class="nav-link" active-class="active">Operations</router-link>
+        <router-link to="/operations" class="nav-link" active-class="active">Operations</router-link>
+        <router-link to="/events" class="nav-link" active-class="active">Events</router-link>
         <router-link to="/forum" class="nav-link" active-class="active">Spectrum Forum</router-link>
         <router-link to="/members" class="nav-link" active-class="active">Personnel</router-link>
         <router-link to="/messages" class="nav-link" active-class="active">
