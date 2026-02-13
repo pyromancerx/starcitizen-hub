@@ -86,7 +86,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-sc-panel border-r border-sc-grey/10 flex-shrink-0 hidden md:flex flex-col h-screen sticky top-0">
+    <aside className="w-64 bg-sc-panel border-r border-sc-grey/10 flex-shrink-0 flex flex-col h-screen sticky top-0">
       <div className="p-6 border-b border-sc-grey/10 flex items-center space-x-3">
         {settings.logo_url && (
           <img src={settings.logo_url} className="h-8 w-8 object-contain" alt="Org Logo" />
@@ -103,7 +103,9 @@ const Sidebar = () => {
               {group.label}
             </h3>
             {group.items.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = item.href === '/' 
+                ? pathname === '/' || pathname === ''
+                : pathname?.startsWith(item.href);
               return (
                 <Link
                   key={item.name}

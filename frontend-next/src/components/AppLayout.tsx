@@ -26,15 +26,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     start();
   }, []);
 
+  const isAuthPage = pathname?.startsWith('/login') || pathname?.startsWith('/register');
+
   useEffect(() => {
     if (!isMounting && isInitialized) {
-      if (!isAuthenticated && pathname !== '/login' && pathname !== '/register') {
+      if (!isAuthenticated && !isAuthPage) {
         router.push('/login');
-      } else if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
+      } else if (isAuthenticated && isAuthPage) {
         router.push('/');
       }
     }
-  }, [isAuthenticated, isInitialized, pathname, isMounting]);
+  }, [isAuthenticated, isInitialized, pathname, isMounting, isAuthPage]);
 
   // Loading Screen
   if (isMounting || !isInitialized) {
@@ -54,10 +56,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isAuthPage = pathname === '/login' || pathname === '/register';
-
   if (!isAuthenticated && !isAuthPage) {
-    return null; // Redirecting...
+    return (
+      <div className="min-h-screen bg-sc-dark flex items-center justify-center">
+        <div className="text-sc-blue font-mono text-xs animate-pulse uppercase tracking-widest text-center space-y-4">
+          <div className="text-sm">Unauthorized Signal Access</div>
+          <div className="opacity-50">Redirecting to Secure Uplink...</div>
+        </div>
+      </div>
+    );
   }
 
   if (isAuthPage) {
