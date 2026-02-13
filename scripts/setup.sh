@@ -113,7 +113,7 @@ cat > "$APP_DIR/.env" << EOF
 # Generated on $(date)
 
 # Database
-DATABASE_URL=backend/data/hub.db
+DATABASE_URL=../data/hub.db
 
 # Security - DO NOT SHARE THIS KEY
 SECRET_KEY=$SECRET_KEY

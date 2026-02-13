@@ -128,7 +128,7 @@ else
     fi
 fi
 
-mkdir -p "$APP_DIR/backend/data"
+mkdir -p "$APP_DIR/data"
 mkdir -p "$APP_DIR/logs"
 
 # Set ownership
@@ -155,7 +155,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/opt/starcitizen-hub/data /opt/starcitizen-hub/logs
+ReadWritePaths=/opt/starcitizen-hub/data /opt/starcitizen-hub/logs /opt/starcitizen-hub/.env
 
 [Install]
 WantedBy=multi-user.target
