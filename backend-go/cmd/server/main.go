@@ -190,6 +190,15 @@ func main() {
 	socialHandler := handlers.NewSocialHandler()
 	adminHandler := handlers.NewAdminHandler()
 
+	// Static files for uploads
+	uploadDir := "../uploads"
+	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
+		os.Mkdir(uploadDir, 0755)
+	}
+	
+	fileServer := http.FileServer(http.Dir(uploadDir))
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", fileServer))
+
 	// Routes
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/auth/login", authHandler.Login)
@@ -245,9 +254,11 @@ func main() {
 
 			// Admin & Integrations
 			r.Get("/admin/users", adminHandler.ListUsers)
+			r.Post("/admin/users", adminHandler.CreateUser)
 			r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
 			r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
 			r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
+			r.Post("/admin/upload-logo", adminHandler.UploadLogo)
 			r.Get("/admin/settings", adminHandler.GetSettings)
 			r.Patch("/admin/settings", adminHandler.UpdateSetting)
 			r.Get("/discord/config", adminHandler.GetDiscordConfig)

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -9,18 +9,45 @@ import {
   ShieldAlert,
   UserX,
   CheckCircle2,
-  Clock
+  Clock,
+  UserPlus,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AdminPersonnelPage() {
   const queryClient = useQueryClient();
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUser, setNewUser] = useState({
+    email: '',
+    password: '',
+    display_name: '',
+    rsi_handle: '',
+    is_admin: false
+  });
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
       const res = await api.get('/admin/users');
       return res.data;
+    },
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      return api.post('/admin/users', userData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowAddModal(false);
+      setNewUser({
+        email: '',
+        password: '',
+        display_name: '',
+        rsi_handle: '',
+        is_admin: false
+      });
     },
   });
 
@@ -37,18 +64,115 @@ export default function AdminPersonnelPage() {
 
   return (
     <section className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden">
-          <div className="text-[10px] text-sc-grey/40 uppercase font-black tracking-widest mb-1">Total Personnel</div>
-          <div className="text-3xl font-bold text-white font-mono">{users?.length || 0}</div>
-          <Users className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-white opacity-5" />
+      <div className="flex justify-between items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 max-w-2xl">
+          <div className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden">
+            <div className="text-[10px] text-sc-grey/40 uppercase font-black tracking-widest mb-1">Total Personnel</div>
+            <div className="text-3xl font-bold text-white font-mono">{users?.length || 0}</div>
+            <Users className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-white opacity-5" />
+          </div>
+          <div className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden">
+            <div className="text-[10px] text-yellow-500/50 uppercase font-black tracking-widest mb-1">Pending Authorization</div>
+            <div className="text-3xl font-bold text-yellow-500 font-mono">{pendingCount}</div>
+            <ShieldAlert className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-yellow-500 opacity-10" />
+          </div>
         </div>
-        <div className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden">
-          <div className="text-[10px] text-yellow-500/50 uppercase font-black tracking-widest mb-1">Pending Authorization</div>
-          <div className="text-3xl font-bold text-yellow-500 font-mono">{pendingCount}</div>
-          <ShieldAlert className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-yellow-500 opacity-10" />
-        </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="px-6 py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)] flex items-center"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Add Citizen
+        </button>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowAddModal(false)}></div>
+          <div className="relative bg-sc-panel border border-sc-blue/30 rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-sc-grey/10 flex justify-between items-center bg-black/20">
+              <h3 className="text-sm font-black text-sc-blue uppercase tracking-[0.2em] flex items-center">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Initialize New Record
+              </h3>
+              <button onClick={() => setShowAddModal(false)} className="text-sc-grey hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                createUserMutation.mutate(newUser);
+              }}
+              className="p-6 space-y-4"
+            >
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Email Address</label>
+                <input 
+                  type="email" required
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all"
+                  placeholder="citizen@uee.navy"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Security Key (Password)</label>
+                <input 
+                  type="password" required
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Callsign</label>
+                  <input 
+                    type="text" required
+                    value={newUser.display_name}
+                    onChange={(e) => setNewUser({...newUser, display_name: e.target.value})}
+                    className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all"
+                    placeholder="Maverick"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">RSI Handle</label>
+                  <input 
+                    type="text" required
+                    value={newUser.rsi_handle}
+                    onChange={(e) => setNewUser({...newUser, rsi_handle: e.target.value})}
+                    className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all"
+                    placeholder="ADMIN_CORE"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 pt-2">
+                <input 
+                  type="checkbox"
+                  id="isAdmin"
+                  checked={newUser.is_admin}
+                  onChange={(e) => setNewUser({...newUser, is_admin: e.target.checked})}
+                  className="w-4 h-4 bg-sc-dark border-sc-grey/20 text-sc-blue rounded focus:ring-0 focus:ring-offset-0"
+                />
+                <label htmlFor="isAdmin" className="text-[10px] font-black text-sc-grey uppercase tracking-widest cursor-pointer">
+                  Grant Command Authority (Admin)
+                </label>
+              </div>
+              <div className="pt-4">
+                <button 
+                  type="submit"
+                  disabled={createUserMutation.isPending}
+                  className="w-full py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)] disabled:opacity-50"
+                >
+                  {createUserMutation.isPending ? 'Writing Record...' : 'Finalize Record Creation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden shadow-2xl">
         <table className="w-full text-left border-collapse">

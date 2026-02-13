@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useRouter, usePathname } from 'next/navigation';
 import { Rocket } from 'lucide-react';
+import LoginPage from '@/app/login/page';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialized, initialize } = useAuthStore();
@@ -30,15 +31,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isMounting && isInitialized) {
-      if (!isAuthenticated && !isAuthPage) {
-        router.push('/login');
-      } else if (isAuthenticated && isAuthPage) {
+      if (isAuthenticated && isAuthPage) {
         router.push('/');
       }
     }
   }, [isAuthenticated, isInitialized, pathname, isMounting, isAuthPage]);
 
-  // Loading Screen
+  // 1. Initial Loading State
   if (isMounting || !isInitialized) {
     return (
       <div className="min-h-screen bg-sc-dark flex flex-col items-center justify-center text-sc-blue">
@@ -56,21 +55,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated && !isAuthPage) {
-    return (
-      <div className="min-h-screen bg-sc-dark flex items-center justify-center">
-        <div className="text-sc-blue font-mono text-xs animate-pulse uppercase tracking-widest text-center space-y-4">
-          <div className="text-sm">Unauthorized Signal Access</div>
-          <div className="opacity-50">Redirecting to Secure Uplink...</div>
-        </div>
-      </div>
-    );
+  // 2. Not Authenticated logic
+  if (!isAuthenticated) {
+    // If they are on register, show register
+    if (pathname?.startsWith('/register')) {
+      return <>{children}</>;
+    }
+    // For ALL other pages, if not authenticated, show Login page directly
+    return <LoginPage />;
   }
 
+  // 3. Authenticated logic
+  // If authenticated but on an auth page, we are redirecting (handled in useEffect), 
+  // but show nothing or loading to prevent flicker
   if (isAuthPage) {
-    return <>{children}</>;
+    return null;
   }
 
+  // Standard Layout for Authenticated Users
   return (
     <div className="min-h-screen bg-sc-dark text-white flex">
       <Sidebar />

@@ -15,9 +15,10 @@ interface ThemeState {
   settings: ThemeSettings;
   fetchTheme: () => Promise<void>;
   updateTheme: (newSettings: Partial<ThemeSettings>) => Promise<void>;
+  uploadLogo: (file: File) => Promise<string>;
 }
 
-export const useThemeStore = create<ThemeState>((set) => ({
+export const useThemeStore = create<ThemeState>((set, get) => ({
   settings: {
     color_sc_dark: '#0b0c10',
     color_sc_panel: '#1f2833',
@@ -31,11 +32,6 @@ export const useThemeStore = create<ThemeState>((set) => ({
   fetchTheme: async () => {
     try {
       const response = await api.get('/admin/settings');
-      // Map settings list to object if backend returns list, or use direct if object
-      // For now assuming Go backend might return a key-value structure for some settings
-      // or we can just fetch what we need.
-      // Based on previous checks, /admin/settings returns a list of SystemSetting objects.
-      
       const settingsList = response.data;
       const mapped: any = {};
       if (Array.isArray(settingsList)) {
@@ -48,18 +44,58 @@ export const useThemeStore = create<ThemeState>((set) => ({
         settings: {
           ...state.settings,
           ...mapped,
-          // Overwrite with specifically named fields if they exist in mapped
-          org_name: mapped.org_name || state.settings.org_name,
-          logo_url: mapped.logo_url || state.settings.logo_url,
         }
       }));
+
+      // Apply colors to CSS variables
+      if (typeof document !== 'undefined') {
+        const root = document.documentElement;
+        Object.entries(mapped).forEach(([key, value]) => {
+          if (key.startsWith('color_sc_') && typeof value === 'string') {
+            const varName = `--${key.replace(/_/g, '-')}-rgb`;
+            // Convert hex to space-separated RGB for Tailwind v4 support
+            const rgb = hexToRgb(value);
+            if (rgb) {
+              root.style.setProperty(varName, `${rgb.r} ${rgb.g} ${rgb.b}`);
+            }
+          }
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch theme settings:', error);
     }
   },
 
   updateTheme: async (newSettings) => {
-    // Implementation for updating settings via API
-    set((state) => ({ settings: { ...state.settings, ...newSettings } }));
+    try {
+      // For each changed setting, send update to backend
+      for (const [key, value] of Object.entries(newSettings)) {
+        await api.patch('/admin/settings', { key, value });
+      }
+      await get().fetchTheme();
+    } catch (error) {
+      console.error('Failed to update theme:', error);
+      throw error;
+    }
+  },
+
+  uploadLogo: async (file: File) => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await api.post('/admin/upload-logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    const logoUrl = response.data.logo_url;
+    set((state) => ({ settings: { ...state.settings, logo_url: logoUrl } }));
+    return logoUrl;
   },
 }));
+
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}

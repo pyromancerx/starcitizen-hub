@@ -10,6 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const tabs = [
     { name: 'Personnel', href: '/admin/personnel' },
+    { name: 'System Theme', href: '/admin/theme' },
     { name: 'RSI Verification', href: '/admin/rsi' },
     { name: 'Announcements', href: '/admin/announcements' },
     { name: 'Discord Settings', href: '/admin/discord' },

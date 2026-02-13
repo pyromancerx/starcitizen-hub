@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,35 @@ func (s *AdminService) ListUsers() ([]models.User, error) {
 	var users []models.User
 	err := s.db.Preload("Roles").Find(&users).Error
 	return users, err
+}
+
+func (s *AdminService) CreateUser(email string, password string, displayName string, rsiHandle string, isAdmin bool) (*models.User, error) {
+	hashedPassword, err := utils.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
+	user := models.User{
+		Email:        email,
+		PasswordHash: hashedPassword,
+		DisplayName:  displayName,
+		RSIHandle:    rsiHandle,
+		IsActive:     true,
+		IsApproved:   true,
+	}
+
+	if err := s.db.Create(&user).Error; err != nil {
+		return nil, err
+	}
+
+	if isAdmin {
+		var adminRole models.Role
+		if err := s.db.Where("name = ?", "Admin").First(&adminRole).Error; err == nil {
+			s.db.Model(&user).Association("Roles").Append(&adminRole)
+		}
+	}
+
+	return &user, nil
 }
 
 func (s *AdminService) UpdateUserStatus(userID uint, isActive bool, isApproved bool) error {

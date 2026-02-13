@@ -2,8 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
@@ -18,6 +22,52 @@ func NewAdminHandler() *AdminHandler {
 	return &AdminHandler{
 		adminService: services.NewAdminService(),
 	}
+}
+
+func (h *AdminHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
+	// Parse multipart form
+	if err := r.ParseMultipartForm(10 << 20); err != nil { // 10MB limit
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("logo")
+	if err != nil {
+		http.Error(w, "Failed to get file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Create uploads directory if not exists
+	uploadDir := "../uploads"
+	os.MkdirAll(uploadDir, 0755)
+
+	// Save file with timestamp to avoid collisions
+	filename := strconv.FormatInt(time.Now().Unix(), 10) + "_" + header.Filename
+	savePath := filepath.Join(uploadDir, filename)
+
+	out, err := os.Create(savePath)
+	if err != nil {
+		http.Error(w, "Failed to save file", http.StatusInternalServerError)
+		return
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, file); err != nil {
+		http.Error(w, "Failed to copy file", http.StatusInternalServerError)
+		return
+	}
+
+	// Update setting
+	logoURL := "/uploads/" + filename
+	err = h.adminService.UpdateSetting("logo_url", logoURL)
+	if err != nil {
+		http.Error(w, "Failed to update setting", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"logo_url": logoURL})
 }
 
 func (h *AdminHandler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +90,30 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		DisplayName string `json:"display_name"`
+		RSIHandle   string `json:"rsi_handle"`
+		IsAdmin     bool   `json:"is_admin"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.adminService.CreateUser(req.Email, req.Password, req.DisplayName, req.RSIHandle, req.IsAdmin)
+	if err != nil {
+		http.Error(w, "Failed to create user: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(user)
 }
 
 func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
