@@ -14,6 +14,8 @@ class Wallet(Base):
     balance_auec: Mapped[int] = mapped_column(Integer, default=0)
     last_updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    user: Mapped["User"] = relationship(back_populates="wallet")
+
 
 class WalletTransaction(Base):
     __tablename__ = "wallet_transactions"

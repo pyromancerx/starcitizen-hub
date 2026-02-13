@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from app.models.discord import UserDiscordLink
     from app.models.rsi import RSIVerificationRequest
     from app.models.privacy import UserPrivacy
+    from app.models.trade import CargoContract
+    from app.models.ship import Ship
+    from app.models.wallet import Wallet
 
 
 class User(Base):
@@ -69,6 +72,32 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     privacy: Mapped[Optional["UserPrivacy"]] = relationship(
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+
+    # Cargo Contracts
+    posted_contracts: Mapped[list["CargoContract"]] = relationship(
+        "CargoContract",
+        back_populates="poster",
+        foreign_keys="CargoContract.poster_id",
+        cascade="all, delete-orphan"
+    )
+    accepted_contracts: Mapped[list["CargoContract"]] = relationship(
+        "CargoContract",
+        back_populates="hauler",
+        foreign_keys="CargoContract.hauler_id"
+    )
+
+    # Other assets
+    ships: Mapped[list["Ship"]] = relationship(
+        "Ship",
+        backref="user",
+        cascade="all, delete-orphan"
+    )
+    wallet: Mapped[Optional["Wallet"]] = relationship(
+        "Wallet",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan"

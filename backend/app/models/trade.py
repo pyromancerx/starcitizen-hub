@@ -64,8 +64,8 @@ class CargoContract(Base):
     __tablename__ = "cargo_contracts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    poster_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), related_name="posted_contracts")
-    hauler_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, related_name="accepted_contracts")
+    poster_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    hauler_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     origin_location: Mapped[str] = mapped_column(String(200))
     destination_location: Mapped[str] = mapped_column(String(200))

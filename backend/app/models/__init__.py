@@ -44,7 +44,6 @@ from app.models.discord import (
 )
 from app.models.rsi import RSIVerificationRequest, VerificationStatus
 from app.models.privacy import UserPrivacy
-from app.models.treasury import OrgTreasury, TreasuryTransaction
 
 __all__ = [
     "User", "Role", "UserRole", "RoleTier",
@@ -71,5 +70,4 @@ __all__ = [
     "DiscordIntegration", "DiscordWebhook", "UserDiscordLink", "DiscordRoleMapping",
     "RSIVerificationRequest", "VerificationStatus",
     "UserPrivacy",
-    "OrgTreasury", "TreasuryTransaction",
 ]

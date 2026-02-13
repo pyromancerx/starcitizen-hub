@@ -35,6 +35,9 @@ from app.schemas.event import (
     EventCreate, EventUpdate, EventResponse, EventDetail,
     EventSignupCreate, EventSignupUpdate, EventSignupResponse,
 )
+from app.schemas.operation import (
+    OperationCreate, OperationUpdate, OperationResponse, ParticipantResponse
+)
 from app.schemas.project import (
     ProjectCreate, ProjectUpdate, ProjectResponse, ProjectDetail,
     ProjectPhaseCreate, ProjectPhaseUpdate, ProjectPhaseResponse,
@@ -66,6 +69,7 @@ __all__ = [
     "ForumPostCreate", "ForumPostUpdate", "ForumPostResponse",
     "EventCreate", "EventUpdate", "EventResponse", "EventDetail",
     "EventSignupCreate", "EventSignupUpdate", "EventSignupResponse",
+    "OperationCreate", "OperationUpdate", "OperationResponse", "ParticipantResponse",
     "ProjectCreate", "ProjectUpdate", "ProjectResponse", "ProjectDetail",
     "ProjectPhaseCreate", "ProjectPhaseUpdate", "ProjectPhaseResponse",
     "TaskCreate", "TaskUpdate", "TaskResponse",
