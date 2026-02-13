@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -13,9 +14,18 @@ import (
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/handlers"
 	customMiddleware "github.com/pyromancerx/starcitizen-hub/backend-go/internal/middleware"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
 )
 
 func main() {
+	// Flags
+	createAdmin := flag.Bool("create-admin", false, "Create an admin user and exit")
+	adminEmail := flag.String("email", "", "Admin email")
+	adminPass := flag.String("password", "", "Admin password")
+	adminName := flag.String("name", "Administrator", "Admin display name")
+	adminHandle := flag.String("handle", "Admin", "Admin RSI handle")
+	flag.Parse()
+
 	// Load .env
 	godotenv.Load("../.env")
 
@@ -60,6 +70,42 @@ func main() {
 		&models.SystemSetting{},
 		&models.AuditLog{},
 	)
+
+	if *createAdmin {
+		if *adminEmail == "" || *adminPass == "" {
+			log.Fatal("Email and password are required for create-admin")
+		}
+
+		// Ensure Admin role exists
+		var adminRole models.Role
+		if err := database.DB.Where("name = ?", "Admin").First(&adminRole).Error; err != nil {
+			adminRole = models.Role{
+				Name:        "Admin",
+				Tier:        models.RoleTierAdmin,
+				Permissions: "[\"*\"]",
+				SortOrder:   100,
+			}
+			database.DB.Create(&adminRole)
+		}
+
+		hashedPassword, _ := utils.HashPassword(*adminPass)
+		user := models.User{
+			Email:        *adminEmail,
+			PasswordHash: hashedPassword,
+			DisplayName:  *adminName,
+			RSIHandle:    *adminHandle,
+			IsActive:     true,
+			IsApproved:   true,
+		}
+
+		if err := database.DB.Create(&user).Error; err != nil {
+			log.Fatalf("Failed to create admin user: %v", err)
+		}
+
+		database.DB.Model(&user).Association("Roles").Append(&adminRole)
+		log.Println("Admin user created successfully")
+		os.Exit(0)
+	}
 
 	r := chi.NewRouter()
 

@@ -134,6 +134,24 @@ log_info "Building backend..."
 cd "$APP_DIR/backend-go"
 go build -o server ./cmd/server/main.go
 
+# Create initial admin user
+echo ""
+echo -e "${CYAN}Creating Initial Admin User${NC}"
+read -p "Admin Email: " ADMIN_EMAIL
+read -s -p "Admin Password: " ADMIN_PASS
+echo ""
+read -p "Admin Display Name [Administrator]: " ADMIN_NAME
+ADMIN_NAME="${ADMIN_NAME:-Administrator}"
+read -p "Admin RSI Handle [Admin]: " ADMIN_HANDLE
+ADMIN_HANDLE="${ADMIN_HANDLE:-Admin}"
+
+if [[ -n "$ADMIN_EMAIL" ]] && [[ -n "$ADMIN_PASS" ]]; then
+    log_info "Creating admin user: $ADMIN_EMAIL"
+    ./server -create-admin -email "$ADMIN_EMAIL" -password "$ADMIN_PASS" -name "$ADMIN_NAME" -handle "$ADMIN_HANDLE"
+else
+    log_warn "Admin email or password empty. Skipping admin creation."
+fi
+
 log_info "Building frontend..."
 cd "$APP_DIR/frontend"
 npm install
