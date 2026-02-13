@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -12,11 +12,12 @@ import {
   MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-export default function ForumThreadPage() {
-  const { id } = useParams();
+function ThreadContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
 
   const { data: thread, isLoading } = useQuery({
     queryKey: ['forum-thread', id],
@@ -24,6 +25,7 @@ export default function ForumThreadPage() {
       const res = await api.get(`/forum/threads/${id}`);
       return res.data;
     },
+    enabled: !!id,
   });
 
   return (
@@ -125,5 +127,13 @@ export default function ForumThreadPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ForumThreadPage() {
+  return (
+    <Suspense fallback={<div>Loading signal...</div>}>
+      <ThreadContent />
+    </Suspense>
   );
 }

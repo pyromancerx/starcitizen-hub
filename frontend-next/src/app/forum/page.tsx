@@ -49,7 +49,7 @@ export default function ForumPage() {
           {categories?.map((cat: any) => (
             <Link 
               key={cat.id} 
-              href={`/forum/${cat.id}`}
+              href={`/forum/channel?id=${cat.id}`}
               className="bg-sc-panel border border-sc-grey/10 p-6 rounded group hover:border-sc-blue/30 transition-all duration-300 relative overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-1 h-full bg-sc-blue opacity-0 group-hover:opacity-100 transition-opacity"></div>

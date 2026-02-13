@@ -101,7 +101,7 @@ export default function OperationsPage() {
               {/* Actions */}
               <div className="p-6 bg-black/20 md:w-48 flex items-center justify-center">
                 <Link 
-                  href={`/operations/${op.id}`}
+                  href={`/operations/mission?id=${op.id}`}
                   className="w-full py-2.5 border border-sc-blue/30 text-sc-blue text-[10px] font-black uppercase tracking-[0.2em] rounded text-center hover:bg-sc-blue hover:text-sc-dark transition-all duration-300 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.05)]"
                 >
                   Mission Intel

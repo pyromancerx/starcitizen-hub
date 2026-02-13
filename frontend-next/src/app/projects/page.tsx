@@ -52,7 +52,7 @@ export default function ProjectsPage() {
           projects.map((project: any) => (
             <Link 
               key={project.id} 
-              href={`/projects/${project.id}`}
+              href={`/projects/objective?id=${project.id}`}
               className="bg-sc-panel border border-sc-grey/10 rounded-lg p-6 group hover:border-sc-blue/30 transition-all duration-300 relative overflow-hidden"
             >
               <div className="flex justify-between items-start mb-4">

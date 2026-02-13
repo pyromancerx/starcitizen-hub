@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -12,11 +12,12 @@ import {
   Pin
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-export default function ForumCategoryPage() {
-  const { id } = useParams();
+function CategoryContent() {
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
 
   const { data: category, isLoading } = useQuery({
     queryKey: ['forum-category', id],
@@ -24,6 +25,7 @@ export default function ForumCategoryPage() {
       const res = await api.get(`/forum/categories/${id}`);
       return res.data;
     },
+    enabled: !!id,
   });
 
   return (
@@ -56,14 +58,14 @@ export default function ForumCategoryPage() {
 
         <div className="divide-y divide-sc-grey/5">
           {isLoading ? (
-            <div className="p-12 text-center text-sc-grey/40 uppercase tracking-widest text-[10px] italic">
+            <div className="p-12 text-center text-sc-grey/40 uppercase tracking-widest text-[10px] font-mono animate-pulse">
               Synchronizing data packets...
             </div>
           ) : category?.threads?.length > 0 ? (
             category.threads.map((thread: any) => (
               <Link 
                 key={thread.id} 
-                href={`/forum/thread/${thread.id}`}
+                href={`/forum/topic?id=${thread.id}`}
                 className="p-4 flex justify-between items-center hover:bg-white/5 transition-colors group"
               >
                 <div className="flex items-start space-x-4">
@@ -104,5 +106,13 @@ export default function ForumCategoryPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ForumCategoryPage() {
+  return (
+    <Suspense fallback={<div>Loading signal...</div>}>
+      <CategoryContent />
+    </Suspense>
   );
 }
