@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-rajdhani);
+  --color-sc-dark: rgb(var(--color-sc-dark-rgb));
+  --color-sc-panel: rgb(var(--color-sc-panel-rgb));
+  --color-sc-blue: rgb(var(--color-sc-blue-rgb));
+  --color-sc-light-blue: rgb(var(--color-sc-light-blue-rgb));
+  --color-sc-grey: rgb(var(--color-sc-grey-rgb));
+
+  /* Alpha variants for Tailwind v4 */
+  --color-sc-dark-alpha: var(--color-sc-dark-rgb);
+  --color-sc-panel-alpha: var(--color-sc-panel-rgb);
+  --color-sc-blue-alpha: var(--color-sc-blue-rgb);
+  --color-sc-light-blue-alpha: var(--color-sc-light-blue-rgb);
+  --color-sc-grey-alpha: var(--color-sc-grey-rgb);
+}
+
+:root {
+  --color-sc-dark-rgb: 11 12 16;
+  --color-sc-panel-rgb: 31 40 51;
+  --color-sc-blue-rgb: 102 252 241;
+  --color-sc-light-blue-rgb: 69 162 158;
+  --color-sc-grey-rgb: 197 198 199;
+
+  --background: var(--color-sc-dark-rgb);
+  --foreground: 255 255 255;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--color-sc-blue-rgb), 0.2);
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--color-sc-blue-rgb), 0.4);
+}

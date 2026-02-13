@@ -153,7 +153,7 @@ else
 fi
 
 log_info "Building frontend..."
-cd "$APP_DIR/frontend"
+cd "$APP_DIR/frontend-next"
 npm install
 npm run build
 
@@ -167,7 +167,7 @@ cat > /etc/caddy/Caddyfile << EOF
 
 $DOMAIN_NAME {
     # Serve frontend static files
-    root * $APP_DIR/frontend/dist
+    root * $APP_DIR/frontend-next/out
     file_server
 
     # Reverse proxy API requests to the Go backend

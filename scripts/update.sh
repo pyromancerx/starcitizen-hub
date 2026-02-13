@@ -85,7 +85,7 @@ go build -o server ./cmd/server/main.go
 
 # Update Frontend
 log_info "Updating frontend..."
-cd "$APP_DIR/frontend"
+cd "$APP_DIR/frontend-next"
 npm install
 npm run build
 
