@@ -75,6 +75,25 @@ func main() {
 		&models.AuditLog{},
 	)
 
+	// Initialize default settings
+	defaultSettings := []models.SystemSetting{
+		{Key: "org_name", Value: "Star Citizen Hub", Description: "The name of your organization"},
+		{Key: "logo_url", Value: "", Description: "URL to the organization logo"},
+		{Key: "color_sc_dark", Value: "#0b0c10", Description: "Primary background color"},
+		{Key: "color_sc_panel", Value: "#1f2833", Description: "Panel background color"},
+		{Key: "color_sc_blue", Value: "#66fcf1", Description: "Accent highlight color"},
+		{Key: "color_sc_light_blue", Value: "#45a29e", Description: "Secondary accent color"},
+		{Key: "color_sc_grey", Value: "#c5c6c7", Description: "Neutral text color"},
+	}
+
+	for _, s := range defaultSettings {
+		var count int64
+		database.DB.Model(&models.SystemSetting{}).Where("key = ?", s.Key).Count(&count)
+		if count == 0 {
+			database.DB.Create(&s)
+		}
+	}
+
 	if *createAdmin || *action == "create-user" {
 		if *email == "" || *password == "" {
 			log.Fatal("Email and password are required")

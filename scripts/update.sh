@@ -78,10 +78,33 @@ git reset --hard origin/main
 NEW_COMMIT=$(git rev-parse --short HEAD)
 log_info "Updated to: $NEW_COMMIT"
 
+# Migrate .env if still in old location
+if [[ -f "$APP_DIR/backend/.env" ]] && [[ ! -f "$APP_DIR/.env" ]]; then
+    log_info "Migrating configuration to root directory..."
+    cp "$APP_DIR/backend/.env" "$APP_DIR/.env"
+    # Update DATABASE_URL in migrated file for Go backend
+    sed -i 's|DATABASE_URL=sqlite+aiosqlite:///./data/hub.db|DATABASE_URL=../data/hub.db|' "$APP_DIR/.env"
+    echo "PORT=8000" >> "$APP_DIR/.env"
+fi
+
+# Ensure data directory exists in new location
+if [[ ! -d "$APP_DIR/data" ]] && [[ -d "$APP_DIR/backend/data" ]]; then
+    log_info "Migrating database to new data directory..."
+    mv "$APP_DIR/backend/data" "$APP_DIR/data"
+fi
+mkdir -p "$APP_DIR/data"
+
 # Build Backend
 log_info "Building Go backend..."
 cd "$APP_DIR/backend-go"
 go build -o server ./cmd/server/main.go
+
+# Fix Caddyfile if it uses old handle_path logic
+if grep -q "handle_path /api\*" /etc/caddy/Caddyfile 2>/dev/null; then
+    log_info "Fixing Caddy API routing..."
+    sed -i 's/handle_path \/api\*/handle \/api\*/g' /etc/caddy/Caddyfile
+    systemctl reload caddy
+fi
 
 # Update Frontend
 log_info "Updating frontend..."

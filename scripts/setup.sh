@@ -83,31 +83,40 @@ if [[ ! "$DOMAIN_NAME" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9](
     fi
 fi
 
+# Load existing .env if it exists to preserve settings
+if [[ -f "$APP_DIR/.env" ]]; then
+    log_info "Found existing .env file. Loading current settings..."
+    # Use grep to get values without exporting them to shell permanently
+    EXISTING_SECRET=$(grep "^SECRET_KEY=" "$APP_DIR/.env" | cut -d'=' -f2-)
+    EXISTING_INSTANCE=$(grep "^INSTANCE_NAME=" "$APP_DIR/.env" | cut -d'=' -f2-)
+    EXISTING_REG=$(grep "^ALLOW_REGISTRATION=" "$APP_DIR/.env" | cut -d'=' -f2-)
+    EXISTING_APPROVE=$(grep "^REQUIRE_APPROVAL=" "$APP_DIR/.env" | cut -d'=' -f2-)
+fi
+
 # Ask for instance name
-read -p "Enter your hub instance name [Star Citizen Hub]: " INSTANCE_NAME
-INSTANCE_NAME="${INSTANCE_NAME:-Star Citizen Hub}"
+read -p "Enter your hub instance name [${EXISTING_INSTANCE:-Star Citizen Hub}]: " INSTANCE_NAME
+INSTANCE_NAME="${INSTANCE_NAME:-${EXISTING_INSTANCE:-Star Citizen Hub}}"
 
 # Ask about registration settings
-read -p "Allow public registration? (Y/n): " ALLOW_REG
-ALLOW_REG="${ALLOW_REG:-Y}"
-if [[ "$ALLOW_REG" =~ ^[Yy]$ ]]; then
+read -p "Allow public registration? (Y/n) [Current: ${EXISTING_REG:-Y}]: " ALLOW_REG
+ALLOW_REG="${ALLOW_REG:-${EXISTING_REG:-Y}}"
+if [[ "$ALLOW_REG" =~ ^[Yy]$ || "$ALLOW_REG" == "true" ]]; then
     ALLOW_REGISTRATION="true"
 else
     ALLOW_REGISTRATION="false"
 fi
 
-read -p "Require admin approval for new users? (Y/n): " REQUIRE_APPROVAL_INPUT
-REQUIRE_APPROVAL_INPUT="${REQUIRE_APPROVAL_INPUT:-Y}"
-if [[ "$REQUIRE_APPROVAL_INPUT" =~ ^[Yy]$ ]]; then
+read -p "Require admin approval for new users? (Y/n) [Current: ${EXISTING_APPROVE:-Y}]: " REQUIRE_APPROVAL_INPUT
+REQUIRE_APPROVAL_INPUT="${REQUIRE_APPROVAL_INPUT:-${EXISTING_APPROVE:-Y}}"
+if [[ "$REQUIRE_APPROVAL_INPUT" =~ ^[Yy]$ || "$REQUIRE_APPROVAL_INPUT" == "true" ]]; then
     REQUIRE_APPROVAL="true"
 else
     REQUIRE_APPROVAL="false"
 fi
 
-log_info "Generating secure secret key..."
-SECRET_KEY=$(openssl rand -hex 32)
+log_info "Preparing environment configuration..."
+SECRET_KEY="${EXISTING_SECRET:-$(openssl rand -hex 32)}"
 
-log_info "Creating environment configuration..."
 cat > "$APP_DIR/.env" << EOF
 # Star Citizen Hub Configuration
 # Generated on $(date)
