@@ -183,3 +183,44 @@ func (h *SocialHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(msg)
 }
+
+// Announcements
+func (h *SocialHandler) ListAnnouncements(w http.ResponseWriter, r *http.Request) {
+	announcements, err := h.socialService.ListAnnouncements()
+	if err != nil {
+		http.Error(w, "Failed to list announcements", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(announcements)
+}
+
+func (h *SocialHandler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var announcement models.Announcement
+	if err := json.NewDecoder(r.Body).Decode(&announcement); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	announcement.AuthorID = userID
+	if err := h.socialService.CreateAnnouncement(&announcement); err != nil {
+		http.Error(w, "Failed to create announcement", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(announcement)
+}
+
+func (h *SocialHandler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	if err := h.socialService.DeleteAnnouncement(uint(id)); err != nil {
+		http.Error(w, "Failed to delete announcement", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

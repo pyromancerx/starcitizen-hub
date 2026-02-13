@@ -65,6 +65,7 @@ func main() {
 		&models.Activity{},
 		&models.Achievement{},
 		&models.UserAchievement{},
+		&models.Announcement{},
 		&models.DiscordIntegration{},
 		&models.DiscordWebhook{},
 		&models.UserDiscordLink{},
@@ -246,6 +247,11 @@ func main() {
 			r.Get("/notifications/", socialHandler.GetNotifications)
 			r.Patch("/notifications/{id}/read", socialHandler.MarkNotificationRead)
 			r.Get("/activity/feed", socialHandler.GetActivityFeed)
+
+			// Announcements
+			r.Get("/announcements", socialHandler.ListAnnouncements)
+			r.Post("/announcements", socialHandler.CreateAnnouncement)
+			r.Delete("/announcements/{id}", socialHandler.DeleteAnnouncement)
 
 			// Messaging
 			r.Get("/messages/conversations", socialHandler.ListConversations)

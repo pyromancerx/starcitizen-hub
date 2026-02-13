@@ -60,3 +60,17 @@ type UserAchievement struct {
 	User        User        `gorm:"foreignKey:UserID" json:"-"`
 	Achievement Achievement `gorm:"foreignKey:AchievementID" json:"achievement"`
 }
+
+type Announcement struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	Title       string    `gorm:"size:200" json:"title"`
+	Content     string    `gorm:"type:text" json:"content"`
+	AuthorID    uint      `json:"author_id"`
+	IsPublic    bool      `gorm:"default:true" json:"is_public"`
+	IsPinned    bool      `gorm:"default:false" json:"is_pinned"`
+	Category    string    `gorm:"size:50" json:"category"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+
+	Author User `gorm:"foreignKey:AuthorID" json:"author,omitempty"`
+}

@@ -89,9 +89,24 @@ func (s *SocialService) SendMessage(msg *models.Message) error {
 		// Update conversation last message preview
 		return tx.Model(&models.Conversation{}).Where("id = ?", msg.ConversationID).
 			Updates(map[string]interface{}{
-				"last_message_at": msg.CreatedAt,
+				"last_message_at":      msg.CreatedAt,
 				"last_message_preview": msg.Content, // Should truncate
 				"last_message_sender_id": msg.SenderID,
 			}).Error
 	})
+}
+
+// Announcements
+func (s *SocialService) ListAnnouncements() ([]models.Announcement, error) {
+	var announcements []models.Announcement
+	err := s.db.Preload("Author").Order("is_pinned desc, created_at desc").Find(&announcements).Error
+	return announcements, err
+}
+
+func (s *SocialService) CreateAnnouncement(announcement *models.Announcement) error {
+	return s.db.Create(announcement).Error
+}
+
+func (s *SocialService) DeleteAnnouncement(id uint) error {
+	return s.db.Delete(&models.Announcement{}, id).Error
 }
