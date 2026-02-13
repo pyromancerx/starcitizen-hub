@@ -28,9 +28,7 @@ export const useAuthStore = defineStore('auth', {
         localStorage.setItem('token', this.token);
         
         // Fetch user details
-        // We don't have a direct "me" endpoint yet, but we can assume we might add one
-        // or decode the token if needed. For now, let's just set authenticated.
-        // Ideally: await this.fetchUser();
+        await this.fetchUser();
       } catch (err) {
         this.error = err.response?.data?.detail || 'Login failed';
         throw err;
@@ -44,7 +42,7 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true;
       this.error = null;
       try {
-        const response = await api.get('/users/me');
+        const response = await api.get('/auth/me');
         this.user = response.data;
       } catch (err) {
         this.error = err.response?.data?.detail || 'Failed to fetch user data';

@@ -171,7 +171,7 @@ $DOMAIN_NAME {
     file_server
 
     # Reverse proxy API requests to the Go backend
-    handle_path /api* {
+    handle /api* {
         reverse_proxy 127.0.0.1:8000
     }
 

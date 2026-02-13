@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -19,12 +20,21 @@ import (
 
 func main() {
 	// Flags
-	createAdmin := flag.Bool("create-admin", false, "Create an admin user and exit")
-	adminEmail := flag.String("email", "", "Admin email")
-	adminPass := flag.String("password", "", "Admin password")
-	adminName := flag.String("name", "Administrator", "Admin display name")
-	adminHandle := flag.String("handle", "Admin", "Admin RSI handle")
+	action := flag.String("action", "", "Action to perform: create-user, list-users, delete-user, approve-user")
+	email := flag.String("email", "", "User email")
+	password := flag.String("password", "", "User password")
+	name := flag.String("name", "", "User display name")
+	handle := flag.String("handle", "", "User RSI handle")
+	isAdmin := flag.Bool("admin", false, "Set user as admin (for create-user)")
 	flag.Parse()
+
+	// Legacy flag support
+	createAdmin := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "create-admin" {
+			createAdmin = true
+		}
+	})
 
 	// Load .env
 	godotenv.Load("../.env")
@@ -71,39 +81,99 @@ func main() {
 		&models.AuditLog{},
 	)
 
-	if *createAdmin {
-		if *adminEmail == "" || *adminPass == "" {
-			log.Fatal("Email and password are required for create-admin")
+	if createAdmin || *action == "create-user" {
+		if *email == "" || *password == "" {
+			log.Fatal("Email and password are required")
 		}
 
-		// Ensure Admin role exists
-		var adminRole models.Role
-		if err := database.DB.Where("name = ?", "Admin").First(&adminRole).Error; err != nil {
-			adminRole = models.Role{
-				Name:        "Admin",
-				Tier:        models.RoleTierAdmin,
-				Permissions: "[\"*\"]",
-				SortOrder:   100,
-			}
-			database.DB.Create(&adminRole)
+		userPass := *password
+		userName := *name
+		if userName == "" {
+			userName = "New User"
+		}
+		userHandle := *handle
+		if userHandle == "" {
+			userHandle = "Citizen"
 		}
 
-		hashedPassword, _ := utils.HashPassword(*adminPass)
+		hashedPassword, _ := utils.HashPassword(userPass)
 		user := models.User{
-			Email:        *adminEmail,
+			Email:        *email,
 			PasswordHash: hashedPassword,
-			DisplayName:  *adminName,
-			RSIHandle:    *adminHandle,
+			DisplayName:  userName,
+			RSIHandle:    userHandle,
 			IsActive:     true,
 			IsApproved:   true,
 		}
 
 		if err := database.DB.Create(&user).Error; err != nil {
-			log.Fatalf("Failed to create admin user: %v", err)
+			log.Fatalf("Failed to create user: %v", err)
 		}
 
-		database.DB.Model(&user).Association("Roles").Append(&adminRole)
-		log.Println("Admin user created successfully")
+		if createAdmin || *isAdmin {
+			var adminRole models.Role
+			if err := database.DB.Where("name = ?", "Admin").First(&adminRole).Error; err != nil {
+				adminRole = models.Role{
+					Name:        "Admin",
+					Tier:        models.RoleTierAdmin,
+					Permissions: "[\"*\"]",
+					SortOrder:   100,
+				}
+				database.DB.Create(&adminRole)
+			}
+			database.DB.Model(&user).Association("Roles").Append(&adminRole)
+			log.Println("Admin user created successfully")
+		} else {
+			log.Println("User created successfully")
+		}
+		os.Exit(0)
+	}
+
+	if *action == "list-users" {
+		var users []models.User
+		database.DB.Preload("Roles").Find(&users)
+		fmt.Printf("%-5s | %-25s | %-20s | %-10s | %s\n", "ID", "Email", "Name", "Approved", "Roles")
+		fmt.Println("--------------------------------------------------------------------------------")
+		for _, u := range users {
+			roles := ""
+			for i, r := range u.Roles {
+				if i > 0 {
+					roles += ", "
+				}
+				roles += r.Name
+			}
+			fmt.Printf("%-5d | %-25s | %-20s | %-10t | %s\n", u.ID, u.Email, u.DisplayName, u.IsApproved, roles)
+		}
+		os.Exit(0)
+	}
+
+	if *action == "delete-user" {
+		if *email == "" {
+			log.Fatal("Email is required for delete-user")
+		}
+		result := database.DB.Where("email = ?", *email).Delete(&models.User{})
+		if result.Error != nil {
+			log.Fatalf("Failed to delete user: %v", result.Error)
+		}
+		if result.RowsAffected == 0 {
+			log.Fatal("User not found")
+		}
+		log.Printf("User %s deleted successfully\n", *email)
+		os.Exit(0)
+	}
+
+	if *action == "approve-user" {
+		if *email == "" {
+			log.Fatal("Email is required for approve-user")
+		}
+		result := database.DB.Model(&models.User{}).Where("email = ?", *email).Update("is_approved", true)
+		if result.Error != nil {
+			log.Fatalf("Failed to approve user: %v", result.Error)
+		}
+		if result.RowsAffected == 0 {
+			log.Fatal("User not found")
+		}
+		log.Printf("User %s approved successfully\n", *email)
 		os.Exit(0)
 	}
 

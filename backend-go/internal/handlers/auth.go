@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
@@ -30,20 +31,46 @@ type RegisterRequest struct {
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	var email, password string
+
+	if r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Failed to parse form", http.StatusBadRequest)
+			return
+		}
+		email = r.FormValue("username")
+		if email == "" {
+			email = r.FormValue("email")
+		}
+		password = r.FormValue("password")
+	} else {
+		var req LoginRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+		email = req.Email
+		password = req.Password
+	}
+
+	if email == "" || password == "" {
+		http.Error(w, "Email and password are required", http.StatusBadRequest)
 		return
 	}
 
-	token, _, err := h.authService.Login(services.LoginInput{
-		Email:    req.Email,
-		Password: req.Password,
+	log.Printf("Login attempt for email: %s (Type: %s)", email, r.Header.Get("Content-Type"))
+
+	token, user, err := h.authService.Login(services.LoginInput{
+		Email:    email,
+		Password: password,
 	})
 	if err != nil {
+		log.Printf("Login failed for %s: %v", email, err)
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+
+	log.Printf("Login successful for %s (ID: %d)", user.Email, user.ID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{

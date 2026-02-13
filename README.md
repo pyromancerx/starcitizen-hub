@@ -3,12 +3,12 @@
 A self-hosted, full-stack logistics and community platform for Star Citizen organizations.
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Python](https://img.shields.io/badge/python-3.12+-yellow)
+![Go](https://img.shields.io/badge/go-1.24+-00ADD8)
 ![Vue](https://img.shields.io/badge/vue-3.x-green)
 
 ## Architecture
 
-- **Backend:** FastAPI (Python), SQLite (WAL Mode), SQLAlchemy 2.0
+- **Backend:** Go 1.24+, SQLite (WAL Mode), GORM
 - **Frontend:** Vue 3, Vite, TailwindCSS (Sci-Fi Theme), Pinia
 - **Infrastructure:** Caddy (Reverse Proxy & HTTPS), Systemd
 
@@ -56,15 +56,10 @@ A self-hosted, full-stack logistics and community platform for Star Citizen orga
 
 ### 1. Backend Setup
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-# Run Migrations & Seed (Rich sample data provided)
-alembic upgrade head
-python -m app.tasks.seed
-# Start Server
-uvicorn app.main:app --reload
+cd backend-go
+# Build and Run
+go build -o server ./cmd/server/main.go
+./server
 # OR use standalone script from root: ./scripts/start_backend.sh
 ```
 
@@ -121,7 +116,7 @@ The Hub features a global search bar in the header (on desktop) that scans multi
 - Domain name pointed to your server (A Record)
 
 ### 1. Installation
-Run the automated installer to set up dependencies (Python, Node.js, Caddy, Systemd).
+Run the automated installer to set up dependencies (Go, Node.js, Caddy, Systemd).
 
 ```bash
 # Clone the repository
@@ -133,20 +128,19 @@ sudo ./scripts/install.sh
 ```
 
 ### 2. Configuration & Setup
-This script configures the environment, builds the frontend, and generates the Caddyfile.
+This script configures the environment, builds the frontend, and generates the Caddyfile. **It will also prompt you to create the initial admin user.**
 
 ```bash
 sudo ./scripts/setup.sh
 ```
-*Follow the prompts to set your domain name and security preferences.*
+*Follow the prompts to set your domain name, security preferences, and admin credentials.*
 
-### 3. Creating the First Admin
-After installation, you need to create an initial administrator account to access the system.
+### 3. Creating Additional Admins (CLI)
+If you need to create an admin user manually from the command line:
 
 ```bash
-cd /opt/starcitizen-hub/backend
-sudo -u starcitizen-hub ../venv/bin/python -m app.cli create-admin admin@example.com MyHandle --name "Commander"
-# You will be prompted to enter a password securely
+cd /opt/starcitizen-hub/backend-go
+./server -create-admin -email "admin@example.com" -password "your-secure-password" -name "Commander" -handle "MyHandle"
 ```
 
 ### 4. Accessing the Hub
@@ -161,14 +155,14 @@ Navigate to `https://your-domain.com`. Log in with the admin credentials created
 2.  **Approval:** By default, new accounts require approval.
     *   Log in as an Admin.
     *   Navigate to the **System Admin** tab.
-    *   Review the "Pending Approval" list and click **Authorize**.
+    *   Review the **Personnel** list and update the user status to **Approved**.
 
 ### CLI Management
-You can also manage users directly from the server terminal:
+You can create additional admin users directly from the server terminal:
 
 ```bash
-# Approve a user by email
-sudo -u starcitizen-hub /opt/starcitizen-hub/venv/bin/python -m app.cli approve-user pilot@example.com
+cd /opt/starcitizen-hub/backend-go
+./server -create-admin -email pilot@example.com -password "secure-pass" -name "Pilot" -handle "PilotHandle"
 ```
 
 ---

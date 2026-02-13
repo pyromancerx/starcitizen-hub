@@ -68,17 +68,31 @@ type User struct {
 
 type Role struct {
 
+
+
 	ID          uint     `gorm:"primaryKey" json:"id"`
 
-	Name        string   `gorm:"uniqueIndex;size:100" json:"name"`
+
+
+	Name        string   `gorm:"unique;size:100" json:"name"`
+
+
 
 	Tier        RoleTier `gorm:"size:20;default:'custom'" json:"tier"`
 
+
+
 	Permissions string   `gorm:"type:json" json:"permissions"` // Stored as JSON array
+
+
 
 	IsDefault   bool     `gorm:"default:false" json:"is_default"`
 
+
+
 	SortOrder   int      `gorm:"default:0" json:"sort_order"`
+
+
 
 }
 
