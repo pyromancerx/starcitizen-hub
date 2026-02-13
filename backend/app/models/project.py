@@ -35,7 +35,7 @@ class Project(Base):
     
     custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
 
-    manager: Mapped["User"] = relationship("User")
+    manager: Mapped["User"] = relationship("User", back_populates="managed_projects")
     phases: Mapped[List["ProjectPhase"]] = relationship(back_populates="project", cascade="all, delete-orphan")
     contribution_goals: Mapped[List["ContributionGoal"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
@@ -67,7 +67,7 @@ class Task(Base):
     priority: Mapped[int] = mapped_column(Integer, default=0) # Higher is more important
     
     phase: Mapped["ProjectPhase"] = relationship(back_populates="tasks")
-    assignee: Mapped["User"] = relationship("User")
+    assignee: Mapped["User"] = relationship("User", back_populates="tasks")
     
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -97,6 +97,6 @@ class Contribution(Base):
     notes: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     
     goal: Mapped["ContributionGoal"] = relationship(back_populates="contributions")
-    user: Mapped["User"] = relationship("User")
+    user: Mapped["User"] = relationship("User", back_populates="contributions")
     
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

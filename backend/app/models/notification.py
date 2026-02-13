@@ -86,8 +86,8 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
     
     # Relationships
-    user: Mapped["User"] = relationship(foreign_keys=[user_id], back_populates="notifications")
-    triggered_by: Mapped[Optional["User"]] = relationship(foreign_keys=[triggered_by_id])
+    user: Mapped["User"] = relationship(foreign_keys="Notification.user_id", back_populates="notifications")
+    triggered_by: Mapped[Optional["User"]] = relationship(foreign_keys="Notification.triggered_by_id")
 
 
 class NotificationPreference(Base):

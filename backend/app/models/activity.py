@@ -45,7 +45,7 @@ class Activity(Base):
     related_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     
     # Relationships
-    user: Mapped[Optional["User"]] = relationship()
+    user: Mapped[Optional["User"]] = relationship(back_populates="activities")
 
 
 class ActivityReaction(Base):

@@ -39,8 +39,8 @@ class TradeRun(Base):
     
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    user = relationship("User")
-    ship = relationship("Ship")
+    user = relationship("User", back_populates="trade_runs")
+    ship = relationship("Ship", back_populates="trade_runs")
 
 
 class PriceReport(Base):
@@ -57,7 +57,7 @@ class PriceReport(Base):
     
     reported_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
-    user = relationship("User")
+    user = relationship("User", back_populates="price_reports")
 
 
 class CargoContract(Base):
@@ -80,5 +80,5 @@ class CargoContract(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
-    poster = relationship("User", foreign_keys=[poster_id], back_populates="posted_contracts")
-    hauler = relationship("User", foreign_keys=[hauler_id], back_populates="accepted_contracts")
+    poster = relationship("User", foreign_keys="CargoContract.poster_id", back_populates="posted_contracts")
+    hauler = relationship("User", foreign_keys="CargoContract.hauler_id", back_populates="accepted_contracts")

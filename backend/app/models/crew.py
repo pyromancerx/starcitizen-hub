@@ -35,7 +35,7 @@ class LFGPost(Base):
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="lfg_posts")
     responses: Mapped[List["LFGResponse"]] = relationship(back_populates="post", cascade="all, delete-orphan")
 
 
@@ -54,7 +54,7 @@ class LFGResponse(Base):
     
     # Relationships
     post: Mapped["LFGPost"] = relationship(back_populates="responses")
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="lfg_responses")
 
 
 class UserAvailability(Base):
@@ -72,7 +72,7 @@ class UserAvailability(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="availabilities")
 
 
 class CrewLoadout(Base):
@@ -94,5 +94,5 @@ class CrewLoadout(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    creator: Mapped["User"] = relationship(foreign_keys=[created_by_id])
+    creator: Mapped["User"] = relationship(foreign_keys="CrewLoadout.created_by_id", back_populates="crew_loadouts")
     ship: Mapped[Optional["Ship"]] = relationship()

@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 from sqlalchemy import String, Integer, Float, DateTime, JSON, ForeignKey, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
@@ -35,6 +35,8 @@ class OrgStockpile(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
     custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
 
+    transactions: Mapped[list["StockpileTransaction"]] = relationship(back_populates="stockpile", cascade="all, delete-orphan")
+
 
 class StockpileTransaction(Base):
     __tablename__ = "stockpile_transactions"
@@ -46,3 +48,6 @@ class StockpileTransaction(Base):
     transaction_type: Mapped[str] = mapped_column(String(50))
     reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    stockpile: Mapped["OrgStockpile"] = relationship(back_populates="transactions")
+    user: Mapped[Optional["User"]] = relationship()

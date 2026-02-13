@@ -33,7 +33,7 @@ class ForumThread(Base):
 
     category: Mapped["ForumCategory"] = relationship(back_populates="threads")
     posts: Mapped[List["ForumPost"]] = relationship(back_populates="thread", cascade="all, delete-orphan")
-    author: Mapped["User"] = relationship("User")
+    author: Mapped["User"] = relationship("User", back_populates="forum_threads")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -48,7 +48,7 @@ class ForumPost(Base):
     content: Mapped[str] = mapped_column(Text)
     
     thread: Mapped["ForumThread"] = relationship(back_populates="posts")
-    author: Mapped["User"] = relationship("User")
+    author: Mapped["User"] = relationship("User", back_populates="forum_posts")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())

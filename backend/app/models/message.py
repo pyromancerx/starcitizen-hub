@@ -33,8 +33,8 @@ class Conversation(Base):
     )
     
     # Relationships
-    user1: Mapped["User"] = relationship(foreign_keys=[user1_id], back_populates="conversations_as_user1")
-    user2: Mapped["User"] = relationship(foreign_keys=[user2_id], back_populates="conversations_as_user2")
+    user1: Mapped["User"] = relationship(foreign_keys="Conversation.user1_id", back_populates="conversations_as_user1")
+    user2: Mapped["User"] = relationship(foreign_keys="Conversation.user2_id", back_populates="conversations_as_user2")
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation",
         cascade="all, delete-orphan",
@@ -72,4 +72,4 @@ class Message(Base):
     
     # Relationships
     conversation: Mapped["Conversation"] = relationship(back_populates="messages")
-    sender: Mapped["User"] = relationship(foreign_keys=[sender_id])
+    sender: Mapped["User"] = relationship(foreign_keys="Message.sender_id")

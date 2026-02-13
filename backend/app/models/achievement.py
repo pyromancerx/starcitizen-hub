@@ -65,7 +65,7 @@ class Achievement(Base):
     )
     
     # Relationships
-    created_by: Mapped[Optional["User"]] = relationship()
+    created_by: Mapped[Optional["User"]] = relationship(back_populates="created_achievements")
     user_achievements: Mapped[list["UserAchievement"]] = relationship(
         back_populates="achievement",
         cascade="all, delete-orphan"
@@ -98,6 +98,6 @@ class UserAchievement(Base):
     awarded_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     
     # Relationships
-    user: Mapped["User"] = relationship(foreign_keys=[user_id], back_populates="achievements")
+    user: Mapped["User"] = relationship(foreign_keys="UserAchievement.user_id", back_populates="achievements")
     achievement: Mapped["Achievement"] = relationship(back_populates="user_achievements")
-    awarded_by: Mapped[Optional["User"]] = relationship(foreign_keys=[awarded_by_id])
+    awarded_by: Mapped[Optional["User"]] = relationship(foreign_keys="UserAchievement.awarded_by_id")

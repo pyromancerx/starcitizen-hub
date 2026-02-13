@@ -4,6 +4,11 @@ from typing import Optional
 from sqlalchemy import String, DateTime, JSON, ForeignKey, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.models.user import User
+    from app.models.trade import TradeRun
 
 
 class Ship(Base):
@@ -27,3 +32,4 @@ class Ship(Base):
     custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
 
     user: Mapped["User"] = relationship(back_populates="ships")
+    trade_runs: Mapped[list["TradeRun"]] = relationship(back_populates="ship")

@@ -134,4 +134,4 @@ class DiscordRoleMapping(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     
     # Relationships
-    hub_role: Mapped["Role"] = relationship()
+    hub_role: Mapped["Role"] = relationship(back_populates="discord_mappings")

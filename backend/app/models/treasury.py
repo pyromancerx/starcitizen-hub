@@ -54,5 +54,5 @@ class TreasuryTransaction(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
-    user: Mapped["User"] = relationship(foreign_keys=[user_id])
-    approved_by: Mapped["User"] = relationship(foreign_keys=[approved_by_id])
+    user: Mapped["User"] = relationship(foreign_keys="TreasuryTransaction.user_id", back_populates="treasury_transactions")
+    approved_by: Mapped["User"] = relationship(foreign_keys="TreasuryTransaction.approved_by_id", back_populates="approved_treasury_transactions")

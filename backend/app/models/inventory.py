@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 from sqlalchemy import String, Integer, DateTime, JSON, ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
@@ -27,3 +27,5 @@ class PersonalInventory(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     custom_attributes: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
+
+    user: Mapped["User"] = relationship(back_populates="inventory")
