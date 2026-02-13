@@ -17,6 +17,10 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Detect script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
     log_error "This script must be run as root (use sudo)"
@@ -97,16 +101,32 @@ fi
 APP_DIR="/opt/starcitizen-hub"
 log_info "Setting up application directory at $APP_DIR..."
 
-# Clone or update repository
-if [[ -d "$APP_DIR/.git" ]]; then
-    log_info "Updating existing installation from git..."
-    cd "$APP_DIR"
-    git fetch origin
-    git reset --hard origin/main
+# Check if we should use local source (if running from a clone)
+USE_LOCAL=false
+if [[ -d "$BASE_DIR/.git" ]] && [[ "$BASE_DIR" != "$APP_DIR" ]]; then
+    log_info "Detected local repository at $BASE_DIR. Use local source? (y/N)"
+    # Non-interactive check for CI/automated scripts
+    if [[ "$FORCE_LOCAL" == "true" ]]; then
+        USE_LOCAL=true
+    fi
+fi
+
+if [[ "$USE_LOCAL" == "true" ]]; then
+    log_info "Installing from local source: $BASE_DIR"
+    mkdir -p "$APP_DIR"
+    cp -r "$BASE_DIR/." "$APP_DIR/"
 else
-    log_info "Cloning repository from GitHub..."
-    rm -rf "$APP_DIR"
-    git clone "$REPO_URL" "$APP_DIR"
+    # Clone or update repository from GitHub
+    if [[ -d "$APP_DIR/.git" ]]; then
+        log_info "Updating existing installation from git..."
+        cd "$APP_DIR"
+        git fetch origin
+        git reset --hard origin/main
+    else
+        log_info "Cloning repository from GitHub..."
+        rm -rf "$APP_DIR"
+        git clone "$REPO_URL" "$APP_DIR"
+    fi
 fi
 
 mkdir -p "$APP_DIR/backend/data"

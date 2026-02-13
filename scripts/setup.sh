@@ -15,7 +15,17 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
-APP_DIR="/opt/starcitizen-hub"
+# Detect script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Use local directory if we are running from the source tree
+if [[ -d "$BASE_DIR/.git" ]] && [[ -d "$BASE_DIR/backend" ]]; then
+    APP_DIR="$BASE_DIR"
+    log_info "Running setup from local source tree: $APP_DIR"
+else
+    APP_DIR="/opt/starcitizen-hub"
+fi
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
