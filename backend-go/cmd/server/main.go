@@ -252,11 +252,29 @@ func main() {
 			r.Get("/messages/conversations/{id}", socialHandler.GetConversation)
 			r.Post("/messages/", socialHandler.SendMessage)
 
-			// Admin & Integrations
-			r.Get("/admin/users", adminHandler.ListUsers)
-			r.Post("/admin/users", adminHandler.CreateUser)
-			r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
-			r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
+						// Admin & Integrations
+
+						r.Get("/admin/users", adminHandler.ListUsers)
+
+						r.Post("/admin/users", adminHandler.CreateUser)
+
+						r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
+
+						r.Post("/admin/users/{id}/roles", adminHandler.AssignUserRole)
+
+						r.Delete("/admin/users/{id}/roles/{roleId}", adminHandler.RemoveUserRole)
+
+			
+
+						r.Get("/admin/roles", adminHandler.ListRoles)
+
+						r.Post("/admin/roles", adminHandler.CreateRole)
+
+						r.Patch("/admin/roles/{id}", adminHandler.UpdateRole)
+
+			
+
+						r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
 			r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
 			r.Post("/admin/upload-logo", adminHandler.UploadLogo)
 			r.Get("/admin/settings", adminHandler.GetSettings)

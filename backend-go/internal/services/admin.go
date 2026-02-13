@@ -61,6 +61,45 @@ func (s *AdminService) UpdateUserStatus(userID uint, isActive bool, isApproved b
 		}).Error
 }
 
+// Role Management
+func (s *AdminService) ListRoles() ([]models.Role, error) {
+	var roles []models.Role
+	err := s.db.Order("sort_order asc").Find(&roles).Error
+	return roles, err
+}
+
+func (s *AdminService) CreateRole(role *models.Role) error {
+	return s.db.Create(role).Error
+}
+
+func (s *AdminService) UpdateRole(id uint, updates map[string]interface{}) error {
+	return s.db.Model(&models.Role{}).Where("id = ?", id).Updates(updates).Error
+}
+
+func (s *AdminService) AssignRoleToUser(userID uint, roleID uint) error {
+	var user models.User
+	var role models.Role
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return err
+	}
+	if err := s.db.First(&role, roleID).Error; err != nil {
+		return err
+	}
+	return s.db.Model(&user).Association("Roles").Append(&role)
+}
+
+func (s *AdminService) RemoveRoleFromUser(userID uint, roleID uint) error {
+	var user models.User
+	var role models.Role
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return err
+	}
+	if err := s.db.First(&role, roleID).Error; err != nil {
+		return err
+	}
+	return s.db.Model(&user).Association("Roles").Delete(&role)
+}
+
 // RSI Verification
 func (s *AdminService) ListRSIVerificationRequests(status string) ([]models.RSIVerificationRequest, error) {
 	var requests []models.RSIVerificationRequest
@@ -116,8 +155,15 @@ func (s *AdminService) GetSettings() ([]models.SystemSetting, error) {
 }
 
 func (s *AdminService) UpdateSetting(key string, value string) error {
-	return s.db.Model(&models.SystemSetting{}).Where("key = ?", key).
-		Update("value", value).Error
+	var setting models.SystemSetting
+	err := s.db.Where("key = ?", key).First(&setting).Error
+	if err != nil {
+		// Create if not exists
+		setting = models.SystemSetting{Key: key, Value: value}
+		return s.db.Create(&setting).Error
+	}
+	// Update if exists
+	return s.db.Model(&setting).Update("value", value).Error
 }
 
 // Stats (extended)
@@ -132,12 +178,15 @@ func (s *AdminService) GetDashboardStats() (map[string]interface{}, error) {
 	s.db.Model(&models.Operation{}).Where("status IN ?", []string{"recruiting", "planning", "active"}).Count(&activeOps)
 
 	var treasury models.OrgTreasury
-	s.db.Where("is_primary = ?", true).First(&treasury)
+	var balance int = 0
+	if err := s.db.Where("is_primary = ?", true).First(&treasury).Error; err == nil {
+		balance = treasury.Balance
+	}
 
 	return map[string]interface{}{
 		"total_users":          totalUsers,
 		"total_ships":          totalShips,
 		"active_operations":    activeOps,
-		"org_treasury_balance": treasury.Balance,
+		"org_treasury_balance": balance,
 	}, nil
 }

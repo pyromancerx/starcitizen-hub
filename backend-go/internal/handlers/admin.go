@@ -70,6 +70,85 @@ func (h *AdminHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"logo_url": logoURL})
 }
 
+func (h *AdminHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	roles, err := h.adminService.ListRoles()
+	if err != nil {
+		http.Error(w, "Failed to list roles", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(roles)
+}
+
+func (h *AdminHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
+	var role models.Role
+	if err := json.NewDecoder(r.Body).Decode(&role); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.adminService.CreateRole(&role); err != nil {
+		http.Error(w, "Failed to create role", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(role)
+}
+
+func (h *AdminHandler) UpdateRole(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.adminService.UpdateRole(uint(id), updates); err != nil {
+		http.Error(w, "Failed to update role", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *AdminHandler) AssignUserRole(w http.ResponseWriter, r *http.Request) {
+	userIDStr := chi.URLParam(r, "id")
+	userID, _ := strconv.ParseUint(userIDStr, 10, 32)
+
+	var req struct {
+		RoleID uint `json:"role_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.adminService.AssignRoleToUser(uint(userID), req.RoleID); err != nil {
+		http.Error(w, "Failed to assign role", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *AdminHandler) RemoveUserRole(w http.ResponseWriter, r *http.Request) {
+	userIDStr := chi.URLParam(r, "id")
+	userID, _ := strconv.ParseUint(userIDStr, 10, 32)
+	roleIDStr := chi.URLParam(r, "roleId")
+	roleID, _ := strconv.ParseUint(roleIDStr, 10, 32)
+
+	if err := h.adminService.RemoveRoleFromUser(uint(userID), uint(roleID)); err != nil {
+		http.Error(w, "Failed to remove role", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *AdminHandler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
 	stats, err := h.adminService.GetDashboardStats()
 	if err != nil {

@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   Clock,
   UserPlus,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -48,6 +49,32 @@ export default function AdminPersonnelPage() {
         rsi_handle: '',
         is_admin: false
       });
+    },
+  });
+
+  const { data: roles } = useQuery({
+    queryKey: ['admin-roles'],
+    queryFn: async () => {
+      const res = await api.get('/admin/roles');
+      return res.data;
+    },
+  });
+
+  const assignRoleMutation = useMutation({
+    mutationFn: async ({ userID, roleID }: any) => {
+      return api.post(`/admin/users/${userID}/roles`, { role_id: roleID });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+  });
+
+  const removeRoleMutation = useMutation({
+    mutationFn: async ({ userID, roleID }: any) => {
+      return api.delete(`/admin/users/${userID}/roles/${roleID}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
   });
 
@@ -222,13 +249,35 @@ export default function AdminPersonnelPage() {
                     </span>
                   </div>
                 </td>
-                <td className="p-4 text-center">
-                  <div className="flex flex-wrap justify-center gap-1">
+                <td className="p-4">
+                  <div className="flex flex-wrap gap-1 items-center">
                     {user.roles?.map((role: any) => (
-                      <span key={role.id} className="px-1.5 py-0.5 bg-sc-dark border border-sc-blue/20 rounded text-[8px] uppercase text-sc-blue">
+                      <span key={role.id} className="group/role px-1.5 py-0.5 bg-sc-dark border border-sc-blue/20 rounded text-[8px] uppercase text-sc-blue flex items-center">
                         {role.name}
+                        <button 
+                          onClick={() => removeRoleMutation.mutate({ userID: user.id, roleID: role.id })}
+                          className="ml-1 text-sc-grey/30 hover:text-red-400 opacity-0 group-hover/role:opacity-100 transition-opacity"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
                       </span>
                     ))}
+                    <div className="relative group/add">
+                      <button className="p-1 rounded bg-sc-blue/5 border border-sc-blue/10 text-sc-blue hover:bg-sc-blue/20 transition-all">
+                        <Plus className="w-3 h-3" />
+                      </button>
+                      <div className="absolute left-0 top-full mt-1 bg-sc-panel border border-sc-blue/20 rounded shadow-2xl z-10 hidden group-hover/add:block min-w-[120px]">
+                        {roles?.filter((r: any) => !user.roles?.find((ur: any) => ur.id === r.id)).map((role: any) => (
+                          <button 
+                            key={role.id}
+                            onClick={() => assignRoleMutation.mutate({ userID: user.id, roleID: role.id })}
+                            className="w-full text-left px-3 py-2 text-[8px] font-black uppercase text-sc-grey hover:text-sc-blue hover:bg-sc-blue/5 transition-all"
+                          >
+                            {role.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="p-4 text-right">
