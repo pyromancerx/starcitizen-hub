@@ -3,6 +3,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import Link from 'next/link';
 import { 
   Rocket, 
   Shield, 
@@ -109,15 +110,15 @@ export default function DashboardPage() {
               <h3 className="text-sm font-bold text-white uppercase tracking-widest">Rapid Deployment</h3>
             </div>
             <div className="bg-sc-panel border border-sc-grey/10 rounded p-4 space-y-3">
-              <button className="w-full py-2 px-4 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-sc-blue text-xs font-bold uppercase tracking-widest transition-all">
+              <Link href="/fleet" className="block w-full py-2 px-4 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-sc-blue text-xs font-bold uppercase tracking-widest transition-all text-center">
                 Register New Vessel
-              </button>
-              <button className="w-full py-2 px-4 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-sc-blue text-xs font-bold uppercase tracking-widest transition-all">
+              </Link>
+              <Link href="/trade" className="block w-full py-2 px-4 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-sc-blue text-xs font-bold uppercase tracking-widest transition-all text-center">
                 Log Trade Run
-              </button>
-              <button className="w-full py-2 px-4 bg-yellow-500/5 hover:bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-500 text-xs font-bold uppercase tracking-widest transition-all">
+              </Link>
+              <Link href="/operations" className="block w-full py-2 px-4 bg-yellow-500/5 hover:bg-yellow-500/10 border border-yellow-500/20 rounded text-yellow-500 text-xs font-bold uppercase tracking-widest transition-all text-center">
                 Request Operation Access
-              </button>
+              </Link>
             </div>
           </div>
 

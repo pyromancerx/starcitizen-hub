@@ -18,7 +18,9 @@ import {
   ShieldCheck, 
   Settings, 
   LogOut,
-  ChevronRight
+  ChevronRight,
+  Globe,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,10 +51,23 @@ const Sidebar = () => {
       ]
     },
     {
+      label: 'Logistics',
+      items: [
+        { name: 'Inter-Org Federation', href: '/federation', icon: Globe },
+        { name: 'Org Treasury', href: '/treasury', icon: Building2 },
+      ]
+    },
+    {
       label: 'Trading',
       items: [
         { name: 'Trade Runs', href: '/trade', icon: ChevronRight },
         { name: 'Cargo Contracts', href: '/trade/contracts', icon: ChevronRight },
+      ]
+    },
+    {
+      label: 'Multi-Crew',
+      items: [
+        { name: 'Crew Finder', href: '/crew', icon: Users },
       ]
     },
     {

@@ -13,24 +13,27 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
   isAuthenticated: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
+  initialize: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
   isLoading: false,
+  isInitialized: false,
   error: null,
-  isAuthenticated: !!(typeof window !== 'undefined' && localStorage.getItem('token')),
+  isAuthenticated: false, // Start false, verify in initialize
 
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      // Standard OAuth2 flow as expected by the Go backend's updated Login handler
+      // ... same login logic
       const formData = new URLSearchParams();
       formData.append('username', email);
       formData.append('password', password);
@@ -41,7 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
-      set({ token: access_token, isAuthenticated: true });
+      set({ token: access_token, isAuthenticated: true, isInitialized: true });
       
       await get().fetchUser();
     } catch (err: any) {
@@ -61,15 +64,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   fetchUser: async () => {
-    if (!get().token) return;
-    set({ isLoading: true });
+    const token = get().token;
+    if (!token) return;
     try {
       const response = await api.get('/auth/me');
-      set({ user: response.data });
+      set({ user: response.data, isAuthenticated: true });
     } catch (err) {
       get().logout();
-    } finally {
-      set({ isLoading: false });
     }
+  },
+
+  initialize: async () => {
+    if (get().isInitialized) return;
+    
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) {
+      set({ token });
+      await get().fetchUser();
+    }
+    set({ isInitialized: true });
   },
 }));

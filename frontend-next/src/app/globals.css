@@ -14,6 +14,11 @@
   --color-sc-blue-alpha: var(--color-sc-blue-rgb);
   --color-sc-light-blue-alpha: var(--color-sc-light-blue-rgb);
   --color-sc-grey-alpha: var(--color-sc-grey-rgb);
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+  }
 }
 
 :root {
