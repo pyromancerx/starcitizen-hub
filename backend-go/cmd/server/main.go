@@ -20,6 +20,7 @@ import (
 
 func main() {
 	// Flags
+	createAdmin := flag.Bool("create-admin", false, "Create an admin user and exit")
 	action := flag.String("action", "", "Action to perform: create-user, list-users, delete-user, approve-user")
 	email := flag.String("email", "", "User email")
 	password := flag.String("password", "", "User password")
@@ -27,14 +28,6 @@ func main() {
 	handle := flag.String("handle", "", "User RSI handle")
 	isAdmin := flag.Bool("admin", false, "Set user as admin (for create-user)")
 	flag.Parse()
-
-	// Legacy flag support
-	createAdmin := false
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "create-admin" {
-			createAdmin = true
-		}
-	})
 
 	// Load .env
 	godotenv.Load("../.env")
@@ -81,7 +74,7 @@ func main() {
 		&models.AuditLog{},
 	)
 
-	if createAdmin || *action == "create-user" {
+	if *createAdmin || *action == "create-user" {
 		if *email == "" || *password == "" {
 			log.Fatal("Email and password are required")
 		}
@@ -110,7 +103,7 @@ func main() {
 			log.Fatalf("Failed to create user: %v", err)
 		}
 
-		if createAdmin || *isAdmin {
+		if *createAdmin || *isAdmin {
 			var adminRole models.Role
 			if err := database.DB.Where("name = ?", "Admin").First(&adminRole).Error; err != nil {
 				adminRole = models.Role{
