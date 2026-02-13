@@ -4,10 +4,18 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
-	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
-	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
 )
+
+type AuthHandler struct {
+	authService *services.AuthService
+}
+
+func NewAuthHandler() *AuthHandler {
+	return &AuthHandler{
+		authService: services.NewAuthService(),
+	}
+}
 
 type LoginRequest struct {
 	Email    string `json:"email"`
@@ -21,28 +29,19 @@ type RegisterRequest struct {
 	RSIHandle   string `json:"rsi_handle"`
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	var user models.User
-	result := database.DB.Where("email = ?", req.Email).First(&user)
-	if result.Error != nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	if !utils.CheckPasswordHash(req.Password, user.PasswordHash) {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
-		return
-	}
-
-	token, err := utils.GenerateToken(user.ID, user.Email)
+	token, _, err := h.authService.Login(services.LoginInput{
+		Email:    req.Email,
+		Password: req.Password,
+	})
 	if err != nil {
-		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -53,26 +52,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func Register(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	hashedPassword, _ := utils.HashPassword(req.Password)
-
-	user := models.User{
-		Email:        req.Email,
-		PasswordHash: hashedPassword,
-		DisplayName:  req.DisplayName,
-		RSIHandle:    req.RSIHandle,
-		IsActive:     true,
-		IsApproved:   false, // Require admin approval
-	}
-
-	if result := database.DB.Create(&user); result.Error != nil {
-		http.Error(w, "Failed to create user (Email/Handle might be taken)", http.StatusConflict)
+	_, err := h.authService.Register(services.RegisterInput{
+		Email:       req.Email,
+		Password:    req.Password,
+		DisplayName: req.DisplayName,
+		RSIHandle:   req.RSIHandle,
+	})
+	if err != nil {
+		http.Error(w, "Failed to create user: "+err.Error(), http.StatusConflict)
 		return
 	}
 
@@ -80,10 +74,10 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"message": "User created successfully"})
 }
 
-func Me(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
-	var user models.User
-	if result := database.DB.Preload("Roles").First(&user, userID); result.Error != nil {
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}

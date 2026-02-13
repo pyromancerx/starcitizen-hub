@@ -78,21 +78,16 @@ git reset --hard origin/main
 NEW_COMMIT=$(git rev-parse --short HEAD)
 log_info "Updated to: $NEW_COMMIT"
 
-# Update Python dependencies
-log_info "Updating Python dependencies..."
-"$APP_DIR/venv/bin/pip" install --upgrade pip
-"$APP_DIR/venv/bin/pip" install -r "$APP_DIR/backend/requirements.txt"
+# Build Backend
+log_info "Building Go backend..."
+cd "$APP_DIR/backend-go"
+go build -o server ./cmd/server/main.go
 
 # Update Frontend
 log_info "Updating frontend..."
 cd "$APP_DIR/frontend"
 npm install
 npm run build
-
-# Run database migrations
-log_info "Running database migrations..."
-cd "$APP_DIR/backend"
-sudo -u starcitizen-hub "$APP_DIR/venv/bin/alembic" upgrade head
 
 # Restart the service
 log_info "Starting service..."

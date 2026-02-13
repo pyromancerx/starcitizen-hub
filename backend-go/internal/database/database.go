@@ -20,8 +20,7 @@ func Connect() {
 	}
 
 	newLogger := logger.New(
-		log.New(os.Stdout, "
-", log.LstdFlags),
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
 			SlowThreshold:             time.Second,
 			LogLevel:                  logger.Info,

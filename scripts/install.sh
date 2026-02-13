@@ -42,28 +42,27 @@ apt-get upgrade -y
 # Install system dependencies
 log_info "Installing system dependencies..."
 apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    python3-dev \
     build-essential \
-    libffi-dev \
-    libssl-dev \
     curl \
     git \
     bc \
     debian-keyring \
     debian-archive-keyring \
     apt-transport-https \
-    gnupg
+    gnupg \
+    wget
 
-# Check Python version
-PYTHON_VERSION=$(python3 --version | cut -d' ' -f2 | cut -d'.' -f1,2)
-log_info "Python version: $PYTHON_VERSION"
-
-if [[ $(echo "$PYTHON_VERSION < 3.12" | bc -l) -eq 1 ]]; then
-    log_error "Python 3.12 or higher is required. Found: $PYTHON_VERSION"
-    exit 1
+# Install Go
+log_info "Installing Go..."
+if ! command -v go &> /dev/null; then
+    GO_VERSION="1.24.4"
+    wget "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz"
+    rm -rf /usr/local/go && tar -C /usr/local -xzf "go${GO_VERSION}.linux-amd64.tar.gz"
+    ln -sf /usr/local/go/bin/go /usr/bin/go
+    rm "go${GO_VERSION}.linux-amd64.tar.gz"
+    log_info "Go ${GO_VERSION} installed successfully"
+else
+    log_info "Go is already installed: $(go version)"
 fi
 
 # Install Caddy
@@ -131,15 +130,6 @@ fi
 
 mkdir -p "$APP_DIR/backend/data"
 mkdir -p "$APP_DIR/logs"
-
-# Create Python virtual environment
-log_info "Creating Python virtual environment..."
-python3 -m venv "$APP_DIR/venv"
-
-# Install Python dependencies
-log_info "Installing Python dependencies..."
-"$APP_DIR/venv/bin/pip" install --upgrade pip
-"$APP_DIR/venv/bin/pip" install -r "$APP_DIR/backend/requirements.txt"
 
 # Set ownership
 chown -R starcitizen-hub:starcitizen-hub "$APP_DIR"

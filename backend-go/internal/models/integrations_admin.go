@@ -53,6 +53,19 @@ type UserDiscordLink struct {
 	User User `gorm:"foreignKey:UserID" json:"-"`
 }
 
+type DiscordRoleMapping struct {
+	ID            uint      `gorm:"primaryKey" json:"id"`
+	DiscordRoleID string    `gorm:"size:30;uniqueIndex" json:"discord_role_id"`
+	DiscordRoleName string  `gorm:"size:100" json:"discord_role_name"`
+	HubRoleID     uint      `json:"hub_role_id"`
+	Priority      int       `gorm:"default:0" json:"priority"`
+	IsActive      bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+
+	HubRole Role `gorm:"foreignKey:HubRoleID" json:"-"`
+}
+
 type RSIVerificationRequest struct {
 	ID               uint       `gorm:"primaryKey" json:"id"`
 	UserID           uint       `json:"user_id"`

@@ -108,12 +108,12 @@ log_info "Generating secure secret key..."
 SECRET_KEY=$(openssl rand -hex 32)
 
 log_info "Creating environment configuration..."
-cat > "$APP_DIR/backend/.env" << EOF
+cat > "$APP_DIR/.env" << EOF
 # Star Citizen Hub Configuration
 # Generated on $(date)
 
 # Database
-DATABASE_URL=sqlite+aiosqlite:///./data/hub.db
+DATABASE_URL=backend/data/hub.db
 
 # Security - DO NOT SHARE THIS KEY
 SECRET_KEY=$SECRET_KEY
@@ -124,20 +124,15 @@ ACCESS_TOKEN_EXPIRE_MINUTES=10080
 INSTANCE_NAME=$INSTANCE_NAME
 ALLOW_REGISTRATION=$ALLOW_REGISTRATION
 REQUIRE_APPROVAL=$REQUIRE_APPROVAL
+PORT=8000
 EOF
 
-chown starcitizen-hub:starcitizen-hub "$APP_DIR/backend/.env"
-chmod 600 "$APP_DIR/backend/.env"
+chown starcitizen-hub:starcitizen-hub "$APP_DIR/.env"
+chmod 600 "$APP_DIR/.env"
 
-log_info "Running database migrations..."
+log_info "Building backend..."
 cd "$APP_DIR/backend-go"
-# GORM handles auto-migration in main.go for now, but we could add a flag
 go build -o server ./cmd/server/main.go
-./server --migrate-only || true # Placeholder for future migration logic
-
-log_info "Seeding initial data..."
-# Seeding logic needs to be ported to Go or run via Python if still available
-# For now, let's assume Go backend will handle basic seeding if DB empty
 
 log_info "Building frontend..."
 cd "$APP_DIR/frontend"
@@ -157,7 +152,7 @@ $DOMAIN_NAME {
     root * $APP_DIR/frontend/dist
     file_server
 
-    # Reverse proxy API requests to the FastAPI backend
+    # Reverse proxy API requests to the Go backend
     handle_path /api* {
         reverse_proxy 127.0.0.1:8000
     }
@@ -243,5 +238,5 @@ echo "  Restart app:       systemctl restart starcitizen-hub"
 echo "  Restart Caddy:     systemctl restart caddy"
 echo "  Check status:      systemctl status starcitizen-hub"
 echo ""
-echo "Configuration file: $APP_DIR/backend/.env"
+echo "Configuration file: $APP_DIR/.env"
 echo ""

@@ -1,0 +1,162 @@
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/internal/database/database.go:41
+[0m[33m[0.012ms] [34;1m[rows:0][0m PRAGMA journal_mode=WAL;
+2026/02/13 19:40:04 Database connection established
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.021ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="users"
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.068ms] [34;1m[rows:4][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "users" AND sql IS NOT NULL order by type = "table" desc
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.018ms] [34;1m[rows:-][0m SELECT * FROM `users` LIMIT 1
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.019ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "users" AND name = "users"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.100ms] [34;1m[rows:0][0m CREATE TABLE `users__temp`  (id INTEGER NOT NULL,`email` text,password_hash VARCHAR(255) NOT NULL,rsi_handle VARCHAR(100),`display_name` text,avatar_url VARCHAR(500),`is_active` numeric DEFAULT true,`is_approved` numeric DEFAULT false,last_seen_at DATETIME,created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,custom_attributes JSON,is_rsi_verified BOOLEAN NOT NULL,`updated_at` datetime,`deleted_at` datetime,PRIMARY KEY (id))
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.021ms] [34;1m[rows:0][0m INSERT INTO `users__temp`(`id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at`) SELECT `id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at` FROM `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.219ms] [34;1m[rows:0][0m DROP TABLE `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[1.251ms] [34;1m[rows:0][0m ALTER TABLE `users__temp` RENAME TO `users`
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.015ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "users" AND name = "users"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.097ms] [34;1m[rows:0][0m CREATE TABLE `users__temp`  (id INTEGER NOT NULL,`email` text,`password_hash` text,rsi_handle VARCHAR(100),`display_name` text,avatar_url VARCHAR(500),`is_active` numeric DEFAULT true,`is_approved` numeric DEFAULT false,last_seen_at DATETIME,created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,custom_attributes JSON,is_rsi_verified BOOLEAN NOT NULL,`updated_at` datetime,`deleted_at` datetime,PRIMARY KEY (id))
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.017ms] [34;1m[rows:0][0m INSERT INTO `users__temp`(`id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at`) SELECT `id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at` FROM `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.028ms] [34;1m[rows:0][0m DROP TABLE `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[1.120ms] [34;1m[rows:0][0m ALTER TABLE `users__temp` RENAME TO `users`
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.015ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.014ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "users" AND name = "users"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.063ms] [34;1m[rows:0][0m CREATE TABLE `users__temp`  (id INTEGER NOT NULL,`email` text,`password_hash` text,`rsi_handle` text,`display_name` text,avatar_url VARCHAR(500),`is_active` numeric DEFAULT true,`is_approved` numeric DEFAULT false,last_seen_at DATETIME,created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,custom_attributes JSON,is_rsi_verified BOOLEAN NOT NULL,`updated_at` datetime,`deleted_at` datetime,PRIMARY KEY (id))
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.015ms] [34;1m[rows:0][0m INSERT INTO `users__temp`(`id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at`) SELECT `id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at` FROM `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.038ms] [34;1m[rows:0][0m DROP TABLE `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[1.102ms] [34;1m[rows:0][0m ALTER TABLE `users__temp` RENAME TO `users`
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.015ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "users" AND name = "users"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.064ms] [34;1m[rows:0][0m CREATE TABLE `users__temp`  (id INTEGER NOT NULL,`email` text,`password_hash` text,`rsi_handle` text,`display_name` text,avatar_url VARCHAR(500),`is_active` numeric DEFAULT true,`is_approved` numeric DEFAULT false,last_seen_at DATETIME,created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,custom_attributes JSON,`is_rsi_verified` numeric DEFAULT false,`updated_at` datetime,`deleted_at` datetime,PRIMARY KEY (id))
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.036ms] [34;1m[rows:0][0m INSERT INTO `users__temp`(`id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at`) SELECT `id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at` FROM `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.028ms] [34;1m[rows:0][0m DROP TABLE `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[1.087ms] [34;1m[rows:0][0m ALTER TABLE `users__temp` RENAME TO `users`
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.015ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "users" AND name = "users"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.067ms] [34;1m[rows:0][0m CREATE TABLE `users__temp`  (id INTEGER NOT NULL,`email` text,`password_hash` text,`rsi_handle` text,`display_name` text,`avatar_url` text,`is_active` numeric DEFAULT true,`is_approved` numeric DEFAULT false,last_seen_at DATETIME,created_at DATETIME DEFAULT (CURRENT_TIMESTAMP) NOT NULL,custom_attributes JSON,`is_rsi_verified` numeric DEFAULT false,`updated_at` datetime,`deleted_at` datetime,PRIMARY KEY (id))
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.016ms] [34;1m[rows:0][0m INSERT INTO `users__temp`(`id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at`) SELECT `id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at` FROM `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.027ms] [34;1m[rows:0][0m DROP TABLE `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[1.092ms] [34;1m[rows:0][0m ALTER TABLE `users__temp` RENAME TO `users`
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.016ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.014ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "users" AND name = "users"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.092ms] [34;1m[rows:0][0m CREATE TABLE `users__temp`  (id INTEGER NOT NULL,`email` text,`password_hash` text,`rsi_handle` text,`display_name` text,`avatar_url` text,`is_active` numeric DEFAULT true,`is_approved` numeric DEFAULT false,last_seen_at DATETIME,`created_at` datetime,custom_attributes JSON,`is_rsi_verified` numeric DEFAULT false,`updated_at` datetime,`deleted_at` datetime,PRIMARY KEY (id))
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.015ms] [34;1m[rows:0][0m INSERT INTO `users__temp`(`id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at`) SELECT `id`,`email`,`password_hash`,`rsi_handle`,`display_name`,`avatar_url`,`is_active`,`is_approved`,`last_seen_at`,`created_at`,`custom_attributes`,`is_rsi_verified`,`updated_at`,`deleted_at` FROM `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.069ms] [34;1m[rows:0][0m DROP TABLE `users`
+
+2026/02/13 19:40:04 [32m
+[0m[33m[1.131ms] [34;1m[rows:0][0m ALTER TABLE `users__temp` RENAME TO `users`
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.016ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "users" AND name = "idx_users_email"
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.068ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_users_email` ON `users`(`email`)
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.014ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "users" AND name = "idx_users_rsi_handle"
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.062ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX `idx_users_rsi_handle` ON `users`(`rsi_handle`)
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.012ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type = "index" AND tbl_name = "users" AND name = "idx_users_deleted_at"
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.058ms] [34;1m[rows:0][0m CREATE INDEX `idx_users_deleted_at` ON `users`(`deleted_at`)
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.012ms] [34;1m[rows:-][0m SELECT count(*) FROM sqlite_master WHERE type='table' AND name="roles"
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.042ms] [34;1m[rows:1][0m SELECT sql FROM sqlite_master WHERE type IN ("table","index") AND tbl_name = "roles" AND sql IS NOT NULL order by type = "table" desc
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.013ms] [34;1m[rows:-][0m SELECT * FROM `roles` LIMIT 1
+
+2026/02/13 19:40:04 [32m/home/pyromancer/starcitizen-hub/backend-go/cmd/server/main.go:26
+[0m[33m[0.024ms] [34;1m[rows:1][0m PRAGMA foreign_keys
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.017ms] [34;1m[rows:-][0m SELECT sql FROM sqlite_master WHERE type = "table" AND tbl_name = "roles" AND name = "roles"
+
+2026/02/13 19:40:04 [32m
+[0m[33m[0.090ms] [34;1m[rows:0][0m CREATE TABLE `roles__temp`  (id INTEGER NOT NULL,`name` text,tier VARCHAR(20) NOT NULL,permissions JSON NOT NULL,is_default BOOLEAN NOT NULL,sort_order INTEGER NOT NULL,PRIMARY KEY (id),UNIQUE (name))
+
+2026/02/13 19:40:04 [31;1m [35;1mtable roles__temp has no column named UNIQUE
+[0m[33m[0.011ms] [34;1m[rows:0][0m INSERT INTO `roles__temp`(`id`,`name`,`tier`,`permissions`,`is_default`,`sort_order`,`UNIQUE`) SELECT `id`,`name`,`tier`,`permissions`,`is_default`,`sort_order`,`UNIQUE` FROM `roles`
+2026/02/13 19:40:04 Starting Go backend on port 8000
+2026/02/13 19:40:06 "GET http://localhost:8000/api/auth/login HTTP/1.1" from [::1]:59916 - 405 0B in 20.815µs

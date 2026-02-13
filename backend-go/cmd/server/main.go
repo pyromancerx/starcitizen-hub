@@ -75,46 +75,77 @@ func main() {
 		MaxAge:           300,
 	}))
 
+	authHandler := handlers.NewAuthHandler()
+	assetHandler := handlers.NewAssetHandler()
+	logisticsHandler := handlers.NewLogisticsHandler()
+	socialHandler := handlers.NewSocialHandler()
+	adminHandler := handlers.NewAdminHandler()
+
 	// Routes
 	r.Route("/api", func(r chi.Router) {
-		r.Post("/auth/login", handlers.Login)
-		r.Post("/auth/register", handlers.Register)
+		r.Post("/auth/login", authHandler.Login)
+		r.Post("/auth/register", authHandler.Register)
 
 		// Protected Routes
 		r.Group(func(r chi.Router) {
 			r.Use(customMiddleware.AuthMiddleware)
-			r.Get("/auth/me", handlers.Me)
+			r.Get("/auth/me", authHandler.Me)
 
 			// Ships
-			r.Get("/ships/", handlers.ListMyShips)
-			r.Post("/ships/", handlers.CreateShip)
-			r.Patch("/ships/{id}", handlers.UpdateShip)
-			r.Delete("/ships/{id}", handlers.DeleteShip)
-			r.Post("/ships/import-hangarxplorer", handlers.ImportHangarXPLORER)
+			r.Get("/ships/", assetHandler.ListMyShips)
+			r.Post("/ships/", assetHandler.CreateShip)
+			r.Patch("/ships/{id}", assetHandler.UpdateShip)
+			r.Delete("/ships/{id}", assetHandler.DeleteShip)
+			r.Post("/ships/import-hangarxplorer", assetHandler.ImportHangarXPLORER)
 
 			// Wallet
-			r.Get("/wallet/", handlers.GetMyWallet)
-			r.Get("/wallet/transactions", handlers.GetWalletTransactions)
+			r.Get("/wallet/", assetHandler.GetMyWallet)
+			r.Get("/wallet/transactions", assetHandler.GetWalletTransactions)
 
 			// Inventory
-			r.Get("/inventory/", handlers.ListMyInventory)
-			r.Post("/inventory/", handlers.AddInventoryItem)
-			r.Patch("/inventory/{id}", handlers.UpdateInventoryItem)
-			r.Delete("/inventory/{id}", handlers.DeleteInventoryItem)
+			r.Get("/inventory/", assetHandler.ListMyInventory)
+			r.Post("/inventory/", assetHandler.AddInventoryItem)
+			r.Patch("/inventory/{id}", assetHandler.UpdateInventoryItem)
+			r.Delete("/inventory/{id}", assetHandler.DeleteInventoryItem)
 
 			// Logistics
-			r.Get("/stockpiles/", handlers.ListStockpiles)
-			r.Post("/trade/runs", handlers.CreateTradeRun)
-			r.Get("/operations/", handlers.ListOperations)
-			r.Get("/projects/", handlers.ListProjects)
+			r.Get("/stockpiles/", logisticsHandler.ListStockpiles)
+			r.Get("/stockpiles/{id}", logisticsHandler.GetStockpile)
+			r.Get("/trade/contracts", logisticsHandler.ListCargoContracts)
+			r.Post("/trade/runs", logisticsHandler.CreateTradeRun)
+			r.Get("/operations/", logisticsHandler.ListOperations)
+			r.Get("/operations/{id}", logisticsHandler.GetOperation)
+			r.Post("/operations/{id}/signup", logisticsHandler.SignupOperation)
+			r.Get("/projects/", logisticsHandler.ListProjects)
+			r.Get("/projects/{id}", logisticsHandler.GetProject)
 
 			// Social
-			r.Get("/forum/categories", handlers.ListForumCategories)
-			r.Get("/notifications/", handlers.GetNotifications)
-			r.Get("/activity/feed", handlers.GetActivityFeed)
+			r.Get("/forum/categories", socialHandler.ListForumCategories)
+			r.Get("/forum/categories/{id}", socialHandler.GetForumCategory)
+			r.Get("/forum/threads/{id}", socialHandler.GetThread)
+			r.Post("/forum/threads", socialHandler.CreateThread)
+			r.Post("/forum/posts", socialHandler.CreatePost)
+			r.Get("/notifications/", socialHandler.GetNotifications)
+			r.Patch("/notifications/{id}/read", socialHandler.MarkNotificationRead)
+			r.Get("/activity/feed", socialHandler.GetActivityFeed)
+
+			// Messaging
+			r.Get("/messages/conversations", socialHandler.ListConversations)
+			r.Get("/messages/conversations/{id}", socialHandler.GetConversation)
+			r.Post("/messages/", socialHandler.SendMessage)
+
+			// Admin & Integrations
+			r.Get("/admin/users", adminHandler.ListUsers)
+			r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
+			r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
+			r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
+			r.Get("/admin/settings", adminHandler.GetSettings)
+			r.Patch("/admin/settings", adminHandler.UpdateSetting)
+			r.Get("/discord/config", adminHandler.GetDiscordConfig)
+			r.Patch("/discord/config", adminHandler.UpdateDiscordConfig)
 
 			// Stats
-			r.Get("/stats/dashboard", handlers.GetDashboardStats)
+			r.Get("/stats/dashboard", adminHandler.GetDashboardStats)
 		})
 	})
 
