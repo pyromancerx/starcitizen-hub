@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { Rocket } from 'lucide-react';
@@ -90,8 +91,8 @@ export default function LoginPage() {
           </button>
         </form>
         
-        <p className="mt-6 text-center text-sm text-sc-grey">
-          No account? <a href="#" className="text-sc-light-blue hover:text-sc-blue hover:underline font-bold">Request Signal Access</a>
+        <p className="mt-6 text-center text-sm text-sc-grey uppercase tracking-widest">
+          No account? <Link href="/register" className="text-sc-light-blue hover:text-sc-blue hover:underline font-bold">Request Signal Access</Link>
         </p>
       </div>
     </div>

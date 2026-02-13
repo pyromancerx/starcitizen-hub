@@ -17,16 +17,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     fetchTheme();
     if (isAuthenticated) {
       fetchUser();
-    } else if (pathname !== '/login') {
+    } else if (pathname !== '/login' && pathname !== '/register') {
       router.push('/login');
     }
   }, [isAuthenticated, pathname]);
 
-  if (!isAuthenticated && pathname !== '/login') {
+  if (!isAuthenticated && pathname !== '/login' && pathname !== '/register') {
     return null; // Prevent flicker
   }
 
-  if (pathname === '/login') {
+  if (pathname === '/login' || pathname === '/register') {
     return <>{children}</>;
   }
 

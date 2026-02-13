@@ -42,10 +42,17 @@ const Sidebar = () => {
       label: 'Social',
       items: [
         { name: 'Operations', href: '/operations', icon: ShieldCheck },
-        { name: 'Events', href: '/events', icon: Calendar },
+        { name: 'Organization Events', href: '/events', icon: Calendar },
         { name: 'Spectrum Forum', href: '/forum', icon: MessageSquare },
         { name: 'Personnel', href: '/members', icon: Users },
         { name: 'Messages', href: '/messages', icon: MessageSquare },
+      ]
+    },
+    {
+      label: 'Trading',
+      items: [
+        { name: 'Trade Runs', href: '/trade', icon: ChevronRight },
+        { name: 'Cargo Contracts', href: '/trade/contracts', icon: ChevronRight },
       ]
     },
     {
@@ -57,8 +64,8 @@ const Sidebar = () => {
     {
       label: 'Command',
       items: [
-        { name: 'System Admin', href: '/admin', icon: Settings },
-        { name: 'RSI Verification', href: '/admin/rsi-verification', icon: ShieldCheck },
+        { name: 'System Admin', href: '/admin/personnel', icon: Settings },
+        { name: 'RSI Verification', href: '/admin/rsi', icon: ShieldCheck },
       ]
     }
   ];
