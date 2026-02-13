@@ -1,9 +1,14 @@
+from typing import List, Optional
+from datetime import datetime
+from sqlalchemy import select, desc, func
+from sqlalchemy.orm import aliased
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.models.role import Role, UserRole, RoleTier
 from app.models.ship import Ship
-from app.models.stockpile import Stockpile, StockpileItem # Assuming these are org stockpiles
+from app.models.stockpile import OrgStockpile # Using OrgStockpile
 from app.models.treasury import TreasuryTransaction # Assuming this is for org treasury
-from app.models.event import Event, EventParticipant # For events
+from app.models.event import Event, EventSignup # For events
 from app.models.announcement import Announcement
 from app.models.forum import ForumPost # For forum posts
 from app.models.trade import CargoContract
@@ -138,44 +143,44 @@ class AdminService:
         
         # --- 4. Ships ---
         ships_data: List[OrgShip] = []
-        ship_results = await self.db.execute(select(Ship, User).join(User, Ship.owner_id == User.id))
+        ship_results = await self.db.execute(select(Ship, User).join(User, Ship.user_id == User.id))
         for ship, owner in ship_results.all():
             ships_data.append(OrgShip(
                 id=ship.id,
                 name=ship.name,
-                manufacturer=ship.manufacturer,
-                model=ship.model,
-                owner_id=ship.owner_id,
+                manufacturer="Unknown", # Manufacturer not in model
+                model=ship.ship_type,
+                owner_id=ship.user_id,
                 owner_display_name=owner.display_name,
             ))
         total_records += len(ships_data)
 
         # --- 5. Stockpiles ---
         stockpiles_data: List[OrgStockpileItem] = []
-        stockpile_results = await self.db.execute(select(StockpileItem, User).join(User, StockpileItem.added_by_id == User.id))
-        for item, added_by_user in stockpile_results.all():
+        stockpile_results = await self.db.execute(select(OrgStockpile))
+        for item in stockpile_results.scalars().all():
             stockpiles_data.append(OrgStockpileItem(
                 id=item.id,
-                item_name=item.item_name,
+                item_name=item.name,
                 quantity=item.quantity,
-                location=item.location,
-                added_by_id=item.added_by_id,
-                added_by_display_name=added_by_user.display_name,
+                location="Organization Inventory", # Default location
+                added_by_id=None,
+                added_by_display_name="Organization",
                 created_at=item.created_at,
             ))
         total_records += len(stockpiles_data)
 
         # --- 6. Treasury Transactions ---
         treasury_data: List[OrgTreasuryTransaction] = []
-        treasury_results = await self.db.execute(select(TreasuryTransaction, User).join(User, TreasuryTransaction.initiated_by_id == User.id))
-        for tx, initiated_by_user in treasury_results.all():
+        treasury_results = await self.db.execute(select(TreasuryTransaction, User).join(User, TreasuryTransaction.user_id == User.id))
+        for tx, user in treasury_results.all():
             treasury_data.append(OrgTreasuryTransaction(
                 id=tx.id,
                 amount=tx.amount,
-                transaction_type=tx.transaction_type.value if hasattr(tx.transaction_type, 'value') else str(tx.transaction_type),
+                transaction_type=tx.type.value if hasattr(tx.type, 'value') else str(tx.type),
                 description=tx.description,
-                initiated_by_id=tx.initiated_by_id,
-                initiated_by_display_name=initiated_by_user.display_name,
+                initiated_by_id=tx.user_id,
+                initiated_by_display_name=user.display_name,
                 created_at=tx.created_at,
             ))
         total_records += len(treasury_data)
@@ -187,8 +192,8 @@ class AdminService:
             # Fetch participants for this operation
             participant_results = await self.db.execute(
                 select(User.display_name)
-                .join(EventParticipant, EventParticipant.user_id == User.id)
-                .where(EventParticipant.event_id == op.id)
+                .join(EventSignup, EventSignup.user_id == User.id)
+                .where(EventSignup.event_id == op.id)
             )
             participants = [name for name, in participant_results.all()]
 
@@ -215,7 +220,7 @@ class AdminService:
                 content=ann.content,
                 author_id=ann.author_id,
                 author_display_name=author.display_name,
-                published_at=ann.published_at,
+                published_at=ann.created_at, # Using created_at
             ))
         total_records += len(announcements_data)
 

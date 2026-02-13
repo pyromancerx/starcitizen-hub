@@ -33,6 +33,7 @@ from app.routers import (
     role_router,
     audit_router, # NEW
     stats_router,
+    search_router,
 )
 from app.routers.web import router as web_router
 from app.routers.admin import router as admin_router

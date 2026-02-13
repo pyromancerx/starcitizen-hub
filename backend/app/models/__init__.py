@@ -7,7 +7,10 @@ from app.models.wallet import Wallet, WalletTransaction
 from app.models.stockpile import OrgStockpile, StockpileTransaction, ResourceType
 from app.models.announcement import Announcement
 from app.models.forum import ForumCategory, ForumThread, ForumPost
-from app.models.event import Operation, OperationParticipant, OperationType, OperationStatus
+from app.models.event import (
+    Operation, OperationParticipant, OperationType, OperationStatus,
+    Event, EventSignup, EventType, EventStatus, SignupStatus
+)
 from app.models.project import (
     Project, ProjectPhase, Task, ContributionGoal, Contribution,
     ProjectStatus, TaskStatus
@@ -51,6 +54,7 @@ __all__ = [
     "Announcement",
     "ForumCategory", "ForumThread", "ForumPost",
     "Operation", "OperationParticipant", "OperationType", "OperationStatus",
+    "Event", "EventSignup", "EventType", "EventStatus", "SignupStatus",
     "Project", "ProjectPhase", "Task", "ContributionGoal", "Contribution",
     "ProjectStatus", "TaskStatus",
     "PeeredInstance", "FederatedEvent", "TradeRequest", "PeerStatus", "TradeRequestStatus",

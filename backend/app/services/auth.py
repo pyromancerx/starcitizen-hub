@@ -42,3 +42,14 @@ class AuthService:
             return payload
         except JWTError as e:
             raise ValueError(f"Invalid token: {e}")
+
+    @staticmethod
+    def generate_random_password(length: int = 12) -> str:
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+    @staticmethod
+    def get_password_hash(password: str) -> str:
+        return get_password_hash(password)
