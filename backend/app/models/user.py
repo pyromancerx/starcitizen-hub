@@ -40,7 +40,7 @@ class User(Base):
     notifications: Mapped[list["Notification"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
-        foreign_keys="Notification.user_id"
+        foreign_keys="[Notification.user_id]"
     )
     notification_preference: Mapped[Optional["NotificationPreference"]] = relationship(
         back_populates="user",
@@ -48,8 +48,11 @@ class User(Base):
         cascade="all, delete-orphan"
     )
     achievements: Mapped[list["UserAchievement"]] = relationship(
+        "UserAchievement",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
+        primaryjoin="User.id == UserAchievement.user_id",
+        foreign_keys="[UserAchievement.user_id]"
     )
     conversations_as_user1: Mapped[list["Conversation"]] = relationship(
         back_populates="user1",
@@ -68,7 +71,7 @@ class User(Base):
     )
     verification_requests: Mapped[list["RSIVerificationRequest"]] = relationship(
         back_populates="user",
-        foreign_keys="RSIVerificationRequest.user_id",
+        foreign_keys="[RSIVerificationRequest.user_id]",
         cascade="all, delete-orphan"
     )
     privacy: Mapped[Optional["UserPrivacy"]] = relationship(
@@ -81,19 +84,19 @@ class User(Base):
     posted_contracts: Mapped[list["CargoContract"]] = relationship(
         "CargoContract",
         back_populates="poster",
-        foreign_keys="CargoContract.poster_id",
+        foreign_keys="[CargoContract.poster_id]",
         cascade="all, delete-orphan"
     )
     accepted_contracts: Mapped[list["CargoContract"]] = relationship(
         "CargoContract",
         back_populates="hauler",
-        foreign_keys="CargoContract.hauler_id"
+        foreign_keys="[CargoContract.hauler_id]"
     )
 
     # Other assets
     ships: Mapped[list["Ship"]] = relationship(
         "Ship",
-        backref="user",
+        back_populates="user",
         cascade="all, delete-orphan"
     )
     wallet: Mapped[Optional["Wallet"]] = relationship(

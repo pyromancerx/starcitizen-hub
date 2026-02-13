@@ -33,11 +33,32 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# Check if installation was completed
-if [[ ! -d "$APP_DIR/venv" ]]; then
-    log_error "Installation not found. Please run install.sh first."
+# Failure handler
+on_failure() {
+    echo ""
+    log_error "Setup failed! An error occurred during configuration."
+    echo ""
+    # Ensure SCRIPT_DIR is used to find uninstall.sh regardless of APP_DIR
+    if [[ -f "$SCRIPT_DIR/uninstall.sh" ]]; then
+        echo -e "${YELLOW}Setup incomplete. You can run the uninstall script to clean up partial changes.${NC}"
+        read -p "Run uninstallation script now? (y/N): " SHOULD_UNINSTALL
+        if [[ "$SHOULD_UNINSTALL" =~ ^[Yy]$ ]]; then
+            log_info "Launching uninstallation script..."
+            # Run without set -e context to avoid recursive failure if uninstall has issues
+            bash "$SCRIPT_DIR/uninstall.sh"
+        else
+            log_warn "Installation left in partial state. Check logs above for details."
+        fi
+    else
+        log_warn "Uninstallation script not found. Manual cleanup may be required."
+    fi
     exit 1
-fi
+}
+
+# Trap errors
+trap on_failure ERR
+
+# Check if installation was completed
 
 echo ""
 echo -e "${CYAN}============================================${NC}"
