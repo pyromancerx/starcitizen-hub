@@ -13,11 +13,18 @@
   -moz-osx-font-smoothing: grayscale;
 
   /* Default Theme Variables */
-  --color-sc-dark: #0b0c10;
-  --color-sc-panel: #1f2833;
-  --color-sc-blue: #66fcf1;
-  --color-sc-light-blue: #45a29e;
-  --color-sc-grey: #c5c6c7;
+  --color-sc-dark-rgb: 11 12 16;
+  --color-sc-panel-rgb: 31 40 51;
+  --color-sc-blue-rgb: 102 252 241;
+  --color-sc-light-blue-rgb: 69 162 158;
+  --color-sc-grey-rgb: 197 198 199;
+
+  /* Legacy variable support if needed */
+  --color-sc-dark: rgb(var(--color-sc-dark-rgb));
+  --color-sc-panel: rgb(var(--color-sc-panel-rgb));
+  --color-sc-blue: rgb(var(--color-sc-blue-rgb));
+  --color-sc-light-blue: rgb(var(--color-sc-light-blue-rgb));
+  --color-sc-grey: rgb(var(--color-sc-grey-rgb));
 }
 
 body {

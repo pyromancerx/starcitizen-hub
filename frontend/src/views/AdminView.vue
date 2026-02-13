@@ -58,3 +58,9 @@
 
     <!-- Router View for Admin Sub-sections -->
     <router-view></router-view>
+  </div>
+</template>
+
+<script setup>
+// No script needed for this view as it's a wrapper
+</script>

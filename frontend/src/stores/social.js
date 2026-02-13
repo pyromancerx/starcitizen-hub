@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import api from '../services/api';
 
-export const useEventStore = defineStore('events', {
+export const useSocialStore = defineStore('social', {
   state: () => ({
     events: [],
     currentEvent: null,
@@ -125,3 +125,5 @@ export const useEventStore = defineStore('events', {
     }
   }
 });
+
+export const useEventStore = useSocialStore;
