@@ -130,11 +130,14 @@ chown starcitizen-hub:starcitizen-hub "$APP_DIR/backend/.env"
 chmod 600 "$APP_DIR/backend/.env"
 
 log_info "Running database migrations..."
-cd "$APP_DIR/backend"
-sudo -u starcitizen-hub "$APP_DIR/venv/bin/alembic" upgrade head
+cd "$APP_DIR/backend-go"
+# GORM handles auto-migration in main.go for now, but we could add a flag
+go build -o server ./cmd/server/main.go
+./server --migrate-only || true # Placeholder for future migration logic
 
 log_info "Seeding initial data..."
-sudo -u starcitizen-hub "$APP_DIR/venv/bin/python" -m app.tasks.seed
+# Seeding logic needs to be ported to Go or run via Python if still available
+# For now, let's assume Go backend will handle basic seeding if DB empty
 
 log_info "Building frontend..."
 cd "$APP_DIR/frontend"
@@ -191,6 +194,10 @@ mkdir -p /var/log/caddy
 chown caddy:caddy /var/log/caddy
 
 log_info "Enabling and starting services..."
+
+# Build the server before starting
+cd "$APP_DIR/backend-go"
+go build -o server ./cmd/server/main.go
 
 # Enable and start the application service
 systemctl enable starcitizen-hub

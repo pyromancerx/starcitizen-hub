@@ -148,16 +148,15 @@ chown -R starcitizen-hub:starcitizen-hub "$APP_DIR"
 log_info "Creating systemd service..."
 cat > /etc/systemd/system/starcitizen-hub.service << 'EOF'
 [Unit]
-Description=Star Citizen Hub API Server
+Description=Star Citizen Hub API Server (Go)
 After=network.target
 
 [Service]
 Type=exec
 User=starcitizen-hub
 Group=starcitizen-hub
-WorkingDirectory=/opt/starcitizen-hub/backend
-Environment="PATH=/opt/starcitizen-hub/venv/bin"
-ExecStart=/opt/starcitizen-hub/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=/opt/starcitizen-hub/backend-go
+ExecStart=/opt/starcitizen-hub/backend-go/server
 Restart=always
 RestartSec=5
 
