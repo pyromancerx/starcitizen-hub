@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import { useSignaling } from '@/context/SignalingContext';
 
 interface Peer {
   id: number;
@@ -9,6 +10,7 @@ interface Peer {
 
 export const useWebRTC = (roomId?: string, targetId?: number) => {
   const { user } = useAuthStore();
+  const { send, subscribe, isConnected } = useSignaling();
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [peers, setPeers] = useState<Map<number, Peer>>(new Map());
   const [roomPresence, setRoomPresence] = useState<Map<string, number[]>>(new Map());
@@ -18,7 +20,6 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
   const [error, setError] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
   
-  const socketRef = useRef<WebSocket | null>(null);
   const peersRef = useRef<Map<number, Peer>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
 
@@ -30,13 +31,13 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
     const pc = new RTCPeerConnection(iceServers);
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && socketRef.current) {
-        socketRef.current.send(JSON.stringify({
+      if (event.candidate) {
+        send({
           type: 'ice-candidate',
           candidate: event.candidate,
           target_id: peerId,
           room_id: roomId,
-        }));
+        });
       }
     };
 
@@ -170,95 +171,69 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
   useEffect(() => {
     if (!user) return;
 
-    let reconnectTimer: NodeJS.Timeout;
-
-    const connect = () => {
+    if (isConnected) {
+        setConnectionStatus('connected');
+        if (roomId) {
+            send({ type: 'join', room_id: roomId });
+        }
+    } else {
         setConnectionStatus('connecting');
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = process.env.NEXT_PUBLIC_API_URL 
-          ? process.env.NEXT_PUBLIC_API_URL.replace(/^http/, 'ws') 
-          : `${protocol}//${window.location.host}/api`;
-        
-        const token = localStorage.getItem('token');
-        const ws = new WebSocket(`${host}/social/signaling?token=${token}`);
-        socketRef.current = ws;
+    }
 
-        ws.onopen = () => {
-          setConnectionStatus('connected');
-          setError(null);
-          if (roomId) {
-            ws.send(JSON.stringify({ type: 'join', room_id: roomId }));
+    const unsubscribe = subscribe(async (data) => {
+        const { type, sender_id, offer, answer, candidate } = data;
+
+        if (type === 'user-joined') {
+          const pc = createPeerConnection(sender_id);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          send({ type: 'offer', offer, target_id: sender_id, room_id: roomId });
+          peersRef.current.set(sender_id, { id: sender_id, connection: pc });
+        } else if (type === 'offer') {
+          const pc = createPeerConnection(sender_id);
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          send({ type: 'answer', answer, target_id: sender_id, room_id: roomId });
+          peersRef.current.set(sender_id, { id: sender_id, connection: pc });
+        } else if (type === 'answer') {
+          const peer = peersRef.current.get(sender_id);
+          if (peer) {
+            await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
           }
-        };
-
-        ws.onclose = () => {
-          setConnectionStatus('disconnected');
-          // Auto reconnect after 3 seconds
-          reconnectTimer = setTimeout(connect, 3000);
-        };
-
-        ws.onerror = () => {
-          setConnectionStatus('error');
-          setError('Signaling link failed. Re-establishing connection...');
-        };
-
-        ws.onmessage = async (event) => {
-          const data = JSON.parse(event.data);
-          const { type, sender_id, offer, answer, candidate } = data;
-
-          if (type === 'user-joined') {
-            // Create offer to new user
-            const pc = createPeerConnection(sender_id);
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            ws.send(JSON.stringify({ type: 'offer', offer, target_id: sender_id, room_id: roomId }));
-            peersRef.current.set(sender_id, { id: sender_id, connection: pc });
-          } else if (type === 'offer') {
-            const pc = createPeerConnection(sender_id);
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            ws.send(JSON.stringify({ type: 'answer', answer, target_id: sender_id, room_id: roomId }));
-            peersRef.current.set(sender_id, { id: sender_id, connection: pc });
-          } else if (type === 'answer') {
-            const peer = peersRef.current.get(sender_id);
-            if (peer) {
-              await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
-            }
-          } else if (type === 'ice-candidate') {
-            const peer = peersRef.current.get(sender_id);
-            if (peer) {
-              await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
-            }
-          } else if (type === 'user-left') {
-            const peer = peersRef.current.get(sender_id);
-            if (peer) {
-              peer.connection.close();
-              peersRef.current.delete(sender_id);
-              setPeers(prev => {
-                const newPeers = new Map(prev);
-                newPeers.delete(sender_id);
-                return newPeers;
-              });
-            }
-          } else if (type === 'room-presence') {
-            setRoomPresence(prev => {
-              const newPresence = new Map(prev);
-              newPresence.set(data.room_id, data.user_ids);
-              return newPresence;
+        } else if (type === 'ice-candidate') {
+          const peer = peersRef.current.get(sender_id);
+          if (peer) {
+            await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
+          }
+        } else if (type === 'user-left') {
+          const peer = peersRef.current.get(sender_id);
+          if (peer) {
+            peer.connection.close();
+            peersRef.current.delete(sender_id);
+            setPeers(prev => {
+              const newPeers = new Map(prev);
+              newPeers.delete(sender_id);
+              return newPeers;
             });
           }
-        };
-    };
-
-    connect();
+        } else if (type === 'room-presence') {
+          setRoomPresence(prev => {
+            const newPresence = new Map(prev);
+            newPresence.set(data.room_id, data.user_ids);
+            return newPresence;
+          });
+        }
+    });
 
     return () => {
-      clearTimeout(reconnectTimer);
-      socketRef.current?.close();
+      unsubscribe();
+      if (roomId && isConnected) {
+          send({ type: 'leave', room_id: roomId });
+      }
       peersRef.current.forEach(peer => peer.connection.close());
     };
-  }, [user, roomId, createPeerConnection]);
+  }, [user, roomId, createPeerConnection, send, subscribe, isConnected]);
 
   return { 
     localStream, 
@@ -269,7 +244,6 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
     isScreenSharing,
     error,
     connectionStatus,
-    socketRef,
     toggleAudio,
     toggleVideo,
     startScreenShare,

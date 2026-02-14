@@ -19,10 +19,13 @@ import VoiceChannelList from '@/components/VoiceChannelList';
 import CallOverlay from '@/components/CallOverlay';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { useAuthStore } from '@/store/authStore';
+import { useCall } from '@/context/CallContext';
+import { Phone } from 'lucide-react';
 
 export default function SocialHubPage() {
   const [activeChannel, setActiveChannel] = useState<any>(null);
   const { user } = useAuthStore();
+  const { initiateCall } = useCall();
   const { 
     localStream, 
     peers, 
@@ -38,8 +41,17 @@ export default function SocialHubPage() {
     stopScreenShare
   } = useWebRTC(activeChannel ? `room_${activeChannel.id}` : undefined);
 
+  const { data: members, isLoading: membersLoading } = useQuery({
+    queryKey: ['social-members-links'],
+    queryFn: async () => {
+      const res = await api.get('/social/members');
+      return res.data;
+    },
+  });
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
+      {/* ... (previous code) ... */}
       {/* Connection Status Banner */}
       {(error || connectionStatus === 'connecting') && (
           <div className={cn(
@@ -98,8 +110,28 @@ export default function SocialHubPage() {
             
             <div className="mt-8 border-t border-white/5 pt-6 px-4">
                 <h3 className="text-[10px] font-black text-sc-grey/40 uppercase tracking-[0.3em] mb-4">Direct Links</h3>
-                <div className="space-y-4 opacity-40">
-                    <div className="text-[10px] uppercase font-bold text-center italic py-4">Scanning for nearby signals...</div>
+                <div className="space-y-2">
+                    {membersLoading ? (
+                        <div className="text-[10px] uppercase font-bold text-center italic py-4 text-sc-grey/20">Scanning frequencies...</div>
+                    ) : members?.filter((m: any) => m.id !== user?.id).length > 0 ? (
+                        members.filter((m: any) => m.id !== user?.id).slice(0, 10).map((member: any) => (
+                            <button 
+                                key={member.id}
+                                onClick={() => initiateCall(member.id, member.display_name)}
+                                className="w-full flex items-center justify-between p-2 rounded hover:bg-sc-blue/5 border border-transparent hover:border-sc-blue/20 transition-all group"
+                            >
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-6 h-6 rounded bg-sc-dark border border-white/5 flex items-center justify-center text-[10px] font-bold text-sc-grey/40 group-hover:text-sc-blue transition-colors">
+                                        {member.display_name[0]}
+                                    </div>
+                                    <span className="text-[10px] font-bold text-sc-grey/60 group-hover:text-white uppercase truncate">{member.display_name}</span>
+                                </div>
+                                <Phone className="w-3 h-3 text-sc-blue/40 opacity-0 group-hover:opacity-100 transition-all" />
+                            </button>
+                        ))
+                    ) : (
+                        <div className="text-[10px] uppercase font-bold text-center italic py-4 text-sc-grey/20">No other citizens found.</div>
+                    )}
                 </div>
             </div>
           </div>

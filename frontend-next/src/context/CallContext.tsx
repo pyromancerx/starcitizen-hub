@@ -6,6 +6,7 @@ import { Phone, PhoneOff, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CallOverlay from '@/components/CallOverlay';
 import { useWebRTC } from '@/hooks/useWebRTC';
+import { useSignaling } from './SignalingContext';
 
 interface CallContextType {
   initiateCall: (targetId: number, name: string) => void;
@@ -17,9 +18,9 @@ const CallContext = createContext<CallContextType | undefined>(undefined);
 
 export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
+  const { send, subscribe } = useSignaling();
   const [incomingCall, setIncomingCall] = useState<any>(null);
   const [activeCall, setActiveCall] = useState<any>(null);
-  const socketRef = useRef<WebSocket | null>(null);
 
   const { 
     localStream, 
@@ -36,35 +37,22 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = process.env.NEXT_PUBLIC_API_URL 
-      ? process.env.NEXT_PUBLIC_API_URL.replace(/^http/, 'ws') 
-      : `${protocol}//${window.location.host}/api`;
-    
-    const token = localStorage.getItem('token');
-    const ws = new WebSocket(`${host}/social/signaling?token=${token}`);
-    socketRef.current = ws;
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    const unsubscribe = subscribe((data) => {
       if (data.type === 'call-request') {
         setIncomingCall(data);
-        // Play sound if needed
       }
-    };
+    });
 
-    return () => ws.close();
-  }, [user]);
+    return () => unsubscribe();
+  }, [user, subscribe]);
 
   const initiateCall = (targetId: number, name: string) => {
-    if (socketRef.current) {
-      socketRef.current.send(JSON.stringify({
-        type: 'call-request',
-        target_id: targetId,
-        sender_name: user?.display_name
-      }));
-      setActiveCall({ id: targetId, name });
-    }
+    send({
+      type: 'call-request',
+      target_id: targetId,
+      sender_name: user?.display_name
+    });
+    setActiveCall({ id: targetId, name });
   };
 
   const acceptCall = () => {
