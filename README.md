@@ -4,51 +4,50 @@ A self-hosted, full-stack logistics and community platform for Star Citizen orga
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Go](https://img.shields.io/badge/go-1.24+-00ADD8)
-![Vue](https://img.shields.io/badge/vue-3.x-green)
+![Next.js](https://img.shields.io/badge/next.js-15.x-black)
 
 ## Architecture
 
 - **Backend:** Go 1.24+, SQLite (WAL Mode), GORM
-- **Frontend:** Vue 3, Vite, TailwindCSS (Sci-Fi Theme), Pinia
+- **Frontend:** Next.js 15 (App Router), TailwindCSS (Sci-Fi Theme), React Query, Zustand
 - **Infrastructure:** Caddy (Reverse Proxy & HTTPS), Systemd
 
 ## Features
 
 ### 🚀 Asset Management
 - **Fleet Registry:** Track organization and member ships with loadout details and real-time readiness status (Ready, Damaged, etc.).
+- **Tactical Blueprints:** Design and share ship loadouts with real-time performance analytics.
 - **Bulk Import:** Seamlessly import your entire RSI hangar using HangarXPLORER JSON exports.
 - **Inventory Tracking:** Manage personal and shared items across the verse.
 - **Financial Terminal:** Track aUEC balances and transactions securely.
+- **Planetary Outposts:** Register and manage player-owned bases and outposts.
 
 ### 📦 Logistics
-- **Org Stockpiles:** Shared resource management with transaction history.
-- **Project Management:** Organize construction, mining, or combat operations with phases, tasks, and completion tracking.
+- **Org Stockpiles:** Shared resource management with transaction history and asset loaning.
+- **Project Management:** Organize strategic initiatives with phases, tasks, and completion tracking.
 - **Crowdfunding:** Create contribution goals for projects (e.g., "Fund a Javelin") with automatic progress tracking.
 
 ### 📡 Communications
+- **Sub-Space Social Hub:** Real-time WebRTC voice and video communication matrix.
 - **Global Search:** Quickly find members, ships, projects, and forum threads from the universal search bar.
-- **Spectrum Forum:** Secure, hierarchical discussion boards.
-- **Operations Calendar:** Event scheduling with role-based signups and participant notifications.
-- **Direct Messaging:** Private 1-on-1 messaging between members with real-time delivery.
-- **Activity Feed:** Organization timeline showing member activities (imports, new ships, completed operations, trades, achievements).
-- **Notification Center:** In-app notifications for mentions, operation invites, contract updates, and project contributions.
-- **Federation:** Securely peer with allied organizations to share event data and trade requests via HMAC-signed APIs.
+- **Spectrum Forum:** Secure, hierarchical discussion boards for permanent organization records.
+- **Operations Calendar:** Event scheduling with mandatory ship/gear requirements and participant notifications.
+- **Direct Messaging:** Private 1-on-1 messaging between members with real-time WebSocket delivery.
+- **Activity Feed:** Organization timeline showing member activities.
+- **Notification Center:** In-app HUD alerts for mentions, operation invites, and system updates.
 
 ### 🎮 Social & Engagement
-- **Achievement System:** Gamification with auto-awarded and custom achievements (Common, Rare, Epic, Legendary).
-- **Service Records:** View comprehensive career stats on member profiles (lifetime profit, contributions, operations).
-- **Crew Finder (LFG):** Post "Looking For Group" requests to find crewmates for ships and activities.
-- **Availability Scheduler:** Weekly availability tracking to coordinate play sessions.
-- **Crew Loadouts:** Save and deploy named crew configurations for multi-crew ships.
+- **Achievement System:** Gamification with auto-awarded and custom merit citations.
+- **Service Records:** View comprehensive career stats on member profiles.
+- **Crew Finder (LFG):** Post "Looking For Group" signals to find crewmates for ships and activities.
 
 ### 🌐 Integrations
-- **Discord Integration:** OAuth login, automatic announcements to Discord channels, role synchronization.
-- **RSI Integration:** Star Citizen account verification (manual approval with screenshot).
+- **Discord Integration:** Webhook relay for announcements and operations.
+- **RSI Integration:** Star Citizen account verification and automatic roster synchronization.
 
 ### 📊 Trading & Economy
-- **Cargo Contracts:** Member-to-member hauling jobs with **automatic escrow** (funds are held securely and released upon delivery).
+- **Cargo Contracts:** Member-to-member hauling jobs with automatic escrow.
 - **Trade Run Tracker:** Log trade runs with auto-calculated profit tracking.
-- **Commodity Price Database:** Crowdsourced market data with best route calculations and price history.
 
 ---
 
@@ -60,16 +59,15 @@ cd backend-go
 # Build and Run
 go build -o server ./cmd/server/main.go
 ./server
-# OR use standalone script from root: ./scripts/start_backend.sh
 ```
 
 ### 2. Frontend Setup
 ```bash
-cd frontend
+cd frontend-next
 npm install
 npm run dev
 ```
-Access the app at `http://localhost:5173`.
+Access the app at `http://localhost:3000`.
 
 ---
 
