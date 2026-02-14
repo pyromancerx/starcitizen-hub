@@ -93,6 +93,20 @@ func (h *SignalingHub) Run() {
 				for roomID, clients := range h.rooms {
 					if _, ok := clients[client.ID]; ok {
 						delete(clients, client.ID)
+						
+						// Notify remaining users in room
+						hMsg, _ := json.Marshal(map[string]interface{}{
+							"type": "user-left",
+							"room_id": roomID,
+							"user_id": client.ID,
+						})
+						for _, remainingClient := range clients {
+							select {
+							case remainingClient.Send <- hMsg:
+							default:
+							}
+						}
+
 						if len(clients) == 0 {
 							delete(h.rooms, roomID)
 						} else {

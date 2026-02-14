@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   MessageSquare, 
@@ -12,7 +12,9 @@ import {
   Settings,
   ShieldAlert,
   Wifi,
-  SignalHigh
+  SignalHigh,
+  Phone,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VoiceChannelList from '@/components/VoiceChannelList';
@@ -20,9 +22,9 @@ import CallOverlay from '@/components/CallOverlay';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { useAuthStore } from '@/store/authStore';
 import { useCall } from '@/context/CallContext';
-import { Phone } from 'lucide-react';
 
 export default function SocialHubPage() {
+  const queryClient = useQueryClient();
   const [activeChannel, setActiveChannel] = useState<any>(null);
   const { user } = useAuthStore();
   const { initiateCall } = useCall();
@@ -49,9 +51,32 @@ export default function SocialHubPage() {
     },
   });
 
+  const createChannelMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.post('/social/voice-channels', data);
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['voice-channels'] });
+      setActiveChannel(res.data);
+    },
+  });
+
+  const handleQuickJoin = () => {
+    createChannelMutation.mutate({
+        name: `Direct Tactical Link: ${user?.display_name}`,
+        is_private: false
+    });
+  };
+
+  const handleTestSignal = () => {
+    setActiveChannel({ id: 'test_freq', name: 'Local Test Frequency' });
+  };
+
+  const totalCitizensActive = roomPresence ? Array.from(roomPresence.values()).flat().length : 0;
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
-      {/* ... (previous code) ... */}
+      {/* ... (Connection status code remains same) ... */}
       {/* Connection Status Banner */}
       {(error || connectionStatus === 'connecting') && (
           <div className={cn(
@@ -73,7 +98,7 @@ export default function SocialHubPage() {
         <StatusCard 
           icon={<Users className="w-4 h-4" />} 
           label="Active Personnel" 
-          value={`${Array.from(roomPresence.values()).flat().length || 0} Citizens`} 
+          value={`${totalCitizensActive || 0} Citizens`} 
           color="text-sc-blue" 
         />
         <StatusCard 
@@ -158,11 +183,20 @@ export default function SocialHubPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-                        <button className="p-4 border border-sc-blue/20 rounded bg-sc-blue/5 hover:bg-sc-blue/10 transition-all flex flex-col items-center space-y-2 group/btn">
+                        <button 
+                            onClick={handleQuickJoin}
+                            disabled={createChannelMutation.isPending}
+                            className="p-4 border border-sc-blue/20 rounded bg-sc-blue/5 hover:bg-sc-blue/10 transition-all flex flex-col items-center space-y-2 group/btn"
+                        >
                             <Radio className="w-5 h-5 text-sc-blue group-hover/btn:scale-110 transition-transform" />
-                            <span className="text-[9px] font-black text-sc-blue uppercase">Quick Join</span>
+                            <span className="text-[9px] font-black text-sc-blue uppercase">
+                                {createChannelMutation.isPending ? 'Linking...' : 'Quick Join'}
+                            </span>
                         </button>
-                        <button className="p-4 border border-white/10 rounded bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center space-y-2 group/btn">
+                        <button 
+                            onClick={handleTestSignal}
+                            className="p-4 border border-white/10 rounded bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center space-y-2 group/btn"
+                        >
                             <Video className="w-5 h-5 text-sc-grey group-hover/btn:scale-110 transition-transform" />
                             <span className="text-[9px] font-black text-sc-grey uppercase">Test Signal</span>
                         </button>
