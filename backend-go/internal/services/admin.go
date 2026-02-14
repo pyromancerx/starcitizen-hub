@@ -8,19 +8,19 @@ import (
 )
 
 type AdminService struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 func NewAdminService() *AdminService {
 	return &AdminService{
-		db: database.DB,
+		DB: database.DB,
 	}
 }
 
 // User Management
 func (s *AdminService) ListUsers() ([]models.User, error) {
 	var users []models.User
-	err := s.db.Preload("Roles").Find(&users).Error
+	err := s.DB.Preload("Roles").Find(&users).Error
 	return users, err
 }
 
@@ -39,14 +39,14 @@ func (s *AdminService) CreateUser(email string, password string, displayName str
 		IsApproved:   true,
 	}
 
-	if err := s.db.Create(&user).Error; err != nil {
+	if err := s.DB.Create(&user).Error; err != nil {
 		return nil, err
 	}
 
 	if isAdmin {
 		var adminRole models.Role
-		if err := s.db.Where("name = ?", "Admin").First(&adminRole).Error; err == nil {
-			s.db.Model(&user).Association("Roles").Append(&adminRole)
+		if err := s.DB.Where("name = ?", "Admin").First(&adminRole).Error; err == nil {
+			s.DB.Model(&user).Association("Roles").Append(&adminRole)
 		}
 	}
 
@@ -54,7 +54,7 @@ func (s *AdminService) CreateUser(email string, password string, displayName str
 }
 
 func (s *AdminService) UpdateUserStatus(userID uint, isActive bool, isApproved bool) error {
-	return s.db.Model(&models.User{}).Where("id = ?", userID).
+	return s.DB.Model(&models.User{}).Where("id = ?", userID).
 		Updates(map[string]interface{}{
 			"is_active":   isActive,
 			"is_approved": isApproved,
@@ -64,46 +64,46 @@ func (s *AdminService) UpdateUserStatus(userID uint, isActive bool, isApproved b
 // Role Management
 func (s *AdminService) ListRoles() ([]models.Role, error) {
 	var roles []models.Role
-	err := s.db.Order("sort_order asc").Find(&roles).Error
+	err := s.DB.Order("sort_order asc").Find(&roles).Error
 	return roles, err
 }
 
 func (s *AdminService) CreateRole(role *models.Role) error {
-	return s.db.Create(role).Error
+	return s.DB.Create(role).Error
 }
 
 func (s *AdminService) UpdateRole(id uint, updates map[string]interface{}) error {
-	return s.db.Model(&models.Role{}).Where("id = ?", id).Updates(updates).Error
+	return s.DB.Model(&models.Role{}).Where("id = ?", id).Updates(updates).Error
 }
 
 func (s *AdminService) AssignRoleToUser(userID uint, roleID uint) error {
 	var user models.User
 	var role models.Role
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.DB.First(&user, userID).Error; err != nil {
 		return err
 	}
-	if err := s.db.First(&role, roleID).Error; err != nil {
+	if err := s.DB.First(&role, roleID).Error; err != nil {
 		return err
 	}
-	return s.db.Model(&user).Association("Roles").Append(&role)
+	return s.DB.Model(&user).Association("Roles").Append(&role)
 }
 
 func (s *AdminService) RemoveRoleFromUser(userID uint, roleID uint) error {
 	var user models.User
 	var role models.Role
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.DB.First(&user, userID).Error; err != nil {
 		return err
 	}
-	if err := s.db.First(&role, roleID).Error; err != nil {
+	if err := s.DB.First(&role, roleID).Error; err != nil {
 		return err
 	}
-	return s.db.Model(&user).Association("Roles").Delete(&role)
+	return s.DB.Model(&user).Association("Roles").Delete(&role)
 }
 
 // RSI Verification
 func (s *AdminService) ListRSIVerificationRequests(status string) ([]models.RSIVerificationRequest, error) {
 	var requests []models.RSIVerificationRequest
-	query := s.db.Preload("User")
+	query := s.DB.Preload("User")
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -112,7 +112,7 @@ func (s *AdminService) ListRSIVerificationRequests(status string) ([]models.RSIV
 }
 
 func (s *AdminService) ProcessRSIVerification(requestID uint, adminID uint, status string, notes string) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+	return s.DB.Transaction(func(tx *gorm.DB) error {
 		var req models.RSIVerificationRequest
 		if err := tx.First(&req, requestID).Error; err != nil {
 			return err
@@ -139,43 +139,43 @@ func (s *AdminService) ProcessRSIVerification(requestID uint, adminID uint, stat
 // Discord
 func (s *AdminService) GetDiscordIntegration() (*models.DiscordIntegration, error) {
 	var integration models.DiscordIntegration
-	err := s.db.First(&integration).Error
+	err := s.DB.First(&integration).Error
 	return &integration, err
 }
 
 func (s *AdminService) UpdateDiscordIntegration(integration *models.DiscordIntegration) error {
-	return s.db.Save(integration).Error
+	return s.DB.Save(integration).Error
 }
 
 // Settings
 func (s *AdminService) GetSettings() ([]models.SystemSetting, error) {
 	var settings []models.SystemSetting
-	err := s.db.Find(&settings).Error
+	err := s.DB.Find(&settings).Error
 	return settings, err
 }
 
 func (s *AdminService) UpdateSetting(key string, value string) error {
 	var setting models.SystemSetting
-	err := s.db.Where("key = ?", key).First(&setting).Error
+	err := s.DB.Where("key = ?", key).First(&setting).Error
 	if err != nil {
 		// Create if not exists
 		setting = models.SystemSetting{Key: key, Value: value}
-		return s.db.Create(&setting).Error
+		return s.DB.Create(&setting).Error
 	}
 	// Update if exists
-	return s.db.Model(&setting).Update("value", value).Error
+	return s.DB.Model(&setting).Update("value", value).Error
 }
 
 // Stats (extended)
 func (s *AdminService) GetDashboardStats() (map[string]interface{}, error) {
 	var totalUsers int64
-	s.db.Model(&models.User{}).Count(&totalUsers)
+	s.DB.Model(&models.User{}).Count(&totalUsers)
 
 	var totalShips int64
-	s.db.Model(&models.Ship{}).Count(&totalShips)
+	s.DB.Model(&models.Ship{}).Count(&totalShips)
 
 	var readyShips int64
-	s.db.Model(&models.Ship{}).Where("status = ?", "ready").Count(&readyShips)
+	s.DB.Model(&models.Ship{}).Where("status = ?", "ready").Count(&readyShips)
 
 	fleetReadiness := 0
 	if totalShips > 0 {
@@ -183,11 +183,11 @@ func (s *AdminService) GetDashboardStats() (map[string]interface{}, error) {
 	}
 
 	var activeOps int64
-	s.db.Model(&models.Operation{}).Where("status IN ?", []string{"recruiting", "planning", "active"}).Count(&activeOps)
+	s.DB.Model(&models.Operation{}).Where("status IN ?", []string{"recruiting", "planning", "active"}).Count(&activeOps)
 
 	var treasury models.OrgTreasury
 	var balance int = 0
-	if err := s.db.First(&treasury).Error; err == nil {
+	if err := s.DB.First(&treasury).Error; err == nil {
 		balance = treasury.BalanceAUEC
 	}
 

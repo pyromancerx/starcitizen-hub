@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -55,9 +57,8 @@ func main() {
 
 	
 
-		// Connect to Database
-
-	 (Migrations are run inside Connect)
+	// Connect to Database
+	// (Migrations are run inside Connect)
 	database.Connect()
 
 	// Initialize default settings

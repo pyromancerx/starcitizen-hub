@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
 )
 
@@ -116,7 +117,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	// If any user exists, we consider setup complete
-	h.authService.DB.Model(&services.User{}).Count(&count)
+	h.authService.DB.Model(&models.User{}).Count(&count)
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"needs_setup": count == 0})
@@ -124,7 +125,7 @@ func (h *AuthHandler) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 
 func (h *AuthHandler) PerformSetup(w http.ResponseWriter, r *http.Request) {
 	var count int64
-	h.authService.DB.Model(&services.User{}).Count(&count)
+	h.authService.DB.Model(&models.User{}).Count(&count)
 	if count > 0 {
 		http.Error(w, "Setup already complete", http.StatusForbidden)
 		return
@@ -142,7 +143,7 @@ func (h *AuthHandler) PerformSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 1. Update Org Name
-	h.authService.DB.Model(&services.SystemSetting{}).Where("key = ?", "org_name").Update("value", req.OrgName)
+	h.authService.DB.Model(&models.SystemSetting{}).Where("key = ?", "org_name").Update("value", req.OrgName)
 
 	// 2. Create Admin User
 	user, err := h.authService.Register(services.RegisterInput{
@@ -157,7 +158,7 @@ func (h *AuthHandler) PerformSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. Grant Admin Role
-	var adminRole services.Role
+	var adminRole models.Role
 	h.authService.DB.Where("tier = ?", "admin").First(&adminRole)
 	h.authService.DB.Model(&user).Association("Roles").Append(&adminRole)
 

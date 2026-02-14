@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
@@ -9,13 +10,13 @@ import (
 )
 
 type LogisticsService struct {
-	db             *gorm.DB
+	DB             *gorm.DB
 	discordService *DiscordService
 }
 
 func NewLogisticsService() *LogisticsService {
 	return &LogisticsService{
-		db:             database.DB,
+		DB:             database.DB,
 		discordService: NewDiscordService(database.DB),
 	}
 }
@@ -23,18 +24,18 @@ func NewLogisticsService() *LogisticsService {
 // Stockpiles
 func (s *LogisticsService) ListStockpiles() ([]models.OrgStockpile, error) {
 	var stockpiles []models.OrgStockpile
-	err := s.db.Find(&stockpiles).Error
+	err := s.DB.Find(&stockpiles).Error
 	return stockpiles, err
 }
 
 func (s *LogisticsService) GetStockpile(id uint) (*models.OrgStockpile, error) {
 	var stockpile models.OrgStockpile
-	err := s.db.Preload("Transactions").First(&stockpile, id).Error
+	err := s.DB.Preload("Transactions").First(&stockpile, id).Error
 	return &stockpile, err
 }
 
 func (s *LogisticsService) CreateStockpileTransaction(tx *models.StockpileTransaction) error {
-	return s.db.Transaction(func(dbTx *gorm.DB) error {
+	return s.DB.Transaction(func(dbTx *gorm.DB) error {
 		if err := dbTx.Create(tx).Error; err != nil {
 			return err
 		}
@@ -47,7 +48,7 @@ func (s *LogisticsService) CreateStockpileTransaction(tx *models.StockpileTransa
 
 // Operations
 func (s *LogisticsService) CreateOperation(op *models.Operation) error {
-	if err := s.db.Create(op).Error; err != nil {
+	if err := s.DB.Create(op).Error; err != nil {
 		return err
 	}
 
@@ -62,7 +63,7 @@ func (s *LogisticsService) CreateOperation(op *models.Operation) error {
 // Operations
 func (s *LogisticsService) ListOperations(status []string) ([]models.Operation, error) {
 	var ops []models.Operation
-	query := s.db.Order("scheduled_at asc")
+	query := s.DB.Order("scheduled_at asc")
 	if len(status) > 0 {
 		query = query.Where("status IN ?", status)
 	}
@@ -72,61 +73,61 @@ func (s *LogisticsService) ListOperations(status []string) ([]models.Operation, 
 
 func (s *LogisticsService) GetOperation(id uint) (*models.Operation, error) {
 	var op models.Operation
-	err := s.db.Preload("Participants.User").Preload("Participants.Ship").First(&op, id).Error
+	err := s.DB.Preload("Participants.User").Preload("Participants.Ship").First(&op, id).Error
 	return &op, err
 }
 
 func (s *LogisticsService) SignupForOperation(participant *models.OperationParticipant) error {
 	// Check if already signed up
 	var count int64
-	s.db.Model(&models.OperationParticipant{}).
+	s.DB.Model(&models.OperationParticipant{}).
 		Where("operation_id = ? AND user_id = ?", participant.OperationID, participant.UserID).
 		Count(&count)
 	if count > 0 {
 		return errors.New("already signed up for this operation")
 	}
 
-	return s.db.Create(participant).Error
+	return s.DB.Create(participant).Error
 }
 
 // Projects
 func (s *LogisticsService) ListProjects() ([]models.Project, error) {
 	var projects []models.Project
-	err := s.db.Order("created_at desc").Find(&projects).Error
+	err := s.DB.Order("created_at desc").Find(&projects).Error
 	return projects, err
 }
 
 func (s *LogisticsService) GetProject(id uint) (*models.Project, error) {
 	var project models.Project
-	err := s.db.Preload("Phases.Tasks").Preload("ContributionGoals.Contributions").First(&project, id).Error
+	err := s.DB.Preload("Phases.Tasks").Preload("ContributionGoals.Contributions").First(&project, id).Error
 	return &project, err
 }
 
 // Trade
 func (s *LogisticsService) CreateTradeRun(run *models.TradeRun) error {
-	return s.db.Create(run).Error
+	return s.DB.Create(run).Error
 }
 
 func (s *LogisticsService) ListTradeRuns(userID uint) ([]models.TradeRun, error) {
 	var runs []models.TradeRun
-	err := s.db.Where("user_id = ?", userID).Order("created_at desc").Find(&runs).Error
+	err := s.DB.Where("user_id = ?", userID).Order("created_at desc").Find(&runs).Error
 	return runs, err
 }
 
 // Crew Finder
 func (s *LogisticsService) CreateCrewPost(post *models.CrewPost) error {
-	return s.db.Create(post).Error
+	return s.DB.Create(post).Error
 }
 
 func (s *LogisticsService) ListCrewPosts() ([]models.CrewPost, error) {
 	var posts []models.CrewPost
-	err := s.db.Preload("User").Preload("Ship").Where("status = ?", "active").Order("created_at desc").Find(&posts).Error
+	err := s.DB.Preload("User").Preload("Ship").Where("status = ?", "active").Order("created_at desc").Find(&posts).Error
 	return posts, err
 }
 
 func (s *LogisticsService) ListCargoContracts(status string) ([]models.CargoContract, error) {
 	var contracts []models.CargoContract
-	query := s.db
+	query := s.DB
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
@@ -135,7 +136,7 @@ func (s *LogisticsService) ListCargoContracts(status string) ([]models.CargoCont
 }
 
 func (s *LogisticsService) CreateCargoContract(contract *models.CargoContract) error {
-	return s.db.Create(contract).Error
+	return s.DB.Create(contract).Error
 }
 
 type ProcurementRequirement struct {
@@ -148,7 +149,7 @@ type ProcurementRequirement struct {
 
 func (s *LogisticsService) AnalyzeOperationProcurement(opID uint) ([]ProcurementRequirement, error) {
 	var op models.Operation
-	if err := s.db.Preload("RequiredManifest").First(&op, opID).Error; err != nil {
+	if err := s.DB.Preload("RequiredManifest").First(&op, opID).Error; err != nil {
 		return nil, err
 	}
 
@@ -165,7 +166,7 @@ func (s *LogisticsService) AnalyzeOperationProcurement(opID uint) ([]Procurement
 		qty, _ := req["quantity"].(float64)
 
 		var stockpile models.OrgStockpile
-		s.db.Where("name = ?", name).First(&stockpile)
+		s.DB.Where("name = ?", name).First(&stockpile)
 
 		shortfall := qty - stockpile.Quantity
 		if shortfall < 0 {
@@ -195,14 +196,14 @@ func (s *LogisticsService) GetTreasuryAnalytics() (TreasuryAnalytics, error) {
 	var analytics TreasuryAnalytics
 	
 	// Total credits from Org Treasury
-	s.db.Table("org_treasuries").Select("SUM(balance_auec)").Row().Scan(&analytics.TotalCredits)
+	s.DB.Table("org_treasuries").Select("SUM(balance_auec)").Row().Scan(&analytics.TotalCredits)
 	
 	// Total profit from Trade Runs
-	s.db.Table("trade_runs").Select("SUM(profit)").Row().Scan(&analytics.TotalTradeProfit)
+	s.DB.Table("trade_runs").Select("SUM(profit)").Row().Scan(&analytics.TotalTradeProfit)
 	
 	// Active contracts
 	var contractCount int64
-	s.db.Model(&models.CargoContract{}).Where("status = ?", "open").Count(&contractCount)
+	s.DB.Model(&models.CargoContract{}).Where("status = ?", "open").Count(&contractCount)
 	analytics.ActiveContracts = int(contractCount)
 
 	return analytics, nil

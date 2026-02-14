@@ -72,10 +72,7 @@ func (s *DiscordService) RelayOperation(op *models.Operation) error {
 		Embeds: []DiscordEmbed{
 			{
 				Title:       "🚀 New Operation Authorized: " + op.Title,
-				Description: fmt.Sprintf("**Type:** %s
-**Deployment:** %s
-
-%s", op.Type, op.ScheduledAt.Format("2006-01-02 15:04 MST"), op.Description),
+				Description: fmt.Sprintf("**Type:** %s\n**Deployment:** %s\n\n%s", op.Type, op.ScheduledAt.Format("2006-01-02 15:04 MST"), op.Description),
 				Color:       0xffae00, // Tactical Orange
 			},
 		},

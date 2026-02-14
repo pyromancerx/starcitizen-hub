@@ -10,12 +10,12 @@ import (
 )
 
 type AuthService struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 func NewAuthService() *AuthService {
 	return &AuthService{
-		db: database.DB,
+		DB: database.DB,
 	}
 }
 
@@ -33,7 +33,7 @@ type RegisterInput struct {
 
 func (s *AuthService) Login(input LoginInput) (string, *models.User, error) {
 	var user models.User
-	if err := s.db.Where("email = ?", input.Email).First(&user).Error; err != nil {
+	if err := s.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		return "", nil, errors.New("invalid credentials")
 	}
 
@@ -64,15 +64,15 @@ func (s *AuthService) Register(input RegisterInput) (*models.User, error) {
 		IsApproved:   false,
 	}
 
-	if err := s.db.Create(&user).Error; err != nil {
+	if err := s.DB.Create(&user).Error; err != nil {
 		return nil, err
 	}
 
 	// Assign default roles
 	var defaultRoles []models.Role
-	s.db.Where("is_default = ?", true).Find(&defaultRoles)
+	s.DB.Where("is_default = ?", true).Find(&defaultRoles)
 	if len(defaultRoles) > 0 {
-		s.db.Model(&user).Association("Roles").Append(defaultRoles)
+		s.DB.Model(&user).Association("Roles").Append(defaultRoles)
 	}
 
 	return &user, nil
@@ -80,7 +80,7 @@ func (s *AuthService) Register(input RegisterInput) (*models.User, error) {
 
 func (s *AuthService) GetUserByID(userID uint) (*models.User, error) {
 	var user models.User
-	if err := s.db.Preload("Roles").First(&user, userID).Error; err != nil {
+	if err := s.DB.Preload("Roles").First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 	"net/smtp"
-	"strconv"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"gorm.io/gorm"
@@ -29,16 +28,12 @@ func (s *MailService) SendEmail(to, subject, body string) error {
 
 	auth := smtp.PlainAuth("", settings["smtp_user"], settings["smtp_pass"], settings["smtp_host"])
 	
-	msg := fmt.Sprintf("From: %s
-"+
-		"To: %s
-"+
-		"Subject: %s
-"+
-		"MIME-version: 1.0;
-Content-Type: text/html; charset="UTF-8";
-
-"+
+	msg := fmt.Sprintf("From: %s\r\n"+
+		"To: %s\r\n"+
+		"Subject: %s\r\n"+
+		"MIME-version: 1.0;\r\n"+
+		"Content-Type: text/html; charset=\"UTF-8\";\r\n"+
+		"\r\n"+
 		"%s", settings["smtp_from"], to, subject, body)
 
 	addr := settings["smtp_host"] + ":" + settings["smtp_port"]
@@ -54,7 +49,7 @@ func (s *MailService) getSMTPSettings() (map[string]string, error) {
 
 	mapped := make(map[string]string)
 	for _, s := range dbSettings {
-		mapped[s.key] = s.value
+		mapped[s.Key] = s.Value
 	}
 	return mapped, nil
 }

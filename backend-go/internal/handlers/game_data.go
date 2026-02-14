@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
 )
 

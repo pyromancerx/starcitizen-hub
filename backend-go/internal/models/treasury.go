@@ -8,7 +8,7 @@ type OrgTreasury struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	Name        string    `gorm:"size:100;default:'Main Treasury'" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
-	Balance     int       `gorm:"default:0" json:"balance"`
+	BalanceAUEC int       `gorm:"default:0" json:"balance_auec"`
 	IsPrimary   bool      `gorm:"default:true" json:"is_primary"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`

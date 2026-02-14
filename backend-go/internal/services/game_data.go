@@ -3,7 +3,6 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -14,11 +13,11 @@ import (
 )
 
 type GameDataService struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
 func NewGameDataService(db *gorm.DB) *GameDataService {
-	return &GameDataService{db: db}
+	return &GameDataService{DB: db}
 }
 
 const (
@@ -100,7 +99,7 @@ func (s *GameDataService) SyncItems() error {
 		}
 
 		// Upsert
-		s.db.Clauses(clause.OnConflict{
+		s.DB.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "uuid"}},
 			UpdateAll: true,
 		}).Create(&item)
@@ -151,7 +150,7 @@ func (s *GameDataService) SyncShips() error {
 			LastSyncedAt: time.Now(),
 		}
 
-		s.db.Clauses(clause.OnConflict{
+		s.DB.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "uuid"}},
 			UpdateAll: true,
 		}).Create(&ship)
@@ -182,7 +181,7 @@ func (s *GameDataService) ImportErkulLoadout(userID uint, shipModelID uint, erku
 			if name, ok := compData["name"].(string); ok {
 				// Search for item in our DB
 				var item models.GameItem
-				if err := s.db.Where("name = ?", name).First(&item).Error; err == nil {
+				if err := s.DB.Where("name = ?", name).First(&item).Error; err == nil {
 					config[slot] = item.UUID
 				}
 			}
@@ -198,7 +197,7 @@ func (s *GameDataService) ImportErkulLoadout(userID uint, shipModelID uint, erku
 		TemplateName:  "Imported from Erkul",
 	}
 
-	if err := s.db.Create(loadout).Error; err != nil {
+	if err := s.DB.Create(loadout).Error; err != nil {
 		return nil, err
 	}
 
@@ -220,7 +219,7 @@ func (s *GameDataService) CalculateLoadoutStats(configJSON string) LoadoutStats 
 
 	for _, itemUUID := range config {
 		var item models.GameItem
-		if err := s.db.Where("uuid = ?", itemUUID).First(&item).Error; err == nil {
+		if err := s.DB.Where("uuid = ?", itemUUID).First(&item).Error; err == nil {
 			var itemStats map[string]interface{}
 			json.Unmarshal([]byte(item.Stats), &itemStats)
 
@@ -251,12 +250,12 @@ type ReadinessReport struct {
 
 func (s *GameDataService) CheckMissionReadiness(userID uint, operationID uint) (ReadinessReport, error) {
 	var op models.Operation
-	if err := s.db.Preload("RequiredLoadout").Preload("RequiredManifest").First(&op, operationID).Error; err != nil {
+	if err := s.DB.Preload("RequiredLoadout").Preload("RequiredManifest").First(&op, operationID).Error; err != nil {
 		return ReadinessReport{}, err
 	}
 
 	var participant models.OperationParticipant
-	if err := s.db.Where("operation_id = ? AND user_id = ?", operationID, userID).First(&participant).Error; err != nil {
+	if err := s.DB.Where("operation_id = ? AND user_id = ?", operationID, userID).First(&participant).Error; err != nil {
 		return ReadinessReport{}, fmt.Errorf("user not signed up for operation")
 	}
 
@@ -265,7 +264,7 @@ func (s *GameDataService) CheckMissionReadiness(userID uint, operationID uint) (
 	// 1. Check Ship Loadout (if required)
 	if op.RequiredLoadoutID != nil && participant.ShipID != nil {
 		var userShip models.Ship
-		s.db.First(&userShip, participant.ShipID)
+		s.DB.First(&userShip, participant.ShipID)
 		
 		// Simplistic check: does the user ship match the required config?
 		if userShip.Loadout != op.RequiredLoadout.Configuration {
@@ -277,13 +276,13 @@ func (s *GameDataService) CheckMissionReadiness(userID uint, operationID uint) (
 	// 2. Check Ground Gear (Manifest)
 	if op.RequiredManifestID != nil {
 		var manifest models.EquipmentManifest
-		s.db.First(&manifest, op.RequiredManifestID)
+		s.DB.First(&manifest, op.RequiredManifestID)
 		
 		var requiredItems []map[string]interface{}
 		json.Unmarshal([]byte(manifest.Items), &requiredItems)
 
 		var userInventory []models.PersonalInventory
-		s.db.Where("user_id = ?", userID).Find(&userInventory)
+		s.DB.Where("user_id = ?", userID).Find(&userInventory)
 
 		for _, req := range requiredItems {
 			found := false
@@ -315,19 +314,19 @@ func (s *GameDataService) CheckMissionReadiness(userID uint, operationID uint) (
 
 func (s *GameDataService) ListShipModels() ([]models.ShipModel, error) {
 	var models []models.ShipModel
-	err := s.db.Find(&models).Error
+	err := s.DB.Find(&models).Error
 	return models, err
 }
 
 func (s *GameDataService) GetShipModel(id uint) (*models.ShipModel, error) {
 	var model models.ShipModel
-	err := s.db.First(&model, id).Error
+	err := s.DB.First(&model, id).Error
 	return &model, err
 }
 
 func (s *GameDataService) SearchItems(query string, category string, size int) ([]models.GameItem, error) {
 	var items []models.GameItem
-	db := s.db.Where("name LIKE ?", "%"+query+"%")
+	db := s.DB.Where("name LIKE ?", "%"+query+"%")
 	if category != "" {
 		db = db.Where("category LIKE ?", "%"+category+"%")
 	}

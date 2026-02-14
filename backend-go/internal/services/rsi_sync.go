@@ -3,11 +3,9 @@ package services
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"regexp"
-	"time"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"gorm.io/gorm"
