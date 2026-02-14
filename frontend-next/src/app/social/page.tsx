@@ -13,8 +13,7 @@ import {
   ShieldAlert,
   Wifi,
   SignalHigh,
-  Phone,
-  Plus
+  Phone
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import VoiceChannelList from '@/components/VoiceChannelList';
@@ -51,54 +50,10 @@ export default function SocialHubPage() {
     },
   });
 
-  const { data: voiceChannels } = useQuery<any[]>({
-    queryKey: ['voice-channels-quick'],
-    queryFn: async () => {
-      const res = await api.get('/social/voice-channels');
-      return res.data;
-    },
-  });
-
-  const createChannelMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return api.post('/social/voice-channels', data);
-    },
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ['voice-channels'] });
-      setActiveChannel(res.data);
-    },
-    onError: (err: any) => {
-        alert(err.response?.data || 'Failed to establish tactical link. Access denied or signal lost.');
-    }
-  });
-
-  const handleQuickJoin = () => {
-    // 1. Try to find an existing "General" or "Lobby" channel
-    const generalChannel = voiceChannels?.find(c => 
-        c.name.toLowerCase().includes('general') || 
-        c.name.toLowerCase().includes('lobby')
-    );
-
-    if (generalChannel) {
-        setActiveChannel(generalChannel);
-    } else {
-        // 2. Try to create one (might fail if not admin, handled by onError)
-        createChannelMutation.mutate({
-            name: `Direct Tactical Link: ${user?.display_name}`,
-            is_private: false
-        });
-    }
-  };
-
-  const handleTestSignal = () => {
-    setActiveChannel({ id: 'test_echo_pulse', name: 'Local Media Test' });
-  };
-
   const totalCitizensActive = roomPresence ? Array.from(roomPresence.values()).flat().length : 0;
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
-      {/* ... (Connection status code remains same) ... */}
       {/* Connection Status Banner */}
       {(error || connectionStatus === 'connecting') && (
           <div className={cn(
@@ -202,26 +157,6 @@ export default function SocialHubPage() {
                         <p className="text-xs text-sc-grey/60 leading-relaxed uppercase tracking-widest font-medium">
                             Select a frequency from the social matrix to establish a real-time voice and video link with organization personnel.
                         </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-                        <button 
-                            onClick={handleQuickJoin}
-                            disabled={createChannelMutation.isPending}
-                            className="p-4 border border-sc-blue/20 rounded bg-sc-blue/5 hover:bg-sc-blue/10 transition-all flex flex-col items-center space-y-2 group/btn"
-                        >
-                            <Radio className="w-5 h-5 text-sc-blue group-hover/btn:scale-110 transition-transform" />
-                            <span className="text-[9px] font-black text-sc-blue uppercase">
-                                {createChannelMutation.isPending ? 'Linking...' : 'Quick Join'}
-                            </span>
-                        </button>
-                        <button 
-                            onClick={handleTestSignal}
-                            className="p-4 border border-white/10 rounded bg-white/5 hover:bg-white/10 transition-all flex flex-col items-center space-y-2 group/btn"
-                        >
-                            <Video className="w-5 h-5 text-sc-grey group-hover/btn:scale-110 transition-transform" />
-                            <span className="text-[9px] font-black text-sc-grey uppercase">Test Signal</span>
-                        </button>
                     </div>
                 </div>
             ) : (
