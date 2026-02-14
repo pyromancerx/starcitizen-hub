@@ -13,7 +13,10 @@ import {
   Mail,
   Bell,
   MessageCircle,
-  RefreshCw
+  RefreshCw,
+  Fingerprint,
+  CheckCircle2,
+  Clock as ClockIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,12 +25,23 @@ import api from '@/lib/api';
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
+  const [rsiHandle, setRsiHandle] = useState('');
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile-me'],
     queryFn: async () => {
       const res = await api.get('/auth/me');
       return res.data;
+    }
+  });
+
+  const submitVerifyMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/social/rsi-verify', { rsi_handle: rsiHandle, screenshot_url: 'MANUAL_VERIFY' });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-me'] });
+      alert('Verification request submitted to Command.');
     }
   });
 
@@ -131,6 +145,57 @@ export default function ProfilePage() {
               <div className="text-[10px] text-sc-grey/30 uppercase italic">No command roles assigned.</div>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* RSI Identity Matching */}
+      <div className="space-y-4 mt-8">
+        <h3 className="text-xs font-black text-sc-blue uppercase tracking-[0.3em] border-b border-sc-blue/20 pb-2">RSI Identity Matching</h3>
+        <div className="bg-sc-panel border border-sc-grey/10 rounded-lg p-8 relative overflow-hidden group shadow-2xl">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <Fingerprint className="w-24 h-24 text-sc-blue" />
+            </div>
+            
+            <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
+                {profile?.is_rsi_verified ? (
+                    <div className="flex-1 space-y-4 text-center md:text-left">
+                        <div className="flex items-center justify-center md:justify-start space-x-3 text-green-500">
+                            <CheckCircle2 className="w-6 h-6" />
+                            <h4 className="text-lg font-black uppercase tracking-widest italic">Matched & Authorized</h4>
+                        </div>
+                        <p className="text-[10px] text-sc-grey/60 uppercase font-bold tracking-widest leading-relaxed max-w-lg">
+                            Your institutional record has been cryptographically matched with RSI citizen <span className="text-sc-blue">{profile.rsi_handle}</span>. High-clearance tactical data is now accessible.
+                        </p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="flex-1 space-y-4">
+                            <div className="flex items-center space-x-3 text-sc-blue">
+                                <ClockIcon className="w-6 h-6 animate-pulse" />
+                                <h4 className="text-lg font-black uppercase tracking-widest italic">Authorization Required</h4>
+                            </div>
+                            <p className="text-[10px] text-sc-grey/60 uppercase font-bold tracking-widest leading-relaxed">
+                                Prove your RSI identity to synchronize with organization assets. Submit your official RSI handle below for command verification.
+                            </p>
+                            <div className="flex items-center space-x-3">
+                                <input 
+                                    value={rsiHandle}
+                                    onChange={(e) => setRsiHandle(e.target.value)}
+                                    placeholder="RSI Citizen Handle..."
+                                    className="bg-black/40 border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none w-64"
+                                />
+                                <button 
+                                    onClick={() => submitVerifyMutation.mutate()}
+                                    disabled={submitVerifyMutation.isPending || !rsiHandle}
+                                    className="px-6 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:bg-white transition-all disabled:opacity-20"
+                                >
+                                    {submitVerifyMutation.isPending ? 'Syncing...' : 'Request Match'}
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
       </div>
 

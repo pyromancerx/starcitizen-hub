@@ -543,3 +543,89 @@ func (h *SocialHandler) DeleteAnnouncement(w http.ResponseWriter, r *http.Reques
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *SocialHandler) GlobalSearch(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	if len(query) < 2 {
+		json.NewEncoder(w).Encode([]interface{}{})
+		return
+	}
+
+	results, err := h.socialService.UnifiedSearch(query)
+	if err != nil {
+		http.Error(w, "Search failure", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (h *SocialHandler) SubmitRSIVerification(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	var req struct {
+		RSIHandle     string `json:"rsi_handle"`
+		ScreenshotURL string `json:"screenshot_url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	verification := models.RSIVerificationRequest{
+		UserID:        userID,
+		RSIHandle:     req.RSIHandle,
+		ScreenshotURL: req.ScreenshotURL,
+		Status:        "pending",
+		SubmittedAt:   time.Now(),
+	}
+
+	if err := h.socialService.DB.Create(&verification).Error; err != nil {
+		http.Error(w, "Failed to submit request", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(verification)
+}
+
+func (h *SocialHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
+	var users []models.User
+	// Fetch active members with their roles
+	if err := h.socialService.DB.Preload("Roles").Where("is_active = ?", true).Order("display_name asc").Find(&users).Error; err != nil {
+		http.Error(w, "Failed to retrieve personnel records", http.StatusInternalServerError)
+		return
+	}
+
+	// In a real product, we would map this to a "PublicProfile" DTO to hide sensitive fields
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
+func (h *SocialHandler) ListFederation(w http.ResponseWriter, r *http.Request) {
+	var entities []models.FederationEntity
+	if err := h.socialService.DB.Order("status asc, name asc").Find(&entities).Error; err != nil {
+		http.Error(w, "Failed to retrieve federation data", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entities)
+}
+
+func (h *SocialHandler) CreateFederationEntity(w http.ResponseWriter, r *http.Request) {
+	var entity models.FederationEntity
+	if err := json.NewDecoder(r.Body).Decode(&entity); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.socialService.DB.Create(&entity).Error; err != nil {
+		http.Error(w, "Failed to create federation record", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(entity)
+}

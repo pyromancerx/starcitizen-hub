@@ -118,3 +118,45 @@ func (s *SocialService) CreateAnnouncement(announcement *models.Announcement) er
 func (s *SocialService) DeleteAnnouncement(id uint) error {
 	return s.DB.Delete(&models.Announcement{}, id).Error
 }
+
+type SearchResult struct {
+	Type  string      `json:"type"`
+	ID    uint        `json:"id"`
+	Title string      `json:"title"`
+	Sub   string      `json:"sub"`
+	Link  string      `json:"link"`
+}
+
+func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
+	var results []SearchResult
+	searchTerm := "%" + query + "%"
+
+	// 1. Search Users
+	var users []models.User
+	s.DB.Where("display_name LIKE ? OR rsi_handle LIKE ?", searchTerm, searchTerm).Limit(5).Find(&users)
+	for _, u := range users {
+		results = append(results, SearchResult{
+			Type: "Citizen", ID: u.ID, Title: u.DisplayName, Sub: u.RSIHandle, Link: "/members",
+		})
+	}
+
+	// 2. Search Ships
+	var ships []models.Ship
+	s.DB.Where("name LIKE ? OR ship_type LIKE ?", searchTerm, searchTerm).Limit(5).Find(&ships)
+	for _, ship := range ships {
+		results = append(results, SearchResult{
+			Type: "Vessel", ID: ship.ID, Title: ship.Name, Sub: ship.ShipType, Link: "/fleet",
+		})
+	}
+
+	// 3. Search Operations
+	var ops []models.Operation
+	s.DB.Where("title LIKE ?", searchTerm).Limit(5).Find(&ops)
+	for _, op := range ops {
+		results = append(results, SearchResult{
+			Type: "Operation", ID: op.ID, Title: op.Title, Sub: op.Status, Link: "/operations",
+		})
+	}
+
+	return results, nil
+}

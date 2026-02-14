@@ -18,7 +18,8 @@ import {
   Box,
   ArrowRight,
   MapPin,
-  ShoppingCart
+  ShoppingCart,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -31,6 +32,7 @@ function LoadoutBuilderContent() {
   const [selectedHardpoint, setSelectedHardpoint] = useState<string | null>(null);
   const [searchTerm, setSearchQuery] = useState('');
   const [configuration, setConfiguration] = useState<Record<string, any>>({});
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   // 1. Fetch Ship Model & Current Loadout
   const { data: loadout, isLoading } = useQuery({
@@ -42,6 +44,27 @@ function LoadoutBuilderContent() {
       }
       const res = await api.get(`/game-data/loadouts/${id}`);
       return res.data;
+    },
+  });
+
+  const { data: myShips } = useQuery({
+    queryKey: ['my-ships'],
+    queryFn: async () => {
+      const res = await api.get('/ships/');
+      return res.data;
+    },
+  });
+
+  const applyMutation = useMutation({
+    mutationFn: async (shipId: number) => {
+      return api.post('/game-data/loadouts/apply', {
+        loadout_id: Number(id),
+        ship_id: shipId
+      });
+    },
+    onSuccess: () => {
+      setShowApplyModal(false);
+      alert('Blueprint successfully synchronized with vessel systems.');
     },
   });
 
@@ -155,6 +178,15 @@ function LoadoutBuilderContent() {
             </div>
         </div>
         <div className="flex items-center space-x-3">
+            {id !== 'new' && (
+                <button 
+                    onClick={() => setShowApplyModal(true)}
+                    className="px-4 py-2 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[10px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]"
+                >
+                    <Rocket className="w-3.5 h-3.5" />
+                    <span>Equip to Vessel</span>
+                </button>
+            )}
             <button className="px-4 py-2 bg-white/5 border border-white/10 text-sc-grey/40 text-[10px] font-black rounded uppercase hover:text-white transition-all flex items-center space-x-2">
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Matrix</span>
@@ -323,6 +355,61 @@ function LoadoutBuilderContent() {
             </div>
         </div>
       </div>
+
+      {/* Apply to Ship Modal */}
+      {showApplyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-xl">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-lg shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Rocket className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Apply Tactical Blueprint</h3>
+                    </div>
+                    <button onClick={() => setShowApplyModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <p className="text-[10px] text-sc-grey/60 uppercase font-black tracking-widest leading-relaxed">
+                        Select a vessel from your personal fleet to synchronize with this tactical blueprint. This will override the vessel's current system configuration.
+                    </p>
+
+                    <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+                        {myShips?.filter((s: any) => s.ship_type === loadout?.ship_model?.name).map((ship: any) => (
+                            <button 
+                                key={ship.id}
+                                onClick={() => applyMutation.mutate(ship.id)}
+                                disabled={applyMutation.isPending}
+                                className="w-full p-4 bg-sc-dark border border-white/5 rounded flex items-center justify-between group hover:border-sc-blue/40 transition-all text-left"
+                            >
+                                <div className="flex items-center space-x-4">
+                                    <div className="h-10 w-10 bg-sc-panel border border-sc-blue/10 rounded flex items-center justify-center text-sc-blue/40 group-hover:text-sc-blue transition-colors">
+                                        <Rocket className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black text-white uppercase tracking-widest">{ship.name}</div>
+                                        <div className="text-[8px] text-sc-grey/40 uppercase font-mono">{ship.serial_number || 'NO SERIAL'}</div>
+                                    </div>
+                                </div>
+                                <div className="px-3 py-1 bg-sc-blue/10 border border-sc-blue/30 rounded text-[8px] font-black text-sc-blue uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Authorize Link
+                                </div>
+                            </button>
+                        ))}
+                        {myShips?.filter((s: any) => s.ship_type === loadout?.ship_model?.name).length === 0 && (
+                            <div className="p-12 text-center border border-dashed border-white/5 rounded space-y-4">
+                                <div className="text-sc-grey/20 flex justify-center"><Rocket className="w-12 h-12" /></div>
+                                <p className="text-[9px] text-sc-grey/40 uppercase font-black tracking-widest">
+                                    No compatible <span className="text-white">{loadout?.ship_model?.name}</span> models detected in your fleet registry.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

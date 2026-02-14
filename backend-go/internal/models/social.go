@@ -74,3 +74,17 @@ type Announcement struct {
 
 	Author User `gorm:"foreignKey:AuthorID" json:"author,omitempty"`
 }
+
+type FederationEntity struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Name        string         `gorm:"size:200;uniqueIndex" json:"name"`
+	SID         string         `gorm:"size:50;uniqueIndex" json:"sid"`
+	Status      string         `gorm:"size:50;default:'neutral'" json:"status"` // allied, friendly, neutral, rival, hostile
+	Description string         `gorm:"type:text" json:"description"`
+	LogoURL     string         `gorm:"size:500" json:"logo_url"`
+	TacticalNotes string       `gorm:"type:text" json:"tactical_notes"`
+	LastEncounter time.Time    `json:"last_encounter"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+}

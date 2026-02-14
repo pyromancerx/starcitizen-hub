@@ -261,9 +261,14 @@ func main() {
 			r.Get("/forum/threads/{id}", socialHandler.GetThread)
 			r.Post("/forum/threads", socialHandler.CreateThread)
 			r.Post("/forum/posts", socialHandler.CreatePost)
+			r.Post("/social/rsi-verify", socialHandler.SubmitRSIVerification)
+			r.Get("/social/members", socialHandler.ListMembers)
+			r.Get("/social/federation", socialHandler.ListFederation)
+			r.Post("/social/federation", socialHandler.CreateFederationEntity)
 			r.Get("/notifications/", socialHandler.GetNotifications)
 			r.Patch("/notifications/{id}/read", socialHandler.MarkNotificationRead)
 			r.Get("/activity/feed", socialHandler.GetActivityFeed)
+			r.Get("/search", socialHandler.GlobalSearch)
 
 			// Voice Channels
 			r.Get("/social/voice-channels", socialHandler.ListVoiceChannels)
@@ -290,6 +295,7 @@ func main() {
 			r.Post("/game-data/loadouts", gameDataHandler.CreateLoadout)
 			r.Patch("/game-data/loadouts/{id}", gameDataHandler.UpdateLoadout)
 			r.Delete("/game-data/loadouts/{id}", gameDataHandler.DeleteLoadout)
+			r.Post("/game-data/loadouts/apply", gameDataHandler.ApplyLoadoutToShip)
 			r.Post("/game-data/import-erkul", gameDataHandler.ImportErkul)
 			r.Get("/game-data/operations/{id}/readiness", gameDataHandler.GetMissionReadiness)
 			r.Get("/game-data/manifests", gameDataHandler.ListManifests)

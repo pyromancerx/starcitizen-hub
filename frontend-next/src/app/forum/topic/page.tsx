@@ -1,23 +1,30 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { Suspense, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   ArrowLeft, 
-  User as UserIcon,
+  User as UserIcon, 
   Clock,
+  ChevronRight,
+  Shield,
+  Zap,
   Send,
-  Lock,
+  Cpu,
   MessageSquare
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/authStore';
 
-function ThreadContent() {
+function TopicContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuthStore();
+  const [replyContent, setReplyContent] = useState('');
 
   const { data: thread, isLoading } = useQuery({
     queryKey: ['forum-thread', id],
@@ -28,112 +35,145 @@ function ThreadContent() {
     enabled: !!id,
   });
 
+  const replyMutation = useMutation({
+    mutationFn: async (content: string) => {
+      return api.post('/forum/posts', {
+        thread_id: Number(id),
+        content
+      });
+    },
+    onSuccess: () => {
+      setReplyContent('');
+      queryClient.invalidateQueries({ queryKey: ['forum-thread', id] });
+    }
+  });
+
+  const handleReply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (replyContent.trim()) {
+      replyMutation.mutate(replyContent);
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 pb-20">
+      {/* Header */}
       <div className="flex items-center space-x-4">
-        <button 
-          onClick={() => window.history.back()}
-          className="p-2 hover:bg-white/5 rounded text-sc-blue transition-colors"
-        >
+        <Link href={`/forum/channel?id=${thread?.category_id || ''}`} className="p-2 hover:bg-white/5 rounded text-sc-blue transition-colors">
           <ArrowLeft className="w-6 h-6" />
-        </button>
+        </Link>
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
-            {isLoading ? 'Establishing Uplink...' : thread?.title}
-          </h2>
-          <div className="flex items-center space-x-4 ml-4 text-[10px] text-sc-grey/40 uppercase font-black tracking-widest">
-            <span className="flex items-center">
-              <UserIcon className="w-3 h-3 mr-1.5" />
-              Origin: {thread?.author?.display_name || 'System'}
-            </span>
-            <span>•</span>
-            <span className="flex items-center">
-              <Clock className="w-3 h-3 mr-1.5 text-sc-blue/50" />
-              Broadcast: {thread?.created_at ? new Date(thread.created_at).toLocaleString() : '---'}
-            </span>
+          <h2 className="text-2xl font-black text-white uppercase tracking-widest italic">{isLoading ? 'Decrypting Transmission...' : thread?.title}</h2>
+          <div className="flex items-center space-x-3">
+            <span className="text-[8px] font-black text-sc-blue uppercase tracking-widest px-2 py-0.5 bg-sc-blue/10 border border-sc-blue/20 rounded">Topic ID: {id}</span>
+            <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Encryption: AES-256-HUD</span>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="p-24 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sc-blue mx-auto mb-4"></div>
-            <span className="text-[10px] text-sc-grey/40 uppercase tracking-widest italic">Downloading encrypted packets...</span>
-          </div>
-        ) : thread?.posts?.map((post: any, index: number) => (
-          <div key={post.id} className={cn(
-            "bg-sc-panel border rounded overflow-hidden flex transition-all duration-300",
-            index === 0 ? "border-sc-blue/20" : "border-sc-grey/10"
-          )}>
-            {/* Author Sidebar */}
-            <div className="w-48 bg-black/40 border-r border-sc-grey/5 p-6 flex flex-col items-center space-y-4 hidden sm:flex">
-              <div className="h-20 w-20 rounded bg-sc-dark border border-sc-blue/20 flex items-center justify-center text-sc-blue shadow-[0_0_10px_rgba(var(--color-sc-blue-rgb),0.1)]">
-                <UserIcon className="w-10 h-10" />
-              </div>
-              <div className="text-center space-y-1">
-                <div className="text-xs font-bold text-white uppercase truncate w-full">{post.author?.display_name}</div>
-                <div className="text-[8px] text-sc-blue font-black uppercase tracking-[0.2em]">{post.author?.rsi_handle || 'Citizen'}</div>
-              </div>
-              <div className="pt-4 border-t border-sc-grey/5 w-full space-y-2">
-                <div className="flex justify-between text-[8px] font-black uppercase text-sc-grey/30">
-                  <span>Signals</span>
-                  <span>42</span>
-                </div>
-                <div className="w-full bg-sc-dark h-1 rounded-full overflow-hidden">
-                  <div className="bg-sc-blue h-full w-2/3 shadow-[0_0_5px_#66fcf1]"></div>
-                </div>
-              </div>
-            </div>
+      <div className="space-y-6">
+        {/* Original Post */}
+        {thread && (
+            <PostCard 
+                author={thread.author} 
+                content={thread.posts?.[0]?.content || 'Signal lost...'} 
+                date={thread.created_at}
+                isOP
+            />
+        )}
 
-            {/* Post Content */}
-            <div className="flex-1 flex flex-col">
-              <div className="p-6 text-sm text-sc-grey/90 leading-relaxed font-medium whitespace-pre-wrap">
-                {post.content}
-              </div>
-              <div className="mt-auto px-6 py-3 bg-black/20 border-t border-sc-grey/5 flex justify-between items-center">
-                <span className="text-[9px] font-mono text-sc-grey/30">POCKET_ID: {post.id.toString().padStart(8, '0')}</span>
-                <div className="flex space-x-4">
-                  <button className="text-[9px] font-black uppercase text-sc-blue/50 hover:text-sc-blue transition-colors">Quote</button>
-                  <button className="text-[9px] font-black uppercase text-sc-grey/30 hover:text-white transition-colors">Report</button>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Replies */}
+        {thread?.posts?.slice(1).map((post: any) => (
+            <PostCard 
+                key={post.id}
+                author={post.author}
+                content={post.content}
+                date={post.created_at}
+            />
         ))}
-      </div>
 
-      {/* Reply Area */}
-      <div className="bg-sc-panel border border-sc-blue/30 rounded p-6 shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)] relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 text-sc-blue opacity-5">
-          <Send className="w-24 h-24" />
-        </div>
-        <div className="flex items-center space-x-2 mb-4">
-          <MessageSquare className="w-4 h-4 text-sc-blue" />
-          <h3 className="text-xs font-bold text-white uppercase tracking-[0.2em]">Encode New Transmission</h3>
-        </div>
-        <textarea 
-          placeholder="Enter message text..."
-          className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded p-4 text-sm text-white min-h-[150px] focus:outline-none focus:border-sc-blue/50 transition-all placeholder-sc-grey/20"
-        />
-        <div className="mt-4 flex justify-between items-center">
-          <div className="flex space-x-4 opacity-40">
-            <span className="text-[8px] font-black uppercase text-sc-grey">Encryption: AES-256</span>
-            <span className="text-[8px] font-black uppercase text-sc-grey">Protocol: HubLink 2.0</span>
-          </div>
-          <button className="px-8 py-2.5 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)]">
-            Relay Signal
-          </button>
+        {/* Reply Area */}
+        <div className="bg-sc-panel border border-sc-blue/20 rounded-lg overflow-hidden shadow-2xl mt-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="p-4 bg-black/40 border-b border-sc-blue/10 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                    <MessageSquare className="w-4 h-4 text-sc-blue" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Encode Response</span>
+                </div>
+                <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest italic">Signal Pulse: Stable</span>
+            </div>
+            <form onSubmit={handleReply} className="p-6 space-y-4">
+                <textarea 
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    rows={4}
+                    placeholder="Input tactical response..."
+                    className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded p-4 text-sm text-white focus:border-sc-blue/50 outline-none transition-all resize-none font-mono"
+                />
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-4 opacity-40">
+                        <Shield className="w-4 h-4 text-sc-blue" />
+                        <Zap className="w-4 h-4 text-sc-blue" />
+                        <Cpu className="w-4 h-4 text-sc-blue" />
+                    </div>
+                    <button 
+                        type="submit"
+                        disabled={!replyContent.trim() || replyMutation.isPending}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all flex items-center space-x-2 disabled:opacity-20"
+                    >
+                        <Send className="w-3 h-3" />
+                        <span>{replyMutation.isPending ? 'Broadcasting...' : 'Authorize Transmission'}</span>
+                    </button>
+                </div>
+            </form>
         </div>
       </div>
     </div>
   );
 }
 
-export default function ForumThreadPage() {
+const PostCard = ({ author, content, date, isOP }: { author: any, content: string, date: string, isOP?: boolean }) => (
+    <div className={cn(
+        "flex space-x-6 animate-in fade-in slide-in-from-bottom-2 duration-500",
+        isOP ? "bg-sc-panel/40 border border-sc-blue/10 p-8 rounded-lg" : "p-6"
+    )}>
+        <div className="flex flex-col items-center space-y-3 w-24 flex-shrink-0">
+            <div className={cn(
+                "h-16 w-16 rounded bg-sc-dark border flex items-center justify-center relative",
+                isOP ? "border-sc-blue/30 text-sc-blue shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]" : "border-white/5 text-sc-grey/40"
+            )}>
+                <UserIcon className="w-8 h-8" />
+                <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-green-500 border-2 border-sc-panel flex items-center justify-center">
+                    <div className="h-1.5 w-1.5 rounded-full bg-white animate-pulse"></div>
+                </div>
+            </div>
+            <div className="text-center space-y-1">
+                <div className="text-[10px] font-black text-white uppercase tracking-tighter truncate w-full">{author?.display_name || 'Pilot'}</div>
+                <div className="text-[7px] font-black text-sc-blue uppercase tracking-widest bg-sc-blue/5 border border-sc-blue/20 rounded-full px-1.5 py-0.5">Verified</div>
+            </div>
+        </div>
+
+        <div className="flex-1 space-y-4 min-w-0">
+            <div className="flex justify-between items-center text-[8px] font-black text-sc-grey/40 uppercase tracking-[0.2em] border-b border-white/5 pb-2">
+                <span>Signal Intercept: {new Date(date).toLocaleString()}</span>
+                <span>Relay node: STANTON-CORE-01</span>
+            </div>
+            <p className="text-sm text-sc-grey/80 leading-relaxed font-medium">
+                {content}
+            </p>
+            {!isOP && (
+                <div className="flex space-x-4 pt-2">
+                    <button className="text-[8px] font-black text-sc-blue/40 uppercase hover:text-sc-blue transition-colors">Acknowledge</button>
+                    <button className="text-[8px] font-black text-sc-blue/40 uppercase hover:text-sc-blue transition-colors">Relay</button>
+                </div>
+            )}
+        </div>
+    </div>
+);
+
+export default function TopicPage() {
   return (
-    <Suspense fallback={<div>Loading signal...</div>}>
-      <ThreadContent />
+    <Suspense fallback={<div className="p-20 text-center uppercase font-black text-sc-blue animate-pulse tracking-[0.5em]">Establishing Neural Link...</div>}>
+      <TopicContent />
     </Suspense>
   );
 }

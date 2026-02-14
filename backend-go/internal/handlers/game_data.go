@@ -233,3 +233,38 @@ func (h *GameDataHandler) DeleteManifest(w http.ResponseWriter, r *http.Request)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *GameDataHandler) ApplyLoadoutToShip(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	var req struct {
+		LoadoutID uint `json:"loadout_id"`
+		ShipID    uint `json:"ship_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// 1. Fetch the Loadout
+	var loadout models.ShipLoadout
+	if err := h.gameDataService.DB.First(&loadout, req.LoadoutID).Error; err != nil {
+		http.Error(w, "Loadout not found", http.StatusNotFound)
+		return
+	}
+
+	// 2. Fetch the User's Ship and Verify Ownership
+	var ship models.Ship
+	if err := h.gameDataService.DB.Where("id = ? AND user_id = ?", req.ShipID, userID).First(&ship).Error; err != nil {
+		http.Error(w, "Ship not found or unauthorized", http.StatusForbidden)
+		return
+	}
+
+	// 3. Apply Configuration
+	if err := h.gameDataService.DB.Model(&ship).Update("loadout", loadout.Configuration).Error; err != nil {
+		http.Error(w, "Failed to apply blueprint", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
