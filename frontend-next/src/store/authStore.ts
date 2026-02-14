@@ -65,23 +65,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchUser: async () => {
     const token = get().token;
-    if (!token) return;
+    if (!token) {
+        set({ isInitialized: true });
+        return;
+    }
     try {
       const response = await api.get('/auth/me');
-      set({ user: response.data, isAuthenticated: true });
+      set({ user: response.data, isAuthenticated: true, isInitialized: true });
     } catch (err) {
+      console.error("Failed to fetch user:", err);
       get().logout();
+      set({ isInitialized: true });
     }
   },
 
   initialize: async () => {
     if (get().isInitialized) return;
     
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-      set({ token });
-      await get().fetchUser();
+    try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (token) {
+          set({ token });
+          await get().fetchUser();
+        } else {
+          set({ isInitialized: true });
+        }
+    } catch (e) {
+        console.error("Initialization error:", e);
+        set({ isInitialized: true });
     }
-    set({ isInitialized: true });
   },
 }));

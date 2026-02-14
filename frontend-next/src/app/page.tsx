@@ -92,10 +92,10 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-white">
                       <span className="font-bold text-sc-blue">{activity.user?.display_name || 'System'}</span>
-                      {' '}{activity.content?.message || 'performed an action'}
+                      {' '}{activity.content?.message || activity.content || 'performed an action'}
                     </p>
                     <span className="text-[10px] text-sc-grey/40 font-mono">
-                      {new Date(activity.created_at).toLocaleString()}
+                      {activity.created_at ? new Date(activity.created_at).toLocaleString() : 'Recent'}
                     </span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-sc-grey/20 opacity-0 group-hover:opacity-100 transition-all" />

@@ -30,7 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    if (!isMounting && isInitialized && setupStatus?.needs_setup && pathname !== '/setup') {
+    if (!isMounting && isInitialized && setupStatus && setupStatus.needs_setup && pathname !== '/setup') {
         router.push('/setup');
     }
   }, [isMounting, isInitialized, setupStatus, pathname, router]);

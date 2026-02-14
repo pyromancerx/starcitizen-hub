@@ -59,13 +59,14 @@ export const SignalingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
 
       setSocket(ws);
+      return ws;
     };
 
-    connect();
+    const ws = connect();
 
     return () => {
       clearTimeout(reconnectTimer);
-      if (socket) socket.close();
+      if (ws) ws.close();
     };
   }, [user]);
 

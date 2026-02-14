@@ -169,13 +169,11 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !roomId) return;
 
     if (isConnected) {
         setConnectionStatus('connected');
-        if (roomId) {
-            send({ type: 'join', room_id: roomId });
-        }
+        send({ type: 'join', room_id: roomId });
     } else {
         setConnectionStatus('connecting');
     }
@@ -228,7 +226,7 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
 
     return () => {
       unsubscribe();
-      if (roomId && isConnected) {
+      if (isConnected) {
           send({ type: 'leave', room_id: roomId });
       }
       peersRef.current.forEach(peer => peer.connection.close());
