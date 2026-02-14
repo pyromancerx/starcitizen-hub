@@ -38,7 +38,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
 
     const unsubscribe = subscribe((data) => {
-      if (data.type === 'call-request') {
+      if (data && data.type === 'call-request') {
         setIncomingCall(data);
       }
     });
@@ -56,8 +56,10 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const acceptCall = () => {
-    setActiveCall({ id: incomingCall.sender_id, name: incomingCall.sender_name });
-    setIncomingCall(null);
+    if (incomingCall && incomingCall.sender_id) {
+        setActiveCall({ id: incomingCall.sender_id, name: incomingCall.sender_name });
+        setIncomingCall(null);
+    }
   };
 
   return (

@@ -181,32 +181,33 @@ export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => 
     }
 
     const unsubscribe = subscribe(async (data) => {
+        if (!data) return;
         const { type, sender_id, offer, answer, candidate } = data;
 
-        if (type === 'user-joined') {
+        if (type === 'user-joined' && sender_id) {
           const pc = createPeerConnection(sender_id);
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
           send({ type: 'offer', offer, target_id: sender_id, room_id: roomId });
           peersRef.current.set(sender_id, { id: sender_id, connection: pc });
-        } else if (type === 'offer') {
+        } else if (type === 'offer' && sender_id) {
           const pc = createPeerConnection(sender_id);
           await pc.setRemoteDescription(new RTCSessionDescription(offer));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           send({ type: 'answer', answer, target_id: sender_id, room_id: roomId });
           peersRef.current.set(sender_id, { id: sender_id, connection: pc });
-        } else if (type === 'answer') {
+        } else if (type === 'answer' && sender_id) {
           const peer = peersRef.current.get(sender_id);
           if (peer) {
             await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
           }
-        } else if (type === 'ice-candidate') {
+        } else if (type === 'ice-candidate' && sender_id) {
           const peer = peersRef.current.get(sender_id);
           if (peer) {
             await peer.connection.addIceCandidate(new RTCIceCandidate(candidate));
           }
-        } else if (type === 'user-left') {
+        } else if (type === 'user-left' && sender_id) {
           const peer = peersRef.current.get(sender_id);
           if (peer) {
             peer.connection.close();

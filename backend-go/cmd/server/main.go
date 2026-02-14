@@ -250,6 +250,7 @@ func main() {
 		r.Post("/auth/register", authHandler.Register)
 		r.Get("/system/setup-status", authHandler.GetSetupStatus)
 		r.Post("/system/setup", authHandler.PerformSetup)
+		r.Get("/admin/settings", adminHandler.GetSettings)
 
 		// Protected Routes
 		r.Group(func(r chi.Router) {
@@ -378,7 +379,6 @@ func main() {
 			r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
 			r.Get("/admin/audit-logs", adminHandler.ListAuditLogs)
 			r.Post("/admin/upload-logo", adminHandler.UploadLogo)
-			r.Get("/admin/settings", adminHandler.GetSettings)
 			r.Patch("/admin/settings", adminHandler.UpdateSetting)
 			r.Get("/admin/system/version", adminHandler.GetSystemVersion)
 			r.Post("/admin/system/update", adminHandler.PerformUpdate)
