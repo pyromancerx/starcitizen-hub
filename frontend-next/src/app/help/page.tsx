@@ -86,7 +86,7 @@ export default function HelpManualPage() {
       content: [
         {
           sub: 'Institutional Branding',
-          desc: 'Admins can customize the Hub insignia, global interface colors, and inject custom neural overrides (CSS) to match the organization's identity.'
+          desc: "Admins can customize the Hub insignia, global interface colors, and inject custom neural overrides (CSS) to match the organization's identity."
         },
         {
           sub: 'Data Integrity',

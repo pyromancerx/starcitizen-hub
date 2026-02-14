@@ -269,6 +269,7 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
     isScreenSharing,
     error,
     connectionStatus,
+    socketRef,
     toggleAudio,
     toggleVideo,
     startScreenShare,

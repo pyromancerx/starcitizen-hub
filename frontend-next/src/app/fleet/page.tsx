@@ -11,19 +11,46 @@ import {
   Shield, 
   AlertTriangle,
   ChevronRight,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function FleetPage() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newShip, setNewShip] = useState({
+    name: '',
+    ship_type: '',
+    serial_number: '',
+    insurance_status: 'Standard'
+  });
   
   const { data: ships, isLoading } = useQuery({
     queryKey: ['my-ships'],
     queryFn: async () => {
       const res = await api.get('/ships/');
       return res.data;
+    },
+  });
+
+  const { data: shipModels } = useQuery({
+    queryKey: ['ship-models-fleet'],
+    queryFn: async () => {
+      const res = await api.get('/game-data/ships');
+      return res.data;
+    },
+  });
+
+  const createShipMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.post('/ships/', data);
+    },
+    onSuccess: () => {
+      setShowAddModal(false);
+      queryClient.invalidateQueries({ queryKey: ['my-ships'] });
+      setNewShip({ name: '', ship_type: '', serial_number: '', insurance_status: 'Standard' });
     },
   });
 
@@ -95,7 +122,10 @@ export default function FleetPage() {
             accept=".json" 
             className="hidden" 
           />
-          <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Register Vessel
           </button>
@@ -181,6 +211,101 @@ export default function FleetPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Commissioning Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Rocket className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Ship Commissioning Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowAddModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        createShipMutation.mutate(newShip);
+                    }}
+                    className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6"
+                >
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Vessel Custom Name</label>
+                        <input 
+                            required
+                            value={newShip.name}
+                            onChange={(e) => setNewShip({...newShip, name: e.target.value})}
+                            placeholder="e.g. Spirit of Stanton"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Ship Model (Class)</label>
+                        <select 
+                            required
+                            value={newShip.ship_type}
+                            onChange={(e) => setNewShip({...newShip, ship_type: e.target.value})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                        >
+                            <option value="">Select Model...</option>
+                            {shipModels?.map((m: any) => (
+                                <option key={m.id} value={m.name}>{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Registry Serial Number</label>
+                        <input 
+                            value={newShip.serial_number}
+                            onChange={(e) => setNewShip({...newShip, serial_number: e.target.value})}
+                            placeholder="e.g. SN-123456"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Insurance Protocol</label>
+                        <select 
+                            value={newShip.insurance_status}
+                            onChange={(e) => setNewShip({...newShip, insurance_status: e.target.value})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                        >
+                            <option value="LTI">Lifetime Insurance (LTI)</option>
+                            <option value="SHI">Standard Hull (SHI)</option>
+                            <option value="Expired">Protocol Expired</option>
+                        </select>
+                    </div>
+
+                    <div className="md:col-span-2 p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3">
+                        <Shield className="w-4 h-4 text-sc-blue mt-0.5" />
+                        <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                            Authorized commission will synchronize this vessel with organization tactical data and mission readiness calculations.
+                        </p>
+                    </div>
+
+                    <div className="md:col-span-2 pt-4 border-t border-white/5 flex justify-end space-x-4">
+                        <button 
+                            type="button"
+                            onClick={() => setShowAddModal(false)}
+                            className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                        >
+                            Abort
+                        </button>
+                        <button 
+                            type="submit"
+                            disabled={createShipMutation.isPending || !newShip.name || !newShip.ship_type}
+                            className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                        >
+                            {createShipMutation.isPending ? 'Syncing...' : 'Authorize Commission'}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
       )}
     </div>

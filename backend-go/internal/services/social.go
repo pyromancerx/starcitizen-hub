@@ -25,6 +25,10 @@ func (s *SocialService) ListForumCategories() ([]models.ForumCategory, error) {
 	return categories, err
 }
 
+func (s *SocialService) CreateForumCategory(cat *models.ForumCategory) error {
+	return s.DB.Create(cat).Error
+}
+
 func (s *SocialService) GetForumCategory(id uint) (*models.ForumCategory, error) {
 	var category models.ForumCategory
 	err := s.DB.Preload("Threads.Author").First(&category, id).Error
@@ -117,6 +121,12 @@ func (s *SocialService) CreateAnnouncement(announcement *models.Announcement) er
 
 func (s *SocialService) DeleteAnnouncement(id uint) error {
 	return s.DB.Delete(&models.Announcement{}, id).Error
+}
+
+func (s *SocialService) ListAchievements() ([]models.Achievement, error) {
+	var achievements []models.Achievement
+	err := s.DB.Where("is_active = ?", true).Order("points desc").Find(&achievements).Error
+	return achievements, err
 }
 
 type SearchResult struct {

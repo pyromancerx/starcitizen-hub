@@ -18,7 +18,7 @@ export default function EventsPage() {
   const { data: events, isLoading } = useQuery({
     queryKey: ['events'],
     queryFn: async () => {
-      const res = await api.get('/events/'); // Go backend needs to support this
+      const res = await api.get('/operations/');
       return res.data;
     },
   });

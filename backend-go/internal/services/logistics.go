@@ -107,6 +107,23 @@ func (s *LogisticsService) CreateTradeRun(run *models.TradeRun) error {
 	return s.db.Create(run).Error
 }
 
+func (s *LogisticsService) ListTradeRuns(userID uint) ([]models.TradeRun, error) {
+	var runs []models.TradeRun
+	err := s.db.Where("user_id = ?", userID).Order("created_at desc").Find(&runs).Error
+	return runs, err
+}
+
+// Crew Finder
+func (s *LogisticsService) CreateCrewPost(post *models.CrewPost) error {
+	return s.db.Create(post).Error
+}
+
+func (s *LogisticsService) ListCrewPosts() ([]models.CrewPost, error) {
+	var posts []models.CrewPost
+	err := s.db.Preload("User").Preload("Ship").Where("status = ?", "active").Order("created_at desc").Find(&posts).Error
+	return posts, err
+}
+
 func (s *LogisticsService) ListCargoContracts(status string) ([]models.CargoContract, error) {
 	var contracts []models.CargoContract
 	query := s.db
@@ -115,6 +132,10 @@ func (s *LogisticsService) ListCargoContracts(status string) ([]models.CargoCont
 	}
 	err := query.Find(&contracts).Error
 	return contracts, err
+}
+
+func (s *LogisticsService) CreateCargoContract(contract *models.CargoContract) error {
+	return s.db.Create(contract).Error
 }
 
 type ProcurementRequirement struct {

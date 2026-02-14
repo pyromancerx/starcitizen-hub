@@ -59,3 +59,20 @@ type WalletTransaction struct {
 
 	Wallet Wallet `gorm:"foreignKey:WalletID" json:"-"`
 }
+
+type PlayerBase struct {
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	UserID           uint           `gorm:"index" json:"user_id"`
+	Name             string         `gorm:"size:200" json:"name"`
+	Planet           string         `gorm:"size:100" json:"planet"`
+	Coordinates      string         `gorm:"size:200" json:"coordinates"` // e.g., X, Y, Z or OMT
+	Capabilities     string         `gorm:"type:json" json:"capabilities"` // Mining, Refining, Defense, etc.
+	Inventory        string         `gorm:"type:json" json:"inventory"`
+	PrivacySettings  string         `gorm:"type:json" json:"privacy_settings"` // controls what org sees
+	Status           string         `gorm:"size:50;default:'active'" json:"status"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
+
+	User User `gorm:"foreignKey:UserID" json:"-"`
+}

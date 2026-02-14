@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   TrendingUp, 
@@ -9,17 +9,41 @@ import {
   Plus,
   Navigation,
   ArrowRight,
-  DollarSign
+  DollarSign,
+  X,
+  Rocket
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function TradePage() {
+  const queryClient = useQueryClient();
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [newRun, setNewRun] = useState({
+    origin_location: '',
+    destination_location: '',
+    commodity: '',
+    quantity: 0,
+    profit: 0,
+    notes: ''
+  });
+
   const { data: runs, isLoading } = useQuery({
     queryKey: ['trade-runs'],
     queryFn: async () => {
-      const res = await api.get('/trade/runs'); // This endpoint might need to be verified in Go
+      const res = await api.get('/trade/runs');
       return res.data;
+    },
+  });
+
+  const logRunMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/trade/runs', newRun);
+    },
+    onSuccess: () => {
+      setShowLogModal(false);
+      queryClient.invalidateQueries({ queryKey: ['trade-runs'] });
+      alert('Commercial flight log synchronized.');
     },
   });
 
@@ -38,7 +62,10 @@ export default function TradePage() {
           <Link href="/trade/contracts" className="px-4 py-2 bg-sc-panel border border-sc-grey/20 text-sc-grey text-xs font-bold uppercase tracking-widest hover:text-white transition-all flex items-center">
             Cargo Contracts
           </Link>
-          <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+          <button 
+            onClick={() => setShowLogModal(true)}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Log Trade Run
           </button>
@@ -114,6 +141,88 @@ export default function TradePage() {
           </tbody>
         </table>
       </div>
+
+      {/* Log Trade Run Modal */}
+      {showLogModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Navigation className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Commercial Flight Log Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowLogModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Origin Terminal</label>
+                        <input 
+                            value={newRun.origin_location}
+                            onChange={(e) => setNewRun({...newRun, origin_location: e.target.value})}
+                            placeholder="e.g. New Babbage"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Destination Terminal</label>
+                        <input 
+                            value={newRun.destination_location}
+                            onChange={(e) => setNewRun({...newRun, destination_location: e.target.value})}
+                            placeholder="e.g. Area18"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Commodity SKU</label>
+                        <input 
+                            value={newRun.commodity}
+                            onChange={(e) => setNewRun({...newRun, commodity: e.target.value})}
+                            placeholder="e.g. Gold"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Net Yield (aUEC)</label>
+                        <input 
+                            type="number"
+                            value={newRun.profit}
+                            onChange={(e) => setNewRun({...newRun, profit: Number(e.target.value)})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Navigational Notes</label>
+                        <textarea 
+                            value={newRun.notes}
+                            onChange={(e) => setNewRun({...newRun, notes: e.target.value})}
+                            rows={3}
+                            placeholder="Encountered pirate activity at OM-1..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none resize-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowLogModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={() => logRunMutation.mutate()}
+                        disabled={logRunMutation.isPending || !newRun.origin_location || !newRun.destination_location}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {logRunMutation.isPending ? 'Synchronizing...' : 'Log Flight Data'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

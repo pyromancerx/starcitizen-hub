@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   Globe, 
@@ -14,19 +14,40 @@ import {
   Plus,
   ExternalLink,
   Zap,
-  Target
+  Target,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 export default function FederationPage() {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showRegModal, setShowRegModal] = useState(false);
+  const [newEntity, setNewEntity] = useState({
+    name: '',
+    sid: '',
+    status: 'neutral',
+    description: '',
+    tactical_notes: ''
+  });
 
   const { data: entities, isLoading } = useQuery({
     queryKey: ['federation-entities'],
     queryFn: async () => {
       const res = await api.get('/social/federation');
       return res.data;
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/social/federation', newEntity);
+    },
+    onSuccess: () => {
+      setShowRegModal(false);
+      queryClient.invalidateQueries({ queryKey: ['federation-entities'] });
+      alert('External entity successfully registered in intelligence bank.');
     },
   });
 
@@ -47,7 +68,10 @@ export default function FederationPage() {
           <p className="text-[10px] text-sc-blue font-mono uppercase tracking-[0.2em]">Inter-Organizational Federation Records • Stanton Sector</p>
         </div>
         <div className="flex items-center space-x-3 relative z-10">
-            <button className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]">
+            <button 
+                onClick={() => setShowRegModal(true)}
+                className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]"
+            >
                 <Plus className="w-4 h-4" />
                 <span>Register Entity</span>
             </button>
@@ -91,6 +115,84 @@ export default function FederationPage() {
             </div>
         )}
       </div>
+
+      {/* Federation Registration Modal */}
+      {showRegModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-xl">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Globe className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Federation Entity Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowRegModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Organization Name</label>
+                        <input 
+                            value={newEntity.name}
+                            onChange={(e) => setNewEntity({...newEntity, name: e.target.value})}
+                            placeholder="e.g. Arccorp Security"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Organization SID</label>
+                        <input 
+                            value={newEntity.sid}
+                            onChange={(e) => setNewEntity({...newEntity, sid: e.target.value})}
+                            placeholder="e.g. ARCCORP"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Diplomatic Standing</label>
+                        <select 
+                            value={newEntity.status}
+                            onChange={(e) => setNewEntity({...newEntity, status: e.target.value})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                        >
+                            <option value="allied">Allied (Strategic)</option>
+                            <option value="friendly">Friendly</option>
+                            <option value="neutral">Neutral</option>
+                            <option value="rival">Rival</option>
+                            <option value="hostile">Hostile (KOS)</option>
+                        </select>
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Tactical Intelligence Notes</label>
+                        <textarea 
+                            value={newEntity.tactical_notes}
+                            onChange={(e) => setNewEntity({...newEntity, tactical_notes: e.target.value})}
+                            rows={3}
+                            placeholder="Observed assets, typical fleet composition..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none resize-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowRegModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={() => registerMutation.mutate()}
+                        disabled={registerMutation.isPending || !newEntity.name || !newEntity.sid}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {registerMutation.isPending ? 'Synchronizing...' : 'Register Entity'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

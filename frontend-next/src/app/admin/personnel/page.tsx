@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 export default function AdminPersonnelPage() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [filter, setFilter] = useState<'all' | 'pending'>('all');
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -88,21 +89,35 @@ export default function AdminPersonnelPage() {
   });
 
   const pendingCount = users?.filter((u: any) => !u.is_approved).length || 0;
+  const filteredUsers = filter === 'all' ? users : users?.filter((u: any) => !u.is_approved);
 
   return (
     <section className="space-y-6">
       <div className="flex justify-between items-end">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 max-w-2xl">
-          <div className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden">
+          <button 
+            onClick={() => setFilter('all')}
+            className={cn(
+                "bg-sc-panel border p-6 rounded relative overflow-hidden text-left transition-all",
+                filter === 'all' ? "border-sc-blue/50 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]" : "border-sc-grey/10"
+            )}
+          >
             <div className="text-[10px] text-sc-grey/40 uppercase font-black tracking-widest mb-1">Total Personnel</div>
             <div className="text-3xl font-bold text-white font-mono">{users?.length || 0}</div>
             <Users className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-white opacity-5" />
-          </div>
-          <div className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden">
+          </button>
+          
+          <button 
+            onClick={() => setFilter('pending')}
+            className={cn(
+                "bg-sc-panel border p-6 rounded relative overflow-hidden text-left transition-all",
+                filter === 'pending' ? "border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]" : "border-sc-grey/10"
+            )}
+          >
             <div className="text-[10px] text-yellow-500/50 uppercase font-black tracking-widest mb-1">Pending Authorization</div>
             <div className="text-3xl font-bold text-yellow-500 font-mono">{pendingCount}</div>
             <ShieldAlert className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-yellow-500 opacity-10" />
-          </div>
+          </button>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
@@ -218,7 +233,7 @@ export default function AdminPersonnelPage() {
                   Accessing restricted personnel records...
                 </td>
               </tr>
-            ) : users?.map((user: any) => (
+            ) : filteredUsers?.map((user: any) => (
               <tr key={user.id} className="hover:bg-white/5 transition-colors group">
                 <td className="p-4">
                   <div className="flex items-center space-x-3">

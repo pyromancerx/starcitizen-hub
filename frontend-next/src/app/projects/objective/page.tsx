@@ -1,7 +1,7 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { Suspense, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   ArrowLeft, 
@@ -10,7 +10,10 @@ import {
   Database,
   Calendar,
   Layers,
-  CheckSquare
+  CheckSquare,
+  X,
+  TrendingUp,
+  Package
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -19,6 +22,13 @@ import { cn } from '@/lib/utils';
 function ProjectContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+  const queryClient = useQueryClient();
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submission, setSubmission] = useState({
+    goal_id: 0,
+    amount: 0,
+    notes: ''
+  });
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -27,6 +37,20 @@ function ProjectContent() {
       return res.data;
     },
     enabled: !!id,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      return api.post(`/projects/contributions`, {
+        ...submission,
+        project_id: Number(id)
+      });
+    },
+    onSuccess: () => {
+      setShowSubmitModal(false);
+      queryClient.invalidateQueries({ queryKey: ['project', id] });
+      alert('Strategic contribution synchronized with organization ledger.');
+    }
   });
 
   return (
@@ -131,7 +155,10 @@ function ProjectContent() {
               ))}
             </div>
 
-            <button className="w-full py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all">
+            <button 
+                onClick={() => setShowSubmitModal(true)}
+                className="w-full py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)]"
+            >
               Submit Resources
             </button>
           </div>
@@ -150,6 +177,83 @@ function ProjectContent() {
           </div>
         </div>
       </div>
+
+      {/* Submit Resource Modal */}
+      {showSubmitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-lg shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Package className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Resource Contribution Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowSubmitModal(false)} className="text-sc-grey hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Objective Goal</label>
+                            <select 
+                                value={submission.goal_id}
+                                onChange={(e) => setSubmission({...submission, goal_id: Number(e.target.value)})}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                            >
+                                <option value="0">Select target resource...</option>
+                                {project?.contribution_goals?.map((goal: any) => (
+                                    <option key={goal.id} value={goal.id}>{goal.resource_type} (Target: {goal.target_amount})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Allocated Quantity</label>
+                            <input 
+                                type="number"
+                                value={submission.amount}
+                                onChange={(e) => setSubmission({...submission, amount: Number(e.target.value)})}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Manifest Notes</label>
+                            <textarea 
+                                value={submission.notes}
+                                onChange={(e) => setSubmission({...submission, notes: e.target.value})}
+                                rows={3}
+                                placeholder="Logistical details of the transfer..."
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3">
+                        <TrendingUp className="w-4 h-4 text-sc-blue mt-0.5" />
+                        <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                            Authorized submission will update the organization's strategic reserves and contribute to overall objective health.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowSubmitModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={() => submitMutation.mutate()}
+                        disabled={submitMutation.isPending || !submission.goal_id || !submission.amount}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {submitMutation.isPending ? 'Synchronizing...' : 'Authorize Transfer'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

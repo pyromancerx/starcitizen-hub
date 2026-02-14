@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   FileText, 
@@ -9,17 +9,40 @@ import {
   Plus,
   MapPin,
   Clock,
-  Briefcase
+  Briefcase,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function ContractsPage() {
+  const queryClient = useQueryClient();
+  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [newContract, setNewContract] = useState({
+    commodity: '',
+    quantity: 0,
+    payment_amount: 0,
+    origin_location: '',
+    destination_location: '',
+    deadline: ''
+  });
+
   const { data: contracts, isLoading } = useQuery({
     queryKey: ['cargo-contracts'],
     queryFn: async () => {
       const res = await api.get('/trade/contracts');
       return res.data;
+    },
+  });
+
+  const issueMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/trade/contracts', newContract); // Note: Verify POST /trade/contracts in Go
+    },
+    onSuccess: () => {
+      setShowIssueModal(false);
+      queryClient.invalidateQueries({ queryKey: ['cargo-contracts'] });
+      alert('Logistics contract broadcast to all commercial units.');
     },
   });
 
@@ -34,7 +57,10 @@ export default function ContractsPage() {
             Encrypted Logistics Exchange
           </p>
         </div>
-        <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+        <button 
+            onClick={() => setShowIssueModal(true)}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Issue Contract
         </button>
@@ -107,6 +133,85 @@ export default function ContractsPage() {
           </div>
         )}
       </div>
+
+      {/* Issue Contract Modal */}
+      {showIssueModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Briefcase className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Logistics Contract Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowIssueModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Commodity / Asset</label>
+                        <input 
+                            value={newContract.commodity}
+                            onChange={(e) => setNewContract({...newContract, commodity: e.target.value})}
+                            placeholder="e.g. Iron, RMC, Supplies"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Contract Yield (aUEC)</label>
+                        <input 
+                            type="number"
+                            value={newContract.payment_amount}
+                            onChange={(e) => setNewContract({...newContract, payment_amount: Number(e.target.value)})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Pickup Node (Origin)</label>
+                        <input 
+                            value={newContract.origin_location}
+                            onChange={(e) => setNewContract({...newContract, origin_location: e.target.value})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Delivery Node (Destination)</label>
+                        <input 
+                            value={newContract.destination_location}
+                            onChange={(e) => setNewContract({...newContract, destination_location: e.target.value})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Deployment Deadline</label>
+                        <input 
+                            type="date"
+                            value={newContract.deadline}
+                            onChange={(e) => setNewContract({...newContract, deadline: e.target.value})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowIssueModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={() => issueMutation.mutate()}
+                        disabled={issueMutation.isPending || !newContract.commodity || !newContract.origin_location}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {issueMutation.isPending ? 'Broadcasting...' : 'Authorize Contract'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

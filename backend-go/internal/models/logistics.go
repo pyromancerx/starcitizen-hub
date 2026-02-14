@@ -87,3 +87,21 @@ type AssetLoan struct {
 	Stockpile      OrgStockpile   `gorm:"foreignKey:StockpileID" json:"stockpile"`
 	User           User           `gorm:"foreignKey:UserID" json:"user"`
 }
+
+type CrewPost struct {
+	ID           uint           `gorm:"primaryKey" json:"id"`
+	UserID       uint           `gorm:"index" json:"user_id"`
+	ShipID       *uint          `json:"ship_id"`
+	Title        string         `gorm:"size:200" json:"title"`
+	Description  string         `gorm:"type:text" json:"description"`
+	ActivityType string         `gorm:"size:100" json:"activity_type"` // Combat, Mining, Salvage
+	CurrentCrew  int            `gorm:"default:1" json:"current_crew"`
+	MaxCrew      int            `gorm:"default:2" json:"max_crew"`
+	Status       string         `gorm:"size:50;default:'active'" json:"status"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+
+	User User  `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Ship *Ship `gorm:"foreignKey:ShipID" json:"ship,omitempty"`
+}

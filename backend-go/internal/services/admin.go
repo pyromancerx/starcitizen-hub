@@ -174,13 +174,21 @@ func (s *AdminService) GetDashboardStats() (map[string]interface{}, error) {
 	var totalShips int64
 	s.db.Model(&models.Ship{}).Count(&totalShips)
 
+	var readyShips int64
+	s.db.Model(&models.Ship{}).Where("status = ?", "ready").Count(&readyShips)
+
+	fleetReadiness := 0
+	if totalShips > 0 {
+		fleetReadiness = int((float64(readyShips) / float64(totalShips)) * 100)
+	}
+
 	var activeOps int64
 	s.db.Model(&models.Operation{}).Where("status IN ?", []string{"recruiting", "planning", "active"}).Count(&activeOps)
 
 	var treasury models.OrgTreasury
 	var balance int = 0
-	if err := s.db.Where("is_primary = ?", true).First(&treasury).Error; err == nil {
-		balance = treasury.Balance
+	if err := s.db.First(&treasury).Error; err == nil {
+		balance = treasury.BalanceAUEC
 	}
 
 	return map[string]interface{}{
@@ -188,5 +196,6 @@ func (s *AdminService) GetDashboardStats() (map[string]interface{}, error) {
 		"total_ships":          totalShips,
 		"active_operations":    activeOps,
 		"org_treasury_balance": balance,
+		"fleet_readiness":      fleetReadiness,
 	}, nil
 }

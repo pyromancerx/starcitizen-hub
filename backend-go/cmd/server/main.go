@@ -84,6 +84,38 @@ func main() {
 		}
 	}
 
+	// Seed Core Roles
+	coreRoles := []models.Role{
+		{Name: "Command (Admin)", Tier: models.RoleTierAdmin, Permissions: "[\"*\"]", SortOrder: 100},
+		{Name: "Officer", Tier: models.RoleTierOfficer, Permissions: "[\"missions.*\", \"forum.*\", \"social.*\"]", SortOrder: 80},
+		{Name: "Specialist", Tier: models.RoleTierMember, Permissions: "[\"missions.view\", \"forum.post\"]", SortOrder: 50},
+		{Name: "Citizen", Tier: models.RoleTierMember, Permissions: "[\"forum.view\"]", IsDefault: true, SortOrder: 10},
+	}
+
+	for _, r := range coreRoles {
+		var count int64
+		database.DB.Model(&models.Role{}).Where("tier = ? AND name = ?", r.Tier, r.Name).Count(&count)
+		if count == 0 {
+			database.DB.Create(&r)
+		}
+	}
+
+	// Seed Common Achievements
+	defaultAchievements := []models.Achievement{
+		{Name: "Verified Pilot", Description: "Successfully matched RSI identity with institutional record.", Icon: "ShieldCheck", Rarity: "common", Points: 10},
+		{Name: "Logistics Specialist", Description: "Logged 10+ successful commercial trade runs.", Icon: "Truck", Rarity: "rare", Points: 50},
+		{Name: "Combat Veteran", Description: "Participated in 5+ authorized combat operations.", Icon: "Swords", Rarity: "epic", Points: 100},
+		{Name: "Organization Founder", Description: "Original member of the institutional core.", Icon: "Crown", Rarity: "legendary", Points: 500},
+	}
+
+	for _, a := range defaultAchievements {
+		var count int64
+		database.DB.Model(&models.Achievement{}).Where("name = ?", a.Name).Count(&count)
+		if count == 0 {
+			database.DB.Create(&a)
+		}
+	}
+
 	if *createAdmin || *action == "create-user" {
 		if *email == "" || *password == "" {
 			log.Fatal("Email and password are required")
@@ -240,12 +272,23 @@ func main() {
 			r.Patch("/inventory/{id}", assetHandler.UpdateInventoryItem)
 			r.Delete("/inventory/{id}", assetHandler.DeleteInventoryItem)
 
+			// Bases
+			r.Get("/bases/", assetHandler.ListMyBases)
+			r.Post("/bases/", assetHandler.CreateBase)
+			r.Patch("/bases/{id}", assetHandler.UpdateBase)
+			r.Delete("/bases/{id}", assetHandler.DeleteBase)
+			r.Get("/bases/org", assetHandler.ListOrgBases)
+
 			// Logistics
 			r.Get("/stockpiles/", logisticsHandler.ListStockpiles)
 			r.Get("/stockpiles/{id}", logisticsHandler.GetStockpile)
 			r.Get("/stockpiles/loans", logisticsHandler.ListActiveLoans)
 			r.Get("/trade/contracts", logisticsHandler.ListCargoContracts)
+			r.Post("/trade/contracts", logisticsHandler.CreateCargoContract)
+			r.Get("/trade/runs", logisticsHandler.ListMyTradeRuns)
 			r.Post("/trade/runs", logisticsHandler.CreateTradeRun)
+			r.Get("/crew/posts", logisticsHandler.ListCrewPosts)
+			r.Post("/crew/posts", logisticsHandler.CreateCrewPost)
 			r.Get("/operations/", logisticsHandler.ListOperations)
 			r.Post("/operations/", logisticsHandler.CreateOperation)
 			r.Get("/operations/{id}", logisticsHandler.GetOperation)
@@ -253,16 +296,20 @@ func main() {
 			r.Get("/operations/{id}/procurement", logisticsHandler.GetOperationProcurement)
 			r.Get("/projects/", logisticsHandler.ListProjects)
 			r.Get("/projects/{id}", logisticsHandler.GetProject)
+			r.Post("/projects/contributions", logisticsHandler.CreateContribution)
 			r.Get("/treasury/analytics", logisticsHandler.GetTreasuryAnalytics)
 
 			// Social
 			r.Get("/forum/categories", socialHandler.ListForumCategories)
+			r.Post("/forum/categories", socialHandler.CreateForumCategory)
 			r.Get("/forum/categories/{id}", socialHandler.GetForumCategory)
 			r.Get("/forum/threads/{id}", socialHandler.GetThread)
 			r.Post("/forum/threads", socialHandler.CreateThread)
 			r.Post("/forum/posts", socialHandler.CreatePost)
 			r.Post("/social/rsi-verify", socialHandler.SubmitRSIVerification)
 			r.Get("/social/members", socialHandler.ListMembers)
+			r.Get("/social/achievements", socialHandler.ListAchievements)
+			r.Post("/social/achievements/award", socialHandler.AwardAchievement)
 			r.Get("/social/federation", socialHandler.ListFederation)
 			r.Post("/social/federation", socialHandler.CreateFederationEntity)
 			r.Get("/notifications/", socialHandler.GetNotifications)

@@ -5,6 +5,8 @@ interface ThemeSettings {
   color_sc_dark: string;
   color_sc_panel: string;
   color_sc_blue: string;
+  color_sc_light_blue: string;
+  color_sc_grey: string;
   custom_css: string;
   logo_url: string | null;
   org_name: string;
@@ -22,6 +24,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     color_sc_dark: '#0b0c10',
     color_sc_panel: '#1f2833',
     color_sc_blue: '#66fcf1',
+    color_sc_light_blue: '#45a29e',
+    color_sc_grey: '#c5c6c7',
     custom_css: '',
     logo_url: null,
     org_name: 'Star Citizen Hub',

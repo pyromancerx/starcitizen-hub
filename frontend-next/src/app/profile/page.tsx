@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { 
   User as UserIcon, 

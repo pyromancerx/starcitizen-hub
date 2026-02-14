@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bell, User as UserIcon, ChevronDown, LogOut, Book, User as UserCircle, Rocket, Shield, MessageSquare } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,16 @@ const Header = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  const { data: searchResults, isLoading: searching } = useQuery({
+    queryKey: ['global-search', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      const res = await api.get(`/search?q=${searchQuery}`);
+      return res.data.results || [];
+    },
+    enabled: searchQuery.length >= 2,
+  });
 
   const { data: notifications, refetch: refetchNotifs } = useQuery({
     queryKey: ['my-notifications'],

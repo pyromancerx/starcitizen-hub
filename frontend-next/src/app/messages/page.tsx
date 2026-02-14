@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -13,12 +13,16 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import { useWebRTC } from '@/hooks/useWebRTC';
 
 export default function MessagesPage() {
   const [selectedConv, setSelectedConv] = useState<any>(null);
   const [messageText, setMessageText] = useState('');
   const { user: currentUser } = useAuthStore();
   const queryClient = useQueryClient();
+  
+  // Use the established signaling link for real-time messages
+  const { socketRef } = useWebRTC();
 
   const { data: conversations, isLoading: convsLoading } = useQuery({
     queryKey: ['conversations'],
@@ -36,8 +40,24 @@ export default function MessagesPage() {
       return res.data.messages;
     },
     enabled: !!selectedConv,
-    refetchInterval: 5000, // Poll for new messages
   });
+
+  // Listen for real-time messages
+  useEffect(() => {
+    const socket = socketRef?.current;
+    if (!socket) return;
+
+    const handleMessage = (event: MessageEvent) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'direct-message' && data.conversation_id === selectedConv?.id) {
+            queryClient.invalidateQueries({ queryKey: ['messages', selectedConv?.id] });
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+        }
+    };
+
+    socket.addEventListener('message', handleMessage);
+    return () => socket.removeEventListener('message', handleMessage);
+  }, [socketRef, selectedConv, queryClient]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -47,6 +67,17 @@ export default function MessagesPage() {
       });
     },
     onSuccess: () => {
+      const otherUser = selectedConv.user1_id === currentUser?.id ? selectedConv.user2 : selectedConv.user1;
+      
+      // Notify recipient via WebSocket
+      if (socketRef?.current && socketRef.current.readyState === WebSocket.OPEN) {
+          socketRef.current.send(JSON.stringify({
+              type: 'direct-message',
+              target_id: otherUser.id,
+              conversation_id: selectedConv.id
+          }));
+      }
+
       setMessageText('');
       queryClient.invalidateQueries({ queryKey: ['messages', selectedConv?.id] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });

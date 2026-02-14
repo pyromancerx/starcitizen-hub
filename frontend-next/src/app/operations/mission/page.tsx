@@ -357,7 +357,7 @@ function MissionContent() {
 
                     <div className="pt-4 border-t border-white/5">
                         <button 
-                            onClick={() => signupMutation.mutate()}
+                            onClick={() => signupMutation.mutate(undefined)}
                             disabled={signupMutation.isPending}
                             className="w-full py-3 bg-white/5 border border-white/10 text-sc-grey/40 text-[10px] font-black rounded uppercase hover:text-white hover:bg-white/10 transition-all flex items-center justify-center space-x-2"
                         >

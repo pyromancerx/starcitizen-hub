@@ -10,10 +10,15 @@ import {
   Trophy, 
   TrendingUp, 
   Activity as ActivityIcon,
-  ChevronRight
+  ChevronRight,
+  Radio,
+  MessageCircle,
+  Users
 } from 'lucide-react';
+import { useWebRTC } from '@/hooks/useWebRTC';
 
 export default function DashboardPage() {
+  const { roomPresence } = useWebRTC();
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
@@ -139,6 +144,37 @@ export default function DashboardPage() {
                   <span className="text-[10px] text-sc-blue font-mono font-bold">4.{4-i}k pts</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Radio className="w-4 h-4 text-sc-blue" />
+              <h3 className="text-sm font-bold text-white uppercase tracking-widest">Active Comms Matrix</h3>
+            </div>
+            <div className="bg-sc-panel border border-sc-blue/10 rounded p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Sub-Space Relay</span>
+                    </div>
+                    <span className="text-[8px] font-mono text-sc-grey/40 uppercase">Linked</span>
+                </div>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 bg-black/20 border border-white/5 rounded transition-all hover:border-sc-blue/20">
+                        <div className="flex items-center space-x-2">
+                            <MessageCircle className="w-3 h-3 text-sc-blue/40" />
+                            <span className="text-[10px] font-bold text-sc-grey/60 uppercase">General Channel</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5">
+                            <Users className="w-2.5 h-2.5 text-sc-blue" />
+                            <span className="text-[10px] font-mono text-white">{Array.from(roomPresence.values()).flat().length || 0}</span>
+                        </div>
+                    </div>
+                </div>
+                <Link href="/social" className="block text-center py-1.5 text-[8px] font-black text-sc-blue/40 hover:text-sc-blue uppercase tracking-[0.3em] transition-all">
+                    Access Social Hub
+                </Link>
             </div>
           </div>
         </div>

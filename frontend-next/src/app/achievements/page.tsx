@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   Trophy, 
@@ -9,16 +9,50 @@ import {
   Award,
   Star,
   Zap,
-  Target
+  Target,
+  Plus,
+  X,
+  User as UserIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AchievementsPage() {
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useAuthStore();
+  const [showGrantModal, setShowGrantModal] = useState(false);
+  const [grantData, setGrantData] = useState({
+    user_id: 0,
+    achievement_id: 0,
+    award_note: ''
+  });
+
+  const isAdmin = currentUser?.roles?.some(r => r.tier === 'admin' || r.tier === 'officer');
+
   const { data: achievements, isLoading } = useQuery({
     queryKey: ['achievements'],
     queryFn: async () => {
-      const res = await api.get('/achievements/'); // Go backend needs to support this
+      const res = await api.get('/social/achievements');
       return res.data;
+    },
+  });
+
+  const { data: members } = useQuery({
+    queryKey: ['member-list-awards'],
+    queryFn: async () => {
+      const res = await api.get('/social/members');
+      return res.data;
+    },
+    enabled: isAdmin && showGrantModal,
+  });
+
+  const grantMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/social/achievements/award', grantData); // Note: Verify POST in Go
+    },
+    onSuccess: () => {
+      setShowGrantModal(false);
+      alert('Merit citation broadcast to organizational records.');
     },
   });
 
@@ -40,6 +74,15 @@ export default function AchievementsPage() {
             Organization Merit & Honor System
           </p>
         </div>
+        {isAdmin && (
+            <button 
+                onClick={() => setShowGrantModal(true)}
+                className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center"
+            >
+                <Plus className="w-4 h-4 mr-2" />
+                Grant Merit Citation
+            </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -88,6 +131,80 @@ export default function AchievementsPage() {
           </div>
         )}
       </div>
+
+      {/* Grant Citation Modal */}
+      {showGrantModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Award className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Merit Citation Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowGrantModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Recipient Citizen</label>
+                            <select 
+                                value={grantData.user_id}
+                                onChange={(e) => setGrantData({...grantData, user_id: Number(e.target.value)})}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                            >
+                                <option value="0">Select Citizen...</option>
+                                {members?.map((m: any) => (
+                                    <option key={m.id} value={m.id}>{m.display_name} ({m.rsi_handle})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Achievement Designation</label>
+                            <select 
+                                value={grantData.achievement_id}
+                                onChange={(e) => setGrantData({...grantData, achievement_id: Number(e.target.value)})}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                            >
+                                <option value="0">Select Achievement...</option>
+                                {achievements?.map((a: any) => (
+                                    <option key={a.id} value={a.id}>{a.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Command Award Note</label>
+                        <textarea 
+                            value={grantData.award_note}
+                            onChange={(e) => setGrantData({...grantData, award_note: e.target.value})}
+                            rows={3}
+                            placeholder="Reason for citation..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none resize-none"
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowGrantModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={() => grantMutation.mutate()}
+                        disabled={grantMutation.isPending || !grantData.user_id || !grantData.achievement_id}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {grantMutation.isPending ? 'Broadcasting...' : 'Grant Citation'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

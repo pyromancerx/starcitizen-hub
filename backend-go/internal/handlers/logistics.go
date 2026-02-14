@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
@@ -63,6 +65,47 @@ func (h *LogisticsHandler) CreateTradeRun(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(run)
 }
 
+func (h *LogisticsHandler) ListMyTradeRuns(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	runs, err := h.logisticsService.ListTradeRuns(userID)
+	if err != nil {
+		http.Error(w, "Failed to list trade runs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(runs)
+}
+
+func (h *LogisticsHandler) ListCrewPosts(w http.ResponseWriter, r *http.Request) {
+	posts, err := h.logisticsService.ListCrewPosts()
+	if err != nil {
+		http.Error(w, "Failed to list crew posts", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
+}
+
+func (h *LogisticsHandler) CreateCrewPost(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var post models.CrewPost
+	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	post.UserID = userID
+	if err := h.logisticsService.CreateCrewPost(&post); err != nil {
+		http.Error(w, "Failed to post crew signal", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(post)
+}
+
 func (h *LogisticsHandler) ListOperations(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query()["status"]
 	ops, err := h.logisticsService.ListOperations(status)
@@ -88,6 +131,14 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "Failed to authorize operation", http.StatusInternalServerError)
 		return
 	}
+
+	// Track Activity
+	h.logisticsService.DB.Create(&models.Activity{
+		Type: "MISSION_AUTHORIZED",
+		UserID: &userID,
+		Content: fmt.Sprintf("authorized a new operation: %s", op.Title),
+		CreatedAt: time.Now(),
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(op)
@@ -167,6 +218,24 @@ func (h *LogisticsHandler) ListCargoContracts(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(contracts)
 }
 
+func (h *LogisticsHandler) CreateCargoContract(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var contract models.CargoContract
+	if err := json.NewDecoder(r.Body).Decode(&contract); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	contract.PosterID = userID
+	if err := h.logisticsService.CreateCargoContract(&contract); err != nil {
+		http.Error(w, "Failed to issue contract", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(contract)
+}
+
 func (h *LogisticsHandler) GetOperationProcurement(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
@@ -199,4 +268,34 @@ func (h *LogisticsHandler) ListActiveLoans(w http.ResponseWriter, r *http.Reques
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loans)
+}
+
+func (h *LogisticsHandler) CreateContribution(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var contrib models.Contribution
+	if err := json.NewDecoder(r.Body).Decode(&contrib); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	contrib.UserID = userID
+	
+	// Process contribution in a transaction
+	err := h.logisticsService.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&contrib).Error; err != nil {
+			return err
+		}
+
+		// Update the goal amount
+		return tx.Model(&models.ContributionGoal{}).Where("id = ?", contrib.GoalID).
+			UpdateColumn("current_amount", gorm.Expr("current_amount + ?", contrib.Amount)).Error
+	})
+
+	if err != nil {
+		http.Error(w, "Failed to log contribution", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(contrib)
 }

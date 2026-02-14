@@ -132,6 +132,22 @@ func (h *SocialHandler) ListForumCategories(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(categories)
 }
 
+func (h *SocialHandler) CreateForumCategory(w http.ResponseWriter, r *http.Request) {
+	var cat models.ForumCategory
+	if err := json.NewDecoder(r.Body).Decode(&cat); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.socialService.CreateForumCategory(&cat); err != nil {
+		http.Error(w, "Failed to create channel", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(cat)
+}
+
 func (h *SocialHandler) GetForumCategory(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
@@ -601,6 +617,44 @@ func (h *SocialHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	// In a real product, we would map this to a "PublicProfile" DTO to hide sensitive fields
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func (h *SocialHandler) ListAchievements(w http.ResponseWriter, r *http.Request) {
+	achievements, err := h.socialService.ListAchievements()
+	if err != nil {
+		http.Error(w, "Failed to list achievements", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(achievements)
+}
+
+func (h *SocialHandler) AwardAchievement(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UserID        uint   `json:"user_id"`
+		AchievementID uint   `json:"achievement_id"`
+		AwardNote     string `json:"award_note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	award := models.UserAchievement{
+		UserID:        req.UserID,
+		AchievementID: req.AchievementID,
+		AwardNote:     req.AwardNote,
+		AwardedAt:     time.Now(),
+	}
+
+	if err := h.socialService.DB.Create(&award).Error; err != nil {
+		http.Error(w, "Failed to award merit", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(award)
 }
 
 func (h *SocialHandler) ListFederation(w http.ResponseWriter, r *http.Request) {

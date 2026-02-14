@@ -23,7 +23,8 @@ import {
   Building2,
   Radio,
   FileCode,
-  Package2
+  Package2,
+  Warehouse
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ const Sidebar = () => {
         { name: 'Fleet Registry', href: '/fleet', icon: Rocket },
         { name: 'Tactical Blueprints', href: '/fleet/loadouts', icon: FileCode },
         { name: 'Logistics Manifests', href: '/fleet/manifests', icon: Package2 },
+        { name: 'Planetary Outposts', href: '/bases', icon: Warehouse },
         { name: 'Inventory', href: '/inventory', icon: Package },
         { name: 'Financials', href: '/wallet', icon: Wallet },
         { name: 'Org Stockpiles', href: '/stockpiles', icon: Database },
