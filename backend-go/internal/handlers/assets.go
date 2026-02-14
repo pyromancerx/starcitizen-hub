@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -96,40 +97,104 @@ func (h *AssetHandler) DeleteShip(w http.ResponseWriter, r *http.Request) {
 
 func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
-	var hangarData []map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&hangarData); err != nil {
+	var rawData interface{}
+	if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
+		log.Printf("Import failed: invalid JSON format: %v", err)
 		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	importedCount := 0
-	for _, pledge := range hangarData {
-		insurance, _ := pledge["insurance"].(string)
-		items, _ := pledge["items"].([]interface{})
+	
+	// Handle different JSON structures
+	switch data := rawData.(type) {
+	case []interface{}:
+		// Standard HangarXPLORER format or simple list
+		for _, entryRaw := range data {
+			entry, ok := entryRaw.(map[string]interface{})
+			if !ok { continue }
 
-		for _, itemRaw := range items {
-			item := itemRaw.(map[string]interface{})
-			if item["type"] == "Ship" {
-				shipType, _ := item["name"].(string)
-				pledgeName, _ := pledge["name"].(string)
+			// Case 1: HangarXPLORER structure (pledge with items)
+			if items, ok := entry["items"].([]interface{}); ok {
+				insurance, _ := entry["insurance"].(string)
+				pledgeName, _ := entry["name"].(string)
 
-				ship := models.Ship{
-					UserID:          userID,
-					ShipType:        shipType,
-					Name:            pledgeName,
-					InsuranceStatus: insurance,
-					Status:          "ready",
-					Notes:           "Imported from HangarXPLORER",
+				for _, itemRaw := range items {
+					item, ok := itemRaw.(map[string]interface{})
+					if !ok { continue }
+					
+					if item["type"] == "Ship" {
+						shipType, _ := item["name"].(string)
+						ship := models.Ship{
+							UserID:          userID,
+							ShipType:        shipType,
+							Name:            pledgeName,
+							InsuranceStatus: insurance,
+							Status:          "ready",
+							Notes:           "Imported from HangarXPLORER",
+						}
+						if err := h.assetService.CreateShip(&ship); err == nil {
+							importedCount++
+						}
+					}
 				}
-				h.assetService.CreateShip(&ship)
-				importedCount++
+			} else {
+				// Case 2: Simple flat list of ships
+				shipType, ok := entry["ship_type"].(string)
+				if !ok {
+					shipType, ok = entry["name"].(string)
+				}
+				
+				if ok && shipType != "" {
+					ship := models.Ship{
+						UserID:          userID,
+						ShipType:        shipType,
+						Name:            entry["custom_name"].(string),
+						InsuranceStatus: entry["insurance"].(string),
+						Status:          "ready",
+						Notes:           "Imported from custom list",
+					}
+					if ship.Name == "" {
+						ship.Name = shipType
+					}
+					if err := h.assetService.CreateShip(&ship); err == nil {
+						importedCount++
+					}
+				}
+			}
+		}
+	case map[string]interface{}:
+		// Single ship or object-wrapped list
+		log.Printf("Received single object import: %v", data)
+		// Try to see if it's a wrapped list
+		if list, ok := data["ships"].([]interface{}); ok {
+			for _, entryRaw := range list {
+				entry, ok := entryRaw.(map[string]interface{})
+				if !ok { continue }
+				shipType, ok := entry["ship_type"].(string)
+				if ok && shipType != "" {
+					ship := models.Ship{
+						UserID:          userID,
+						ShipType:        shipType,
+						Name:            entry["custom_name"].(string),
+						InsuranceStatus: entry["insurance"].(string),
+						Status:          "ready",
+						Notes:           "Imported from object-wrapped list",
+					}
+					if ship.Name == "" { ship.Name = shipType }
+					if err := h.assetService.CreateShip(&ship); err == nil {
+						importedCount++
+					}
+				}
 			}
 		}
 	}
 
+	log.Printf("User %d imported %d vessels", userID, importedCount)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Successfully imported ships",
+		"message": fmt.Sprintf("Successfully imported %d vessels", importedCount),
 		"count":   importedCount,
 	})
 }

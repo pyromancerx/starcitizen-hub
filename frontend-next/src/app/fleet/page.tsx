@@ -67,10 +67,14 @@ export default function FleetPage() {
     mutationFn: async (data: any) => {
       return api.post('/ships/import-hangarxplorer', data);
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['my-ships'] });
-      alert('Hangar imported successfully!');
+      alert(res.data.message || `Successfully imported ${res.data.count} vessels!`);
     },
+    onError: (err: any) => {
+      console.error('Import error:', err);
+      alert(err.response?.data || 'Tactical data sync failed. Ensure the JSON format is compatible.');
+    }
   });
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
