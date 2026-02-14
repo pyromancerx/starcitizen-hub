@@ -55,7 +55,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         
         // 1. Update Colors
         Object.entries(mapped).forEach(([key, value]) => {
-          if (key.startsWith('color_sc_') && typeof value === 'string') {
+          if (key.startsWith('color_sc_') && typeof value === 'string' && value.startsWith('#')) {
             const varName = `--${key.replace(/_/g, '-')}-rgb`;
             const rgb = hexToRgb(value);
             if (rgb) {
@@ -65,13 +65,16 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         });
 
         // 2. Apply Custom CSS Overrides
-        let styleTag = document.getElementById('hub-custom-css');
-        if (!styleTag) {
-          styleTag = document.createElement('style');
-          styleTag.id = 'hub-custom-css';
-          document.head.appendChild(styleTag);
+        const customCss = mapped['custom_css'] || get().settings.custom_css;
+        if (customCss) {
+            let styleTag = document.getElementById('hub-custom-css');
+            if (!styleTag) {
+              styleTag = document.createElement('style');
+              styleTag.id = 'hub-custom-css';
+              document.head.appendChild(styleTag);
+            }
+            styleTag.innerHTML = customCss;
         }
-        styleTag.innerHTML = mapped['custom_css'] || '';
       }
     } catch (error) {
       console.error('Failed to fetch theme settings:', error);
@@ -82,7 +85,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     try {
       // For each changed setting, send update to backend
       for (const [key, value] of Object.entries(newSettings)) {
-        await api.patch('/admin/settings', { key, value });
+        if (value !== undefined && value !== null) {
+            await api.patch('/admin/settings', { key, value: String(value) });
+        }
       }
       await get().fetchTheme();
     } catch (error) {
@@ -103,7 +108,8 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   },
 }));
 
-function hexToRgb(hex: string) {
+function hexToRgb(hex: string | null | undefined) {
+  if (!hex || typeof hex !== 'string') return null;
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
     r: parseInt(result[1], 16),

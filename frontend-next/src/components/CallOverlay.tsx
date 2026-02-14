@@ -79,9 +79,10 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
         </div>
 
         {/* Remote Streams */}
-        {Array.from(peers.values()).map((peer) => (
-          <RemoteVideo key={peer.id} stream={peer.stream} userId={peer.id} />
-        ))}
+        {Array.from(peers.values()).map((peer) => {
+          if (!peer || !peer.id) return null;
+          return <RemoteVideo key={peer.id} stream={peer.stream} userId={peer.id} />;
+        })}
       </div>
 
       {/* Controls */}

@@ -26,12 +26,15 @@ import {
   Package2,
   Warehouse
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, useIsMounted } from '@/lib/utils';
 
 const Sidebar = () => {
+  const isMounted = useIsMounted();
   const pathname = usePathname();
   const { settings } = useThemeStore();
   const { logout } = useAuthStore();
+
+  if (!isMounted) return <aside className="w-64 bg-sc-panel border-r border-sc-grey/10 flex-shrink-0 flex flex-col h-screen sticky top-0" />;
 
   const navGroups = [
     {

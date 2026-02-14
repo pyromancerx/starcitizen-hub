@@ -35,7 +35,7 @@ const Header = () => {
     queryKey: ['my-notifications'],
     queryFn: async () => {
       const res = await api.get('/notifications/');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : [];
     },
   });
 
@@ -46,7 +46,7 @@ const Header = () => {
     onSuccess: () => refetchNotifs(),
   });
 
-  const unreadCount = notifications?.filter((n: any) => !n.is_read).length || 0;
+  const unreadCount = Array.isArray(notifications) ? notifications.filter((n: any) => !n.is_read).length : 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -97,7 +97,7 @@ const Header = () => {
                 </div>
 
                 <div className="max-h-80 overflow-y-auto custom-scrollbar">
-                    {searchResults?.map((res: any, idx: number) => (
+                    {Array.isArray(searchResults) && searchResults.map((res: any, idx: number) => (
                         <Link 
                             key={idx} 
                             href={res.link} 
@@ -116,7 +116,7 @@ const Header = () => {
                         </Link>
                     ))}
 
-                    {(!searchResults || searchResults.length === 0) && !searching && (
+                    {(!searchResults || (Array.isArray(searchResults) && searchResults.length === 0)) && !searching && (
                         <div className="p-8 text-center text-sc-grey/20 uppercase text-[9px] font-black italic">
                             No matching signals found in databank.
                         </div>
@@ -151,7 +151,7 @@ const Header = () => {
                 </div>
                 
                 <div className="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-white/5">
-                    {notifications?.slice(0, 10).map((n: any) => (
+                    {Array.isArray(notifications) && notifications.slice(0, 10).map((n: any) => (
                         <div key={n.id} className={cn(
                             "p-4 space-y-1 transition-all",
                             !n.is_read ? "bg-sc-blue/[0.03]" : "opacity-60"
@@ -170,7 +170,7 @@ const Header = () => {
                             </div>
                         </div>
                     ))}
-                    {(!notifications || notifications.length === 0) && (
+                    {(!notifications || (Array.isArray(notifications) && notifications.length === 0)) && (
                         <div className="p-12 text-center text-sc-grey/20 uppercase text-[9px] font-black italic">
                             All sectors currently secure. No active alerts.
                         </div>
