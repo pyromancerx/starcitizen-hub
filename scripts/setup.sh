@@ -279,6 +279,7 @@ chmod 600 "$APP_DIR/.env"
 
 log_info "Building backend..."
 cd "$APP_DIR/backend-go"
+go mod tidy
 go build -o server ./cmd/server/main.go
 
 # Create initial admin user

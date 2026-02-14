@@ -22,6 +22,7 @@ fi
 echo "Building and starting Go backend..."
 cd "$BACKEND_DIR"
 
+go mod tidy
 go build -o server ./cmd/server/main.go
 
 nohup ./server > backend.log 2>&1 &

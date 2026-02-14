@@ -110,32 +110,28 @@ The Hub features a global search bar in the header (on desktop) that scans multi
 
 ## 🚀 Production Deployment (Debian 13)
 
+### One-Line Installer
+Run the following command as root to automatically install and configure the entire stack:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/pyromancerx/starcitizen-hub/main/scripts/install.sh | sudo bash
+```
+
 ### Prerequisites
 - Debian 13 (Trixie) server
 - Root access
 - Domain name pointed to your server (A Record)
 
-### 1. Installation
-Run the automated installer to set up dependencies (Go, Node.js, Caddy, Systemd).
+### 1. Installation & Setup
+The automated installer will set up all dependencies (Go, Node.js, Caddy, Systemd), clone the repository to `/opt/starcitizen-hub`, and launch the configuration wizard.
 
 ```bash
-# Clone the repository
-git clone https://github.com/pyromancerx/starcitizen-hub.git
-cd starcitizen-hub
-
-# Run the installer (as root)
+# Optional: Manual installation from clone
 sudo ./scripts/install.sh
 ```
+*The script will prompt you for your domain name, security preferences, and admin credentials.*
 
-### 2. Configuration & Setup
-This script configures the environment, builds the frontend, and generates the Caddyfile. **It will also prompt you to create the initial admin user.**
-
-```bash
-sudo ./scripts/setup.sh
-```
-*Follow the prompts to set your domain name, security preferences, and admin credentials.*
-
-### 3. Creating Additional Admins (CLI)
+### 2. Creating Additional Admins (CLI)
 If you need to create an admin user manually from the command line:
 
 ```bash

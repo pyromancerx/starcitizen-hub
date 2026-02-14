@@ -222,6 +222,14 @@ EOF
 # Reload systemd
 systemctl daemon-reload
 
+# Build and tidy backend dependencies
+log_info "Synchronizing Go dependencies..."
+cd "$APP_DIR/backend-go"
+go mod tidy
+
+# Set ownership again after tidy
+chown -R starcitizen-hub:starcitizen-hub "$APP_DIR"
+
 log_info "Installation complete!"
 
 # Prepare setup arguments
@@ -241,24 +249,5 @@ SETUP_ARGS=""
 [[ -n "$SMTP_FROM" ]] && SETUP_ARGS="$SETUP_ARGS --smtp-from $SMTP_FROM"
 [[ "$SILENT" == "true" ]] && SETUP_ARGS="$SETUP_ARGS --silent"
 
-if [[ "$SILENT" == "true" ]]; then
-    log_info "Running setup automatically (silent mode)..."
-    bash "$APP_DIR/scripts/setup.sh" $SETUP_ARGS
-else
-    echo ""
-    echo "============================================"
-    echo "  Star Citizen Hub - Installation Complete"
-    echo "============================================"
-    echo ""
-    echo "Next steps:"
-    echo "  1. Run the setup script to configure your instance:"
-    echo "     sudo $APP_DIR/scripts/setup.sh $SETUP_ARGS"
-    echo ""
-    echo "  2. The setup script will:"
-    echo "     - Ask for any missing configuration"
-    echo "     - Generate a secure secret key"
-    echo "     - Configure Caddy reverse proxy"
-    echo "     - Run database migrations"
-    echo "     - Start the services"
-    echo ""
-fi
+log_info "Launching configuration wizard..."
+bash "$APP_DIR/scripts/setup.sh" $SETUP_ARGS
