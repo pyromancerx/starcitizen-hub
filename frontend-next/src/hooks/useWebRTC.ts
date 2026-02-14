@@ -8,7 +8,7 @@ interface Peer {
   stream?: MediaStream;
 }
 
-export const useWebRTC = (roomId?: string, targetId?: number) => {
+export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => {
   const { user } = useAuthStore();
   const { send, subscribe, isConnected } = useSignaling();
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -61,12 +61,8 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
       }
     };
 
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => pc.addTrack(track, localStreamRef.current!));
-    }
-
     return pc;
-  }, [roomId]);
+  }, [roomId, send]);
 
   const toggleAudio = useCallback(() => {
     if (localStreamRef.current) {
@@ -85,6 +81,34 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoEnabled(videoTrack.enabled);
       }
+    }
+  }, []);
+
+  const stopScreenShare = useCallback(async () => {
+    try {
+      const userStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const videoTrack = userStream.getVideoTracks()[0];
+
+      if (localStreamRef.current) {
+        const screenTrack = localStreamRef.current.getVideoTracks()[0];
+        if (screenTrack) {
+          localStreamRef.current.removeTrack(screenTrack);
+          screenTrack.stop();
+        }
+        localStreamRef.current.addTrack(videoTrack);
+        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+
+        peersRef.current.forEach((peer) => {
+          const sender = peer.connection.getSenders().find(s => s.track?.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(videoTrack);
+          }
+        });
+
+        setIsScreenSharing(false);
+      }
+    } catch (err) {
+      console.error("Failed to restore camera:", err);
     }
   }, []);
 
@@ -121,39 +145,17 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
     } catch (err) {
       console.error("Failed to start screen share:", err);
     }
-  }, []);
-
-  const stopScreenShare = useCallback(async () => {
-    try {
-      const userStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      const videoTrack = userStream.getVideoTracks()[0];
-
-      if (localStreamRef.current) {
-        const screenTrack = localStreamRef.current.getVideoTracks()[0];
-        if (screenTrack) {
-          localStreamRef.current.removeTrack(screenTrack);
-          screenTrack.stop();
-        }
-        localStreamRef.current.addTrack(videoTrack);
-        setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
-
-        peersRef.current.forEach((peer) => {
-          const sender = peer.connection.getSenders().find(s => s.track?.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(videoTrack);
-          }
-        });
-
-        setIsScreenSharing(false);
-      }
-    } catch (err) {
-      console.error("Failed to restore camera:", err);
-    }
-  }, []);
+  }, [stopScreenShare]);
 
   useEffect(() => {
+    if (!shouldInitMedia) return;
+
     const initMedia = async () => {
       try {
+        if (!navigator.mediaDevices) {
+            console.error("Media devices not supported in this context.");
+            return;
+        }
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         setLocalStream(stream);
         localStreamRef.current = stream;
@@ -166,7 +168,7 @@ export const useWebRTC = (roomId?: string, targetId?: number) => {
     return () => {
       localStreamRef.current?.getTracks().forEach(track => track.stop());
     };
-  }, []);
+  }, [shouldInitMedia]);
 
   useEffect(() => {
     if (!user || !roomId) return;

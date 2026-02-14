@@ -15,10 +15,25 @@ import {
   MessageCircle,
   Users
 } from 'lucide-react';
-import { useWebRTC } from '@/hooks/useWebRTC';
+import { useSignaling } from '@/context/SignalingContext';
 
 export default function DashboardPage() {
-  const { roomPresence } = useWebRTC();
+  const { subscribe } = useSignaling();
+  const [roomPresence, setRoomPresence] = React.useState<Map<string, number[]>>(new Map());
+
+  React.useEffect(() => {
+    const unsub = subscribe((data) => {
+        if (data.type === 'room-presence') {
+            setRoomPresence(prev => {
+                const newPresence = new Map(prev);
+                newPresence.set(data.room_id, data.user_ids);
+                return newPresence;
+            });
+        }
+    });
+    return unsub;
+  }, [subscribe]);
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {

@@ -32,7 +32,7 @@ export const CallProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toggleVideo,
     startScreenShare,
     stopScreenShare
-  } = useWebRTC(activeCall ? `direct_${activeCall.id}` : undefined);
+  } = useWebRTC(activeCall ? `direct_${activeCall.id}` : undefined, !!activeCall);
 
   useEffect(() => {
     if (!user) return;

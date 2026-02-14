@@ -39,7 +39,7 @@ export default function SocialHubPage() {
     toggleVideo,
     startScreenShare,
     stopScreenShare
-  } = useWebRTC(activeChannel ? `room_${activeChannel.id}` : undefined);
+  } = useWebRTC(activeChannel ? `room_${activeChannel.id}` : undefined, !!activeChannel);
 
   const { data: members, isLoading: membersLoading } = useQuery({
     queryKey: ['social-members-links'],
