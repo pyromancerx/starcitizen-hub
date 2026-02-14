@@ -9,6 +9,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Rocket } from 'lucide-react';
 import LoginPage from '@/app/login/page';
 import { CallProvider } from '@/context/CallContext';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialized, initialize } = useAuthStore();
@@ -16,6 +18,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isMounting, setIsMounting] = useState(true);
+
+  const { data: setupStatus } = useQuery({
+    queryKey: ['system-setup-status'],
+    queryFn: async () => {
+      const res = await api.get('/system/setup-status');
+      return res.data;
+    },
+    enabled: isInitialized
+  });
+
+  useEffect(() => {
+    if (!isMounting && isInitialized && setupStatus?.needs_setup && pathname !== '/setup') {
+        router.push('/setup');
+    }
+  }, [isMounting, isInitialized, setupStatus, pathname, router]);
 
   useEffect(() => {
     const start = async () => {

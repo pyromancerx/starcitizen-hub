@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -23,8 +23,10 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
-export default function LoadoutBuilderPage() {
+function LoadoutBuilderContent() {
   const { id } = useParams();
+  const searchParams = useSearchParams();
+  const modelId = searchParams.get('modelId');
   const queryClient = useQueryClient();
   const [selectedHardpoint, setSelectedHardpoint] = useState<string | null>(null);
   const [searchTerm, setSearchQuery] = useState('');
@@ -32,10 +34,10 @@ export default function LoadoutBuilderPage() {
 
   // 1. Fetch Ship Model & Current Loadout
   const { data: loadout, isLoading } = useQuery({
-    queryKey: ['loadout', id],
+    queryKey: ['loadout', id, modelId],
     queryFn: async () => {
       if (id === 'new') {
-        const res = await api.get(`/game-data/ships/1`); // Mocking model ID 1
+        const res = await api.get(`/game-data/ships/${modelId || 1}`); 
         return { ship_model: res.data, configuration: "{}" };
       }
       const res = await api.get(`/game-data/loadouts/${id}`);
@@ -43,16 +45,45 @@ export default function LoadoutBuilderPage() {
     },
   });
 
+  // Prepopulate configuration when loading existing
+  useEffect(() => {
+    if (loadout?.configuration) {
+        try {
+            const config = JSON.parse(loadout.configuration);
+            setConfiguration(config);
+        } catch(e) { console.error("Failed to parse stored config", e); }
+    }
+  }, [loadout]);
+
   // 2. Fetch compatible items for selected hardpoint
+  const activeHp = selectedHardpoint ? JSON.parse(loadout?.ship_model?.hardpoints || '{}')[selectedHardpoint] : null;
+
   const { data: items } = useQuery({
-    queryKey: ['game-items', selectedHardpoint, searchTerm],
+    queryKey: ['game-items', selectedHardpoint, searchTerm, activeHp?.size],
     queryFn: async () => {
-      const category = selectedHardpoint?.toLowerCase().includes('weapon') ? 'Weapon' : 'Shield';
-      const res = await api.get(`/game-data/items?q=${searchTerm}&category=${category}`);
+      const type = activeHp?.type || '';
+      const size = activeHp?.size || 0;
+      const res = await api.get(`/game-data/items?q=${searchTerm}&category=${type}&size=${size}`);
       return res.data;
     },
     enabled: !!selectedHardpoint,
   });
+
+  // 3. Calculate Live Stats
+  const calculatedStats = React.useMemo(() => {
+    let dps = 0;
+    let shields = 0;
+    let power = 0;
+
+    Object.values(configuration).forEach((item: any) => {
+        const stats = JSON.parse(item.stats || '{}');
+        if (stats.dps) dps += stats.dps;
+        if (stats.shield_hp) shields += stats.shield_hp;
+        if (stats.power_draw) power += stats.power_draw;
+    });
+
+    return { dps, shields, power };
+  }, [configuration]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -271,9 +302,22 @@ export default function LoadoutBuilderPage() {
                 </div>
                 
                 <div className="space-y-4">
-                    <StatBar label="Burst Damage (DPS)" value="4,210" percent={75} />
-                    <StatBar label="Shield Endurance" value="12,500 HP" percent={60} />
-                    <StatBar label="Power Stability" value="112%" percent={90} color="bg-sc-blue" />
+                    <StatBar 
+                        label="Burst Damage (DPS)" 
+                        value={calculatedStats.dps.toLocaleString()} 
+                        percent={Math.min(100, (calculatedStats.dps / 5000) * 100)} 
+                    />
+                    <StatBar 
+                        label="Shield Endurance" 
+                        value={`${calculatedStats.shields.toLocaleString()} HP`} 
+                        percent={Math.min(100, (calculatedStats.shields / 20000) * 100)} 
+                    />
+                    <StatBar 
+                        label="Energy Consumption" 
+                        value={`${calculatedStats.power.toLocaleString()} W`} 
+                        percent={Math.min(100, (calculatedStats.power / 1000) * 100)} 
+                        color="bg-sc-blue" 
+                    />
                     <StatBar label="Heat Management" value="Stable" percent={45} color="bg-yellow-500" />
                 </div>
             </div>
@@ -281,6 +325,14 @@ export default function LoadoutBuilderPage() {
       </div>
     </div>
   );
+}
+
+export default function LoadoutBuilderPage() {
+    return (
+        <Suspense fallback={<div className="p-20 text-center uppercase font-black text-sc-blue animate-pulse tracking-[0.5em]">Synchronizing Neural Link...</div>}>
+            <LoadoutBuilderContent />
+        </Suspense>
+    );
 }
 
 const HardpointGroup = ({ title, icon, items, selected, onSelect, configuration }: { title: string, icon: any, items: any[], selected: string | null, onSelect: (s: string) => void, configuration: any }) => (

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
@@ -30,9 +31,6 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 
 	log.Printf("Initiating RSI Roster Sync for Org: %s", orgSID.Value)
 
-	// Note: RSI uses a specific endpoint for member lists. 
-	// In a production scraper, we would handle pagination.
-	// For this phase, we'll implement the ingestion logic.
 	url := fmt.Sprintf("https://robertsspaceindustries.com/api/orgs/getOrgMembers?symbol=%s&pagesize=100", orgSID.Value)
 	
 	resp, err := http.Get(url)
@@ -41,24 +39,48 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("RSI returned status: %d", resp.StatusCode)
-	}
-
 	var result struct {
+		Success int `json:"success"`
 		Data struct {
-			HTML string `json:"html"` // RSI sometimes returns HTML fragments or JSON
+			HTML string `json:"html"`
 		} `json:"data"`
 	}
-	// Note: RSI APIs often require specific headers (X-RSI-Token).
-	// For this implementation, we will mock the ingestion of the returned data.
-	
-	// Implementation would parse the member list and upsert:
-	// 1. Check if user exists by RSI Handle
-	// 2. If not, create a "ghost" user or invited user
-	// 3. Update their Rank/Role within the Hub based on RSI Rank
-	
-	log.Printf("Successfully synchronized RSI roster for %s", orgSID.Value)
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return err
+	}
+
+	// RSI often returns HTML blobs. We use Regex to extract handles.
+	// Pattern for RSI Handle: href="/citizens/HANDLE"
+	re := regexp.MustCompile(`href="/citizens/([^"]+)"`)
+	matches := re.FindAllStringSubmatch(result.Data.HTML, -1)
+
+	count := 0
+	for _, match := range matches {
+		handle := match[1]
+		if handle == "" { continue }
+
+		// Upsert logic:
+		// We create a user record if it doesn't exist.
+		// We set their email to a placeholder since we don't know it from RSI.
+		
+		user := models.User{
+			RSIHandle:     handle,
+			DisplayName:   handle, // Default display name to handle
+			Email:         fmt.Sprintf("%s@sync-pending.hub", handle),
+			IsActive:      true,
+			IsRSIVerified: true, // Flag as RSI-verified since they're in the org roster
+		}
+
+		// Use OnConflict to avoid duplicates and update status
+		err := s.db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "rsi_handle"}},
+			DoUpdates: clause.AssignmentColumns([]string{"is_rsi_verified"}),
+		}).Create(&user).Error
+
+		if err == nil { count++ }
+	}
+
+	log.Printf("Successfully synchronized %d RSI members for %s", count, orgSID.Value)
 	return nil
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   Shield, 
@@ -9,17 +9,60 @@ import {
   Plus,
   Clock,
   MapPin,
-  Users
+  Users,
+  X,
+  Calendar,
+  Rocket,
+  Package
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function OperationsPage() {
+  const queryClient = useQueryClient();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [newOp, setNewOp] = useState({
+    title: '',
+    description: '',
+    type: 'Combat',
+    scheduled_at: '',
+    max_participants: 10,
+    required_loadout_id: undefined as number | undefined,
+    required_manifest_id: undefined as number | undefined,
+  });
+
   const { data: operations, isLoading } = useQuery({
     queryKey: ['operations'],
     queryFn: async () => {
       const res = await api.get('/operations/');
       return res.data;
+    },
+  });
+
+  const { data: blueprints } = useQuery({
+    queryKey: ['loadout-templates'],
+    queryFn: async () => {
+      const res = await api.get('/game-data/loadouts');
+      return res.data;
+    },
+  });
+
+  const { data: manifests } = useQuery({
+    queryKey: ['manifest-templates'],
+    queryFn: async () => {
+      const res = await api.get('/game-data/manifests');
+      return res.data;
+    },
+  });
+
+  const authorizeMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/operations/', newOp);
+    },
+    onSuccess: () => {
+      setShowAuthModal(false);
+      queryClient.invalidateQueries({ queryKey: ['operations'] });
+      alert('Operation authorized. Signal broadcast to all tactical units.');
     },
   });
 
@@ -42,7 +85,10 @@ export default function OperationsPage() {
             Active Combat & Logistics Deployment
           </p>
         </div>
-        <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+        <button 
+            onClick={() => setShowAuthModal(true)}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Authorize Operation
         </button>
@@ -115,6 +161,109 @@ export default function OperationsPage() {
           </div>
         )}
       </div>
+
+      {/* Operation Authorization Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-xl">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-2xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Shield className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">New Operation Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowAuthModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                    {/* Mission Details */}
+                    <div className="space-y-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mission Title</label>
+                            <input 
+                                value={newOp.title}
+                                onChange={(e) => setNewOp({...newOp, title: e.target.value})}
+                                placeholder="Operation Name..."
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Deployment Time</label>
+                            <input 
+                                type="datetime-local"
+                                value={newOp.scheduled_at}
+                                onChange={(e) => setNewOp({...newOp, scheduled_at: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Briefing Description</label>
+                            <textarea 
+                                value={newOp.description}
+                                onChange={(e) => setNewOp({...newOp, description: e.target.value})}
+                                rows={4}
+                                placeholder="Classified mission parameters..."
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none resize-none"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Requirements */}
+                    <div className="space-y-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mandatory Ship Blueprint</label>
+                            <select 
+                                value={newOp.required_loadout_id}
+                                onChange={(e) => setNewOp({...newOp, required_loadout_id: Number(e.target.value)})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                            >
+                                <option value="">No Requirement</option>
+                                {blueprints?.map((bp: any) => (
+                                    <option key={bp.id} value={bp.id}>{bp.ship_model?.name} - {bp.template_name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mandatory Gear Manifest</label>
+                            <select 
+                                value={newOp.required_manifest_id}
+                                onChange={(e) => setNewOp({...newOp, required_manifest_id: Number(e.target.value)})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                            >
+                                <option value="">No Requirement</option>
+                                {manifests?.map((mf: any) => (
+                                    <option key={mf.id} value={mf.id}>{mf.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3">
+                            <Package className="w-4 h-4 text-sc-blue mt-0.5" />
+                            <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                                Setting mandatory requirements will trigger the Readiness Engine for all enlisting citizens.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowAuthModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Abort
+                    </button>
+                    <button 
+                        onClick={() => authorizeMutation.mutate()}
+                        disabled={authorizeMutation.isPending || !newOp.title || !newOp.scheduled_at}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {authorizeMutation.isPending ? 'Broadcasting...' : 'Authorize Operation'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

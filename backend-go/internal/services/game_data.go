@@ -325,11 +325,14 @@ func (s *GameDataService) GetShipModel(id uint) (*models.ShipModel, error) {
 	return &model, err
 }
 
-func (s *GameDataService) SearchItems(query string, category string) ([]models.GameItem, error) {
+func (s *GameDataService) SearchItems(query string, category string, size int) ([]models.GameItem, error) {
 	var items []models.GameItem
 	db := s.db.Where("name LIKE ?", "%"+query+"%")
 	if category != "" {
-		db = db.Where("category = ?", category)
+		db = db.Where("category LIKE ?", "%"+category+"%")
+	}
+	if size > 0 {
+		db = db.Where("size = ?", size)
 	}
 	err := db.Limit(50).Find(&items).Error
 	return items, err

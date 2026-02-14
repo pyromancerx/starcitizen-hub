@@ -326,6 +326,7 @@ func (h *AdminHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
+	adminID := r.Context().Value("user_id").(uint)
 	var req struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
@@ -340,6 +341,15 @@ func (h *AdminHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Record Audit Log
+	h.adminService.DB.Create(&models.AuditLog{
+		UserID:     &adminID,
+		Action:     "UPDATE_SETTING",
+		TargetType: "SYSTEM_SETTING",
+		Details:    fmt.Sprintf("Changed %s to %s", req.Key, req.Value),
+		IPAddress:  r.RemoteAddr,
+	})
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -351,6 +361,16 @@ func (h *AdminHandler) GetSystemVersion(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
+	adminID := r.Context().Value("user_id").(uint)
+	// Record Audit Log
+	h.adminService.DB.Create(&models.AuditLog{
+		UserID:     &adminID,
+		Action:     "SYSTEM_UPDATE",
+		TargetType: "KERNEL",
+		Details:    "Initiated remote system upgrade",
+		IPAddress:  r.RemoteAddr,
+	})
+
 	// Execute the update script
 	go func() {
 		log.Println("Starting system update...")
@@ -368,6 +388,16 @@ func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
+	adminID := r.Context().Value("user_id").(uint)
+	// Record Audit Log
+	h.adminService.DB.Create(&models.AuditLog{
+		UserID:     &adminID,
+		Action:     "CREATE_BACKUP",
+		TargetType: "DATABASE",
+		Details:    "Generated cold storage archive",
+		IPAddress:  r.RemoteAddr,
+	})
+
 	backupFilename := fmt.Sprintf("hub-backup-%d.tar.gz", time.Now().Unix())
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", backupFilename))

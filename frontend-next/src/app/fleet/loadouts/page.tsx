@@ -18,7 +18,10 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
+import { useRouter } from 'next/navigation';
+
 export default function LoadoutDashboardPage() {
+  const router = useRouter();
   const { data: loadouts, isLoading } = useQuery({
     queryKey: ['ship-loadouts'],
     queryFn: async () => {
@@ -97,7 +100,11 @@ export default function LoadoutDashboardPage() {
                 </div>
                 <div className="max-h-64 overflow-y-auto custom-scrollbar space-y-1 pr-2">
                     {shipModels?.map((ship: any) => (
-                        <div key={ship.id} className="flex items-center justify-between p-2 rounded hover:bg-white/5 group cursor-pointer transition-all">
+                        <div 
+                            key={ship.id} 
+                            onClick={() => router.push(`/fleet/loadouts/new?modelId=${ship.id}`)}
+                            className="flex items-center justify-between p-2 rounded hover:bg-white/5 group cursor-pointer transition-all"
+                        >
                             <span className="text-[10px] font-bold text-sc-grey/60 group-hover:text-white uppercase truncate pr-4">{ship.name}</span>
                             <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Plus className="w-3 h-3 text-sc-blue" />

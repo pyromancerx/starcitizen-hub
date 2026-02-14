@@ -215,6 +215,8 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		r.Post("/auth/login", authHandler.Login)
 		r.Post("/auth/register", authHandler.Register)
+		r.Get("/system/setup-status", authHandler.GetSetupStatus)
+		r.Post("/system/setup", authHandler.PerformSetup)
 
 		// Protected Routes
 		r.Group(func(r chi.Router) {

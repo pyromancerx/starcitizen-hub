@@ -1,7 +1,7 @@
 'use client';
 
-import React, { Suspense } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { Suspense, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   ArrowLeft, 
@@ -11,7 +11,9 @@ import {
   Target,
   Rocket,
   Box,
-  ShoppingBag
+  ShoppingBag,
+  X,
+  ChevronRight
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -20,6 +22,8 @@ import { cn } from '@/lib/utils';
 function MissionContent() {
   const searchParams = useSearchParams();
   const id = searchParams.get('id');
+  const queryClient = useQueryClient();
+  const [showShipSelect, setShowShipSelect] = useState(false);
 
   const { data: operation, isLoading } = useQuery({
     queryKey: ['operation', id],
@@ -28,6 +32,29 @@ function MissionContent() {
       return res.data;
     },
     enabled: !!id,
+  });
+
+  const { data: myShips } = useQuery({
+    queryKey: ['my-ships'],
+    queryFn: async () => {
+      const res = await api.get('/ships/');
+      return res.data;
+    },
+  });
+
+  const signupMutation = useMutation({
+    mutationFn: async (shipId?: number) => {
+      return api.post(`/operations/${id}/signup`, {
+        ship_id: shipId,
+        role_preference: 'Pilot'
+      });
+    },
+    onSuccess: () => {
+      setShowShipSelect(false);
+      queryClient.invalidateQueries({ queryKey: ['operation', id] });
+      queryClient.invalidateQueries({ queryKey: ['operation-readiness', id] });
+      alert('Deployment authorized. Welcome to the wing, Citizen.');
+    },
   });
 
   const { data: readiness, isLoading: readinessLoading } = useQuery({
@@ -256,7 +283,10 @@ function MissionContent() {
               </div>
             </div>
 
-            <button className="w-full py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)]">
+            <button 
+                onClick={() => setShowShipSelect(true)}
+                className="w-full py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-[0.2em] hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)]"
+            >
               Enlist for Deployment
             </button>
           </div>
@@ -276,6 +306,68 @@ function MissionContent() {
           </div>
         </div>
       </div>
+
+      {/* Ship Selection Modal */}
+      {showShipSelect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/90 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Rocket className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Deployment Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowShipSelect(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <div className="space-y-2">
+                        <p className="text-[10px] text-sc-grey/60 uppercase font-black tracking-widest leading-relaxed">
+                            Assign a vessel from your personal registry to this operation. Tactical configuration and readiness score will be calculated upon selection.
+                        </p>
+                    </div>
+
+                    <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+                        {myShips?.map((ship: any) => (
+                            <button 
+                                key={ship.id}
+                                onClick={() => signupMutation.mutate(ship.id)}
+                                disabled={signupMutation.isPending}
+                                className="w-full p-4 bg-sc-dark border border-white/5 rounded flex items-center justify-between group hover:border-sc-blue/40 transition-all text-left"
+                            >
+                                <div className="flex items-center space-x-4">
+                                    <div className="h-10 w-10 bg-sc-panel border border-sc-blue/10 rounded flex items-center justify-center text-sc-blue/40 group-hover:text-sc-blue transition-colors">
+                                        <Rocket className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black text-white uppercase tracking-widest">{ship.name}</div>
+                                        <div className="text-[8px] text-sc-grey/40 uppercase font-mono">{ship.ship_type}</div>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-sc-grey/20 group-hover:text-sc-blue transition-all" />
+                            </button>
+                        ))}
+                        {(!myShips || myShips.length === 0) && (
+                            <div className="p-8 text-center border border-dashed border-white/5 rounded text-sc-grey/30 uppercase text-[9px] font-black tracking-widest">
+                                No vessels detected in personal registry.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5">
+                        <button 
+                            onClick={() => signupMutation.mutate()}
+                            disabled={signupMutation.isPending}
+                            className="w-full py-3 bg-white/5 border border-white/10 text-sc-grey/40 text-[10px] font-black rounded uppercase hover:text-white hover:bg-white/10 transition-all flex items-center justify-center space-x-2"
+                        >
+                            <span>Enlist as Infantry / Crew (No Ship)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }
