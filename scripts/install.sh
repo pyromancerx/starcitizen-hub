@@ -204,6 +204,7 @@ Type=exec
 User=starcitizen-hub
 Group=starcitizen-hub
 WorkingDirectory=/opt/starcitizen-hub/backend-go
+Environment=MIGRATIONS_PATH=./migrations
 ExecStart=/opt/starcitizen-hub/backend-go/server
 Restart=always
 RestartSec=5

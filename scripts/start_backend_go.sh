@@ -25,6 +25,7 @@ cd "$BACKEND_DIR"
 go mod tidy
 go build -o server ./cmd/server/main.go
 
+export MIGRATIONS_PATH=./migrations
 nohup ./server > backend.log 2>&1 &
 echo $! > "$PID_FILE"
 

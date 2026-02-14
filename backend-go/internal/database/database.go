@@ -60,9 +60,14 @@ func RunMigrations(dbPath string) {
 		log.Fatal(err)
 	}
 
-	// Look for migrations in the migrations folder
+	// Look for migrations in the migrations folder (configurable)
+	migrationsPath := os.Getenv("MIGRATIONS_PATH")
+	if migrationsPath == "" {
+		migrationsPath = "./migrations"
+	}
+
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://../migrations",
+		"file://"+migrationsPath,
 		"sqlite3", driver)
 	if err != nil {
 		log.Fatal(err)

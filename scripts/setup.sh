@@ -254,6 +254,7 @@ cat > "$APP_DIR/.env" << EOF
 
 # Database
 DATABASE_URL=../data/hub.db
+MIGRATIONS_PATH=./migrations
 
 # Security - DO NOT SHARE THIS KEY
 SECRET_KEY=$SECRET_KEY
