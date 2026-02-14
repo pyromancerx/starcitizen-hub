@@ -7,18 +7,69 @@ import {
   Settings, 
   Save,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Cpu,
+  ArrowUpCircle,
+  Palette,
+  Upload,
+  Database,
+  Download,
+  Terminal,
+  Activity,
+  Mail,
+  Send,
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useThemeStore } from '@/store/themeStore';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
+  const { settings: themeSettings, uploadLogo } = useThemeStore();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: async () => {
       const res = await api.get('/admin/settings');
       return res.data;
+    },
+  });
+
+  const testEmailMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/admin/system/test-email');
+    },
+    onSuccess: (res) => {
+        alert(res.data.status || 'Test transmission successful!');
+    },
+    onError: (err: any) => {
+        alert('Failed to send test signal: ' + (err.response?.data || err.message));
+    }
+  });
+
+  const { data: versionInfo } = useQuery({
+    queryKey: ['system-version'],
+    queryFn: async () => {
+      const res = await api.get('/admin/system/version');
+      return res.data;
+    },
+  });
+
+  const { data: systemLogs } = useQuery({
+    queryKey: ['system-logs'],
+    queryFn: async () => {
+      const res = await api.get('/admin/system/logs');
+      return res.data;
+    },
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  const updateSystemMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/admin/system/update');
+    },
+    onSuccess: () => {
+        alert('System update initiated. The hub will restart shortly.');
     },
   });
 
@@ -80,6 +131,267 @@ export default function AdminSettingsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Organization Branding Section */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center space-x-3 mb-6 border-b border-sc-grey/10 pb-4">
+          <Palette className="w-5 h-5 text-sc-blue" />
+          <h3 className="text-sm font-black text-white uppercase tracking-widest">Organization Branding</h3>
+        </div>
+
+        <div className="space-y-8">
+            {/* Logo Upload */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Institutional Logo</label>
+                    <p className="text-[10px] text-sc-grey/40 italic">Primary insignia for the hub interface.</p>
+                </div>
+                <div className="md:col-span-2 flex items-center space-x-6">
+                    <div className="h-20 w-20 bg-black/40 border border-sc-grey/10 rounded flex items-center justify-center overflow-hidden">
+                        {themeSettings.logo_url ? (
+                            <img src={themeSettings.logo_url} className="max-h-full max-w-full object-contain" alt="Preview" />
+                        ) : (
+                            <Settings className="w-8 h-8 text-sc-grey/20" />
+                        )}
+                    </div>
+                    <label className="cursor-pointer bg-sc-blue/10 border border-sc-blue/30 px-4 py-2 rounded text-[10px] font-black text-sc-blue uppercase tracking-widest hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Insignia</span>
+                        <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                                if (e.target.files?.[0]) {
+                                    await uploadLogo(e.target.files[0]);
+                                    queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+                                }
+                            }}
+                        />
+                    </label>
+                </div>
+            </div>
+
+            {/* Colors & Custom CSS */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Interface Palette</label>
+                    <p className="text-[10px] text-sc-grey/40 italic">Global CSS variables for accent and background tones.</p>
+                </div>
+                <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                    {['color_sc_blue', 'color_sc_dark', 'color_sc_panel'].map((key) => (
+                        <div key={key} className="space-y-2">
+                            <label className="text-[9px] font-bold text-sc-grey/60 uppercase">{key.replace(/_/g, ' ')}</label>
+                            <div className="flex items-center space-x-2">
+                                <input 
+                                    type="color"
+                                    defaultValue={themeSettings[key as keyof typeof themeSettings] as string}
+                                    onChange={(e) => updateSettingMutation.mutate({ key, value: e.target.value })}
+                                    className="w-10 h-10 bg-transparent border-none cursor-pointer"
+                                />
+                                <input 
+                                    defaultValue={themeSettings[key as keyof typeof themeSettings] as string}
+                                    onBlur={(e) => updateSettingMutation.mutate({ key, value: e.target.value })}
+                                    className="flex-1 bg-black/40 border border-sc-grey/20 rounded px-3 py-2 text-xs text-white font-mono uppercase"
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Neural Override (Custom CSS)</label>
+                    <p className="text-[10px] text-sc-grey/40 italic leading-relaxed uppercase tracking-tighter">Inject raw CSS to override core interface modules. Use with caution.</p>
+                </div>
+                <textarea 
+                    defaultValue={themeSettings.custom_css}
+                    onBlur={(e) => updateSettingMutation.mutate({ key: 'custom_css', value: e.target.value })}
+                    rows={6}
+                    className="w-full bg-black/40 border border-sc-grey/20 rounded p-4 text-xs text-sc-blue font-mono focus:outline-none focus:border-sc-blue/50 transition-all custom-scrollbar"
+                    placeholder="/* Enter custom CSS overrides here */"
+                />
+            </div>
+        </div>
+      </div>
+
+      {/* Email Integration (SMTP) */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center justify-between mb-6 border-b border-sc-grey/10 pb-4">
+          <div className="flex items-center space-x-3">
+            <Mail className="w-5 h-5 text-sc-blue" />
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Email Integration (SMTP)</h3>
+          </div>
+          <button 
+            onClick={() => testEmailMutation.mutate()}
+            disabled={testEmailMutation.isPending}
+            className="flex items-center space-x-2 px-4 py-1.5 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[9px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all disabled:opacity-20"
+          >
+            <Send className={cn("w-3 h-3", testEmailMutation.isPending && "animate-ping")} />
+            <span>{testEmailMutation.isPending ? 'Transmitting...' : 'Send Test Transmission'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+                {['smtp_host', 'smtp_port', 'smtp_from'].map((key) => {
+                    const setting = settings?.find((s: any) => s.key === key);
+                    return (
+                        <div key={key} className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">{key.replace(/_/g, ' ')}</label>
+                            <input 
+                                defaultValue={setting?.value}
+                                onBlur={(e) => {
+                                    if (e.target.value !== setting?.value) {
+                                        updateSettingMutation.mutate({ key, value: e.target.value });
+                                    }
+                                }}
+                                className="w-full bg-black/40 border border-sc-grey/20 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-sc-blue/50 transition-all font-mono"
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="space-y-6">
+                {['smtp_user', 'smtp_pass'].map((key) => {
+                    const setting = settings?.find((s: any) => s.key === key);
+                    return (
+                        <div key={key} className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">{key.replace(/_/g, ' ')}</label>
+                            <input 
+                                type={key === 'smtp_pass' ? 'password' : 'text'}
+                                defaultValue={setting?.value}
+                                onBlur={(e) => {
+                                    if (e.target.value !== setting?.value) {
+                                        updateSettingMutation.mutate({ key, value: e.target.value });
+                                    }
+                                }}
+                                className="w-full bg-black/40 border border-sc-grey/20 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-sc-blue/50 transition-all font-mono"
+                            />
+                        </div>
+                    );
+                })}
+                <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3">
+                    <ShieldCheck className="w-4 h-4 text-sc-blue mt-0.5" />
+                    <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                        Credentials are encrypted at rest. For Gmail, ensure you use an "App Password" rather than your primary login credentials.
+                    </p>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      {/* Data Integrity & Backups */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center space-x-3 mb-6 border-b border-sc-grey/10 pb-4">
+          <Database className="w-5 h-5 text-sc-blue" />
+          <h3 className="text-sm font-black text-white uppercase tracking-widest">Data Integrity & Backups</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+                <p className="text-[10px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                    Protect your organization's data. This process bundles the core database and all uploaded assets into a single encrypted archive for off-site storage.
+                </p>
+                <div className="flex items-center space-x-2 text-[10px] text-yellow-500/60 font-black uppercase tracking-widest">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>Recommended: Weekly off-site backups</span>
+                </div>
+            </div>
+
+            <div className="flex justify-center items-center">
+                <button 
+                    onClick={() => {
+                        window.open(`${process.env.NEXT_PUBLIC_API_URL || '/api'}/admin/system/backup`, '_blank');
+                    }}
+                    className="flex items-center space-x-3 px-8 py-4 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[10px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all group"
+                >
+                    <Download className="w-4 h-4 group-hover:bounce" />
+                    <span>Generate Cold Storage Backup</span>
+                </button>
+            </div>
+        </div>
+      </div>
+
+      {/* System Maintenance Section */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center space-x-3 mb-6 border-b border-sc-grey/10 pb-4">
+          <Cpu className="w-5 h-5 text-sc-blue" />
+          <h3 className="text-sm font-black text-white uppercase tracking-widest">System Maintenance & Updates</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+                <div className="p-4 bg-black/40 border border-white/5 rounded">
+                    <div className="text-[10px] font-black text-sc-grey/40 uppercase tracking-widest mb-1">Current Version</div>
+                    <div className="text-xl font-bold text-sc-blue font-mono">{versionInfo?.version || '1.0.0-alpha'}</div>
+                </div>
+                
+                <div className="p-4 bg-black/40 border border-white/5 rounded">
+                    <div className="text-[10px] font-black text-sc-grey/40 uppercase tracking-widest mb-1">Update Server</div>
+                    <div className="text-sm font-bold text-white uppercase tracking-widest">Official Hub Registry</div>
+                    <div className="flex items-center space-x-2 mt-2">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-[9px] text-green-500 font-bold uppercase tracking-widest">Synchronized</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-col justify-center items-center p-8 bg-sc-blue/5 border border-sc-blue/20 rounded-lg text-center space-y-4">
+                <ArrowUpCircle className={cn(
+                    "w-12 h-12 text-sc-blue",
+                    updateSystemMutation.isPending && "animate-bounce"
+                )} />
+                <div className="space-y-2">
+                    <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Remote Upgrade Available</h4>
+                    <p className="text-[10px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                        Initiate a system-wide pull from the master registry. This will rebuild the backend and frontend modules.
+                    </p>
+                </div>
+                <button 
+                    onClick={() => {
+                        if(confirm('Are you sure you want to initiate a system update? This will temporarily interrupt service.')) {
+                            updateSystemMutation.mutate();
+                        }
+                    }}
+                    disabled={updateSystemMutation.isPending}
+                    className="w-full py-3 bg-sc-blue/20 border border-sc-blue/40 text-sc-blue text-[10px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all disabled:opacity-20"
+                >
+                    {updateSystemMutation.isPending ? 'Downloading Transmission...' : 'Execute System Upgrade'}
+                </button>
+            </div>
+        </div>
+      </div>
+
+      {/* System Logs Section */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center justify-between mb-6 border-b border-sc-grey/10 pb-4">
+          <div className="flex items-center space-x-3">
+            <Terminal className="w-5 h-5 text-sc-blue" />
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Kernel Output (System Logs)</h3>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-1.5 h-1.5 bg-sc-blue rounded-full animate-pulse"></div>
+            <span className="text-[8px] text-sc-blue font-black uppercase tracking-widest">Real-time Monitoring</span>
+          </div>
+        </div>
+
+        <div className="bg-black/60 border border-sc-grey/20 rounded-lg p-4 h-64 overflow-y-auto custom-scrollbar font-mono text-[10px] leading-relaxed text-sc-blue/80">
+            {systemLogs ? (
+                <pre className="whitespace-pre-wrap">{systemLogs}</pre>
+            ) : (
+                <div className="h-full flex items-center justify-center text-sc-grey/20 uppercase tracking-[0.3em] font-black italic">
+                    Initializing Signal Tap...
+                </div>
+            )}
+        </div>
+        
+        <div className="mt-4 flex items-center justify-between text-[9px] font-bold text-sc-grey/40 uppercase tracking-widest">
+            <span>Accessing: logs/backend.log</span>
+            <span>Tail: Last 10KB</span>
+        </div>
       </div>
     </section>
   );

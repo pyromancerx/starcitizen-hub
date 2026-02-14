@@ -1,12 +1,18 @@
 package handlers
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -16,11 +22,14 @@ import (
 
 type AdminHandler struct {
 	adminService *services.AdminService
+	mailService  *services.MailService
 }
 
 func NewAdminHandler() *AdminHandler {
+	adminSvc := services.NewAdminService()
 	return &AdminHandler{
-		adminService: services.NewAdminService(),
+		adminService: adminSvc,
+		mailService:  services.NewMailService(adminSvc.DB),
 	}
 }
 
@@ -300,6 +309,160 @@ func (h *AdminHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.adminService.UpdateSetting(req.Key, req.Value); err != nil {
 		http.Error(w, "Failed to update setting", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+var AppVersion = "v1.0.0-dev"
+
+func (h *AdminHandler) GetSystemVersion(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"version": AppVersion})
+}
+
+func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
+	// Execute the update script
+	go func() {
+		log.Println("Starting system update...")
+		cmd := exec.Command("/bin/bash", "../scripts/update.sh")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("Update failed: %v\nOutput: %s", err, string(output))
+			return
+		}
+		log.Println("Update completed successfully")
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "Update initiated"})
+}
+
+func (h *AdminHandler) CreateBackup(w http.ResponseWriter, r *http.Request) {
+	backupFilename := fmt.Sprintf("hub-backup-%d.tar.gz", time.Now().Unix())
+	w.Header().Set("Content-Type", "application/gzip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", backupFilename))
+
+	gw := gzip.NewWriter(w)
+	defer gw.Close()
+	tw := tar.NewWriter(gw)
+	defer tw.Close()
+
+	// 1. Add database
+	dbPath := os.Getenv("DATABASE_URL")
+	if dbPath == "" {
+		dbPath = "hub.db"
+	}
+	if err := addFileToTar(tw, dbPath, "hub.db"); err != nil {
+		log.Printf("Failed to add DB to backup: %v", err)
+	}
+
+	// 2. Add uploads
+	uploadDir := "../uploads"
+	filepath.Walk(uploadDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+		relPath, _ := filepath.Rel("../", path)
+		return addFileToTar(tw, path, relPath)
+	})
+}
+
+func addFileToTar(tw *tar.Writer, filePath string, tarPath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
+	header, err := tar.FileInfoHeader(info, "")
+	if err != nil {
+		return err
+	}
+	header.Name = tarPath
+
+	if err := tw.WriteHeader(header); err != nil {
+		return err
+	}
+
+	_, err = io.Copy(tw, file)
+	return err
+}
+
+func (h *AdminHandler) RestoreBackup(w http.ResponseWriter, r *http.Request) {
+	// Restoring is dangerous as it requires stopping DB access
+	// In a real product, we'd want a separate orchestrator for this
+	http.Error(w, "Restore via UI currently disabled for safety. Use CLI tools.", http.StatusNotImplemented)
+}
+
+func (h *AdminHandler) GetLogs(w http.ResponseWriter, r *http.Request) {
+	logPath := "../logs/backend.log"
+	
+	file, err := os.Open(logPath)
+	if err != nil {
+		http.Error(w, "Log file not found", http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+
+	// Read last 10KB of logs
+	stat, _ := file.Stat()
+	size := stat.Size()
+	var offset int64 = 0
+	if size > 10240 {
+		offset = size - 10240
+	}
+	
+	data := make([]byte, size-offset)
+	_, err = file.ReadAt(data, offset)
+	if err != nil && err != io.EOF {
+		http.Error(w, "Failed to read logs", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write(data)
+}
+
+func (h *AdminHandler) TestEmail(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var user models.User
+	if err := h.adminService.DB.First(&user, userID).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	subject := "Star Citizen Hub - Test Transmission"
+	body := fmt.Sprintf("<h1>Test Transmission Received</h1><p>Greetings %s,</p><p>This is a test email from your Star Citizen Hub to verify SMTP configuration.</p><p>Signal status: <strong>Locked and Secure</strong>.</p>", user.DisplayName)
+
+	if err := h.mailService.SendEmail(user.Email, subject, body); err != nil {
+		http.Error(w, "Failed to send test email: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "Test transmission sent to " + user.Email})
+}
+
+func (h *AdminHandler) UpdateMyNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	var req struct {
+		Settings string `json:"notification_settings"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.adminService.DB.Model(&models.User{}).Where("id = ?", userID).Update("notification_settings", req.Settings).Error; err != nil {
+		http.Error(w, "Failed to update notification settings", http.StatusInternalServerError)
 		return
 	}
 

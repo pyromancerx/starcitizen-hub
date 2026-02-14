@@ -9,12 +9,47 @@ import {
   Rocket, 
   Calendar,
   Lock,
-  Edit3
+  Edit3,
+  Mail,
+  Bell,
+  MessageCircle,
+  RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['profile-me'],
+    queryFn: async () => {
+      const res = await api.get('/auth/me');
+      return res.data;
+    }
+  });
+
+  const updatePrefsMutation = useMutation({
+    mutationFn: async (settings: any) => {
+      return api.patch('/admin/users/me/notifications', { notification_settings: JSON.stringify(settings) });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-me'] });
+    }
+  });
+
+  const prefs = profile?.notification_settings ? JSON.parse(profile.notification_settings) : {
+    announcements: { email: true, discord: false, in_app: true },
+    messages: { email: false, discord: false, in_app: true }
+  };
+
+  const handleToggle = (category: string, channel: string) => {
+    const newPrefs = { ...prefs };
+    newPrefs[category][channel] = !newPrefs[category][channel];
+    updatePrefsMutation.mutate(newPrefs);
+  };
 
   const profileStats = [
     { label: 'Fleet Assets', value: '12 Vessels', icon: Rocket },
@@ -98,6 +133,83 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Comms Preferences */}
+      <div className="space-y-4 mt-8">
+        <h3 className="text-xs font-black text-sc-blue uppercase tracking-[0.3em] border-b border-sc-blue/20 pb-2">Communication & Alerts</h3>
+        <div className="bg-sc-panel border border-sc-grey/10 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/5">
+                {/* Announcements */}
+                <div className="p-6 space-y-6">
+                    <div className="flex items-center space-x-3 mb-2">
+                        <Bell className="w-4 h-4 text-sc-blue" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Organization Announcements</span>
+                    </div>
+                    <div className="space-y-4">
+                        <PreferenceToggle 
+                            label="Sub-Space Transmission (Email)" 
+                            active={prefs.announcements.email} 
+                            onClick={() => handleToggle('announcements', 'email')}
+                            loading={updatePrefsMutation.isPending}
+                        />
+                        <PreferenceToggle 
+                            label="In-App HUD Alerts" 
+                            active={prefs.announcements.in_app} 
+                            onClick={() => handleToggle('announcements', 'in_app')}
+                            loading={updatePrefsMutation.isPending}
+                        />
+                        <PreferenceToggle 
+                            label="Discord Relay" 
+                            active={prefs.announcements.discord} 
+                            onClick={() => handleToggle('announcements', 'discord')}
+                            loading={updatePrefsMutation.isPending}
+                        />
+                    </div>
+                </div>
+
+                {/* Messages */}
+                <div className="p-6 space-y-6">
+                    <div className="flex items-center space-x-3 mb-2">
+                        <MessageCircle className="w-4 h-4 text-sc-blue" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Personal Frequencies (DMs)</span>
+                    </div>
+                    <div className="space-y-4">
+                        <PreferenceToggle 
+                            label="Offline Email Alerts" 
+                            active={prefs.messages.email} 
+                            onClick={() => handleToggle('messages', 'email')}
+                            loading={updatePrefsMutation.isPending}
+                        />
+                        <PreferenceToggle 
+                            label="Desktop Notifications" 
+                            active={prefs.messages.in_app} 
+                            onClick={() => handleToggle('messages', 'in_app')}
+                            loading={updatePrefsMutation.isPending}
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
     </div>
   );
 }
+
+const PreferenceToggle = ({ label, active, onClick, loading }: { label: string, active: boolean, onClick: () => void, loading: boolean }) => (
+    <div className="flex items-center justify-between group">
+        <span className="text-[10px] font-bold text-sc-grey/60 uppercase tracking-widest">{label}</span>
+        <button 
+            onClick={onClick}
+            disabled={loading}
+            className={cn(
+                "relative w-10 h-5 rounded-full transition-all duration-300 border",
+                active ? "bg-sc-blue/20 border-sc-blue shadow-[0_0_10px_rgba(var(--color-sc-blue-rgb),0.2)]" : "bg-black/40 border-sc-grey/20"
+            )}
+        >
+            <div className={cn(
+                "absolute top-1 left-1 w-2.5 h-2.5 rounded-full transition-all duration-300",
+                active ? "translate-x-5 bg-sc-blue" : "bg-sc-grey/40"
+            )}></div>
+        </button>
+    </div>
+);

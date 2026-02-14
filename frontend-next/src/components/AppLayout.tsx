@@ -8,6 +8,7 @@ import { useThemeStore } from '@/store/themeStore';
 import { useRouter, usePathname } from 'next/navigation';
 import { Rocket } from 'lucide-react';
 import LoginPage from '@/app/login/page';
+import { CallProvider } from '@/context/CallContext';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isInitialized, initialize } = useAuthStore();
@@ -72,16 +73,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  // Standard Layout for Authenticated Users
-  return (
-    <div className="min-h-screen bg-sc-dark text-white flex">
-      <Sidebar />
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header />
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-sc-dark/50">
-          {children}
+    // Standard Layout for Authenticated Users
+
+    return (
+
+      <CallProvider>
+
+        <div className="min-h-screen bg-sc-dark text-white flex">
+
+          <Sidebar />
+
+          <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+            <Header />
+
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-sc-dark/50">
+
+              {children}
+
+            </div>
+
+          </main>
+
         </div>
-      </main>
-    </div>
-  );
-}
+
+      </CallProvider>
+
+    );
+
+  }
+
+  

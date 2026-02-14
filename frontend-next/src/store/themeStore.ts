@@ -5,8 +5,7 @@ interface ThemeSettings {
   color_sc_dark: string;
   color_sc_panel: string;
   color_sc_blue: string;
-  color_sc_light_blue: string;
-  color_sc_grey: string;
+  custom_css: string;
   logo_url: string | null;
   org_name: string;
 }
@@ -23,8 +22,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     color_sc_dark: '#0b0c10',
     color_sc_panel: '#1f2833',
     color_sc_blue: '#66fcf1',
-    color_sc_light_blue: '#45a29e',
-    color_sc_grey: '#c5c6c7',
+    custom_css: '',
     logo_url: null,
     org_name: 'Star Citizen Hub',
   },
@@ -47,19 +45,29 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
         }
       }));
 
-      // Apply colors to CSS variables
+      // Apply colors to CSS variables and Custom CSS
       if (typeof document !== 'undefined') {
         const root = document.documentElement;
+        
+        // 1. Update Colors
         Object.entries(mapped).forEach(([key, value]) => {
           if (key.startsWith('color_sc_') && typeof value === 'string') {
             const varName = `--${key.replace(/_/g, '-')}-rgb`;
-            // Convert hex to space-separated RGB for Tailwind v4 support
             const rgb = hexToRgb(value);
             if (rgb) {
               root.style.setProperty(varName, `${rgb.r} ${rgb.g} ${rgb.b}`);
             }
           }
         });
+
+        // 2. Apply Custom CSS Overrides
+        let styleTag = document.getElementById('hub-custom-css');
+        if (!styleTag) {
+          styleTag = document.createElement('style');
+          styleTag.id = 'hub-custom-css';
+          document.head.appendChild(styleTag);
+        }
+        styleTag.innerHTML = mapped['custom_css'] || '';
       }
     } catch (error) {
       console.error('Failed to fetch theme settings:', error);

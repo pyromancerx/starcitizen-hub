@@ -41,6 +41,11 @@ cd "$APP_DIR"
 CURRENT_COMMIT=$(git rev-parse --short HEAD)
 log_info "Current version: $CURRENT_COMMIT"
 
+# Run pre-flight check
+if [[ -f "$APP_DIR/scripts/check_system.sh" ]]; then
+    bash "$APP_DIR/scripts/check_system.sh"
+fi
+
 # Fetch updates
 log_info "Checking for updates..."
 git fetch origin
@@ -95,8 +100,11 @@ fi
 mkdir -p "$APP_DIR/data"
 
 # Build Backend
-log_info "Building Go backend..."
+log_info "Downloading Go dependencies..."
 cd "$APP_DIR/backend-go"
+go mod tidy
+
+log_info "Building Go backend..."
 go build -o server ./cmd/server/main.go
 
 # Fix Caddyfile if it uses old handle_path logic

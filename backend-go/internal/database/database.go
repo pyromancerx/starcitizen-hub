@@ -1,10 +1,14 @@
 package database
 
 import (
+	"database/sql"
 	"log"
 	"os"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -40,4 +44,32 @@ func Connect() {
 	// Enable WAL mode for better concurrency
 	DB.Exec("PRAGMA journal_mode=WAL;")
 	log.Println("Database connection established")
+
+	// Run migrations
+	RunMigrations(dbPath)
+}
+
+func RunMigrations(dbPath string) {
+	db, err := sql.Open("sqlite3", dbPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Look for migrations in the migrations folder
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://../migrations",
+		"sqlite3", driver)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal(err)
+	}
+	log.Println("Database migrations applied successfully")
 }

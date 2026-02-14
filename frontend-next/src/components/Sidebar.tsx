@@ -20,7 +20,8 @@ import {
   LogOut,
   ChevronRight,
   Globe,
-  Building2
+  Building2,
+  Radio
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +46,7 @@ const Sidebar = () => {
       items: [
         { name: 'Operations', href: '/operations', icon: ShieldCheck },
         { name: 'Organization Events', href: '/events', icon: Calendar },
+        { name: 'Social Hub', href: '/social', icon: Radio },
         { name: 'Spectrum Forum', href: '/forum', icon: MessageSquare },
         { name: 'Personnel', href: '/members', icon: Users },
         { name: 'Messages', href: '/messages', icon: MessageSquare },

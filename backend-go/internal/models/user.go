@@ -54,11 +54,15 @@ type User struct {
 
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 
-	CustomAttributes string         `gorm:"type:json" json:"custom_attributes"`
+		CustomAttributes string         `gorm:"type:json" json:"custom_attributes"`
 
+		NotificationSettings string     `gorm:"type:json" json:"notification_settings"`
 
+	
 
-	// Relationships
+		// Relationships
+
+	
 
 	Roles []Role `gorm:"many2many:user_roles;constraint:OnDelete:CASCADE;" json:"roles"`
 

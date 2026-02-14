@@ -2,21 +2,121 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/websocket"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
 )
 
+const (
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 5120 // 5KB for WebRTC signals
+)
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+type Client struct {
+	ID   uint
+	Conn *websocket.Conn
+	Hub  *SignalingHub
+	Send chan []byte
+}
+
+type SignalingHub struct {
+	clients    map[uint]*Client
+	rooms      map[string]map[uint]*Client // channel_id or conv_id -> clients
+	broadcast  chan []byte
+	register   chan *Client
+	unregister chan *Client
+	mu         sync.Mutex
+}
+
+func NewSignalingHub() *SignalingHub {
+	return &SignalingHub{
+		clients:    make(map[uint]*Client),
+		rooms:      make(map[string]map[uint]*Client),
+		broadcast:  make(chan []byte),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
+	}
+}
+
+func (h *SignalingHub) broadcastRoomState(roomID string) {
+	clients, ok := h.rooms[roomID]
+	if !ok {
+		return
+	}
+
+	userIDs := make([]uint, 0, len(clients))
+	for id := range clients {
+		userIDs = append(userIDs, id)
+	}
+
+	msg, _ := json.Marshal(map[string]interface{}{
+		"type":     "room-presence",
+		"room_id":  roomID,
+		"user_ids": userIDs,
+	})
+
+	for _, client := range clients {
+		client.Send <- msg
+	}
+}
+
+func (h *SignalingHub) Run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.mu.Lock()
+			h.clients[client.ID] = client
+			h.mu.Unlock()
+		case client := <-h.unregister:
+			h.mu.Lock()
+			if _, ok := h.clients[client.ID]; ok {
+				delete(h.clients, client.ID)
+				close(client.Send)
+				// Remove from all rooms and notify
+				for roomID, clients := range h.rooms {
+					if _, ok := clients[client.ID]; ok {
+						delete(clients, client.ID)
+						if len(clients) == 0 {
+							delete(h.rooms, roomID)
+						} else {
+							h.broadcastRoomState(roomID)
+						}
+					}
+				}
+			}
+			h.mu.Unlock()
+		}
+	}
+}
+
 type SocialHandler struct {
 	socialService *services.SocialService
+	hub           *SignalingHub
 }
 
 func NewSocialHandler() *SocialHandler {
+	hub := NewSignalingHub()
+	go hub.Run()
 	return &SocialHandler{
 		socialService: services.NewSocialService(),
+		hub:           hub,
 	}
 }
 
@@ -193,6 +293,225 @@ func (h *SocialHandler) ListAnnouncements(w http.ResponseWriter, r *http.Request
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(announcements)
+}
+
+// Voice Channels
+func (h *SocialHandler) ListVoiceChannels(w http.ResponseWriter, r *http.Request) {
+	var channels []models.VoiceChannel
+	if err := h.socialService.DB.Find(&channels).Error; err != nil {
+		http.Error(w, "Failed to list voice channels", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(channels)
+}
+
+func (h *SocialHandler) CreateVoiceChannel(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	// Check if user is Admin or Officer
+	var user models.User
+	if err := h.socialService.DB.Preload("Roles").First(&user, userID).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	isAuthorized := false
+	for _, role := range user.Roles {
+		if role.Tier == models.RoleTierAdmin || role.Tier == models.RoleTierOfficer {
+			isAuthorized = true
+			break
+		}
+	}
+
+	if !isAuthorized {
+		http.Error(w, "Unauthorized: Requires Admin or Officer rank", http.StatusForbidden)
+		return
+	}
+	
+	var channel models.VoiceChannel
+	if err := json.NewDecoder(r.Body).Decode(&channel); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	channel.CreatedByID = userID
+	if err := h.socialService.DB.Create(&channel).Error; err != nil {
+		http.Error(w, "Failed to create voice channel", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(channel)
+}
+
+func (h *SocialHandler) DeleteVoiceChannel(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	var user models.User
+	if err := h.socialService.DB.Preload("Roles").First(&user, userID).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	isAuthorized := false
+	for _, role := range user.Roles {
+		if role.Tier == models.RoleTierAdmin || role.Tier == models.RoleTierOfficer {
+			isAuthorized = true
+			break
+		}
+	}
+
+	if !isAuthorized {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	if err := h.socialService.DB.Delete(&models.VoiceChannel{}, id).Error; err != nil {
+		http.Error(w, "Failed to delete voice channel", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Signaling WebSocket
+func (h *SocialHandler) HandleSignaling(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("upgrade:", err)
+		return
+	}
+
+	client := &Client{
+		ID:   userID,
+		Conn: conn,
+		Hub:  h.hub,
+		Send: make(chan []byte, 256),
+	}
+	client.Hub.register <- client
+
+	go client.writePump()
+	go client.readPump()
+}
+
+func (c *Client) readPump() {
+	defer func() {
+		c.Hub.unregister <- c
+		c.Conn.Close()
+	}()
+	
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error { 
+		c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil 
+	})
+
+	for {
+		_, message, err := c.Conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("error: %v", err)
+			}
+			break
+		}
+		
+		var msg map[string]interface{}
+		if err := json.Unmarshal(message, &msg); err != nil {
+			continue
+		}
+
+		// Routing logic:
+		// target_id: direct message
+		// room_id: room broadcast
+		// type: offer, answer, ice-candidate, join, leave
+		
+		targetID, hasTarget := msg["target_id"].(float64)
+		roomID, hasRoom := msg["room_id"].(string)
+
+		if hasTarget {
+			c.Hub.mu.Lock()
+			if target, ok := c.Hub.clients[uint(targetID)]; ok {
+				msg["sender_id"] = c.ID
+				data, _ := json.Marshal(msg)
+				target.Send <- data
+			}
+			c.Hub.mu.Unlock()
+		} else if hasRoom {
+			c.Hub.mu.Lock()
+			if msg["type"] == "join" {
+				if _, ok := c.Hub.rooms[roomID]; !ok {
+					c.Hub.rooms[roomID] = make(map[uint]*Client)
+				}
+				c.Hub.rooms[roomID][c.ID] = c
+				// Notify others in room
+				hMsg, _ := json.Marshal(map[string]interface{}{
+					"type": "user-joined",
+					"room_id": roomID,
+					"user_id": c.ID,
+				})
+				for cid, client := range c.Hub.rooms[roomID] {
+					if cid != c.ID {
+						client.Send <- hMsg
+					}
+				}
+				c.Hub.broadcastRoomState(roomID)
+			} else if msg["type"] == "leave" {
+				if room, ok := c.Hub.rooms[roomID]; ok {
+					delete(room, c.ID)
+					hMsg, _ := json.Marshal(map[string]interface{}{
+						"type": "user-left",
+						"room_id": roomID,
+						"user_id": c.ID,
+					})
+					for _, client := range room {
+						client.Send <- hMsg
+					}
+					c.Hub.broadcastRoomState(roomID)
+				}
+			} else {
+				// Broadcast to room except self
+				if room, ok := c.Hub.rooms[roomID]; ok {
+					msg["sender_id"] = c.ID
+					data, _ := json.Marshal(msg)
+					for cid, client := range room {
+						if cid != c.ID {
+							client.Send <- data
+						}
+					}
+				}
+			}
+			c.Hub.mu.Unlock()
+		}
+	}
+}
+
+func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.Conn.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-c.Send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			c.Conn.WriteMessage(websocket.TextMessage, message)
+		case <-ticker.C:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
 }
 
 func (h *SocialHandler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {

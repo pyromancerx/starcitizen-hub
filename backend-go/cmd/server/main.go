@@ -29,61 +29,50 @@ func main() {
 	isAdmin := flag.Bool("admin", false, "Set user as admin (for create-user)")
 	flag.Parse()
 
-	// Load .env
-	godotenv.Load("../.env")
+		// Load .env
 
-	// Connect to Database
+		godotenv.Load("../.env")
+
+	
+
+		// Setup Logging to file
+
+		logDir := "../logs"
+
+		os.MkdirAll(logDir, 0755)
+
+		logFile, err := os.OpenFile(filepath.Join(logDir, "backend.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+		if err == nil {
+
+			// Multi-writer to show logs in console AND file
+
+			mw := io.MultiWriter(os.Stdout, logFile)
+
+			log.SetOutput(mw)
+
+		}
+
+	
+
+		// Connect to Database
+
+	 (Migrations are run inside Connect)
 	database.Connect()
-
-	// Auto-migrate
-	database.DB.AutoMigrate(
-		&models.User{},
-		&models.Role{},
-		&models.Ship{},
-		&models.Wallet{},
-		&models.WalletTransaction{},
-		&models.PersonalInventory{},
-		&models.OrgStockpile{},
-		&models.StockpileTransaction{},
-		&models.TradeRun{},
-		&models.CargoContract{},
-		&models.OrgTreasury{},
-		&models.TreasuryTransaction{},
-		&models.Operation{},
-		&models.OperationParticipant{},
-		&models.Project{},
-		&models.ProjectPhase{},
-		&models.Task{},
-		&models.ContributionGoal{},
-		&models.Contribution{},
-		&models.ForumCategory{},
-		&models.ForumThread{},
-		&models.ForumPost{},
-		&models.Conversation{},
-		&models.Message{},
-		&models.Notification{},
-		&models.Activity{},
-		&models.Achievement{},
-		&models.UserAchievement{},
-		&models.Announcement{},
-		&models.DiscordIntegration{},
-		&models.DiscordWebhook{},
-		&models.UserDiscordLink{},
-		&models.DiscordRoleMapping{},
-		&models.RSIVerificationRequest{},
-		&models.SystemSetting{},
-		&models.AuditLog{},
-	)
 
 	// Initialize default settings
 	defaultSettings := []models.SystemSetting{
 		{Key: "org_name", Value: "Star Citizen Hub", Description: "The name of your organization"},
 		{Key: "logo_url", Value: "", Description: "URL to the organization logo"},
-		{Key: "color_sc_dark", Value: "#0b0c10", Description: "Primary background color"},
-		{Key: "color_sc_panel", Value: "#1f2833", Description: "Panel background color"},
-		{Key: "color_sc_blue", Value: "#66fcf1", Description: "Accent highlight color"},
-		{Key: "color_sc_light_blue", Value: "#45a29e", Description: "Secondary accent color"},
-		{Key: "color_sc_grey", Value: "#c5c6c7", Description: "Neutral text color"},
+		{Key: "color_sc_blue", Value: "#66fcf1", Description: "Primary accent highlight color (HEX)"},
+		{Key: "color_sc_dark", Value: "#0b0c10", Description: "Primary background color (HEX)"},
+		{Key: "color_sc_panel", Value: "#1f2833", Description: "Panel background color (HEX)"},
+		{Key: "custom_css", Value: "", Description: "Custom CSS overrides for the entire interface"},
+		{Key: "smtp_host", Value: "", Description: "SMTP Server Host (e.g., smtp.gmail.com)"},
+		{Key: "smtp_port", Value: "587", Description: "SMTP Server Port (e.g., 587 or 465)"},
+		{Key: "smtp_user", Value: "", Description: "SMTP Username / Email"},
+		{Key: "smtp_pass", Value: "", Description: "SMTP Password / App Password"},
+		{Key: "smtp_from", Value: "noreply@hub.org", Description: "Email 'From' Address"},
 	}
 
 	for _, s := range defaultSettings {
@@ -267,6 +256,12 @@ func main() {
 			r.Patch("/notifications/{id}/read", socialHandler.MarkNotificationRead)
 			r.Get("/activity/feed", socialHandler.GetActivityFeed)
 
+			// Voice Channels
+			r.Get("/social/voice-channels", socialHandler.ListVoiceChannels)
+			r.Post("/social/voice-channels", socialHandler.CreateVoiceChannel)
+			r.Delete("/social/voice-channels/{id}", socialHandler.DeleteVoiceChannel)
+			r.Get("/social/signaling", socialHandler.HandleSignaling)
+
 			// Announcements
 			r.Get("/announcements", socialHandler.ListAnnouncements)
 			r.Post("/announcements", socialHandler.CreateAnnouncement)
@@ -280,7 +275,7 @@ func main() {
 						// Admin & Integrations
 
 						r.Get("/admin/users", adminHandler.ListUsers)
-
+						r.Patch("/admin/users/me/notifications", adminHandler.UpdateMyNotificationSettings)
 						r.Post("/admin/users", adminHandler.CreateUser)
 
 						r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
@@ -304,6 +299,12 @@ func main() {
 			r.Post("/admin/upload-logo", adminHandler.UploadLogo)
 			r.Get("/admin/settings", adminHandler.GetSettings)
 			r.Patch("/admin/settings", adminHandler.UpdateSetting)
+			r.Get("/admin/system/version", adminHandler.GetSystemVersion)
+			r.Post("/admin/system/update", adminHandler.PerformUpdate)
+			r.Get("/admin/system/backup", adminHandler.CreateBackup)
+			r.Post("/admin/system/restore", adminHandler.RestoreBackup)
+			r.Get("/admin/system/logs", adminHandler.GetLogs)
+			r.Post("/admin/system/test-email", adminHandler.TestEmail)
 			r.Get("/discord/config", adminHandler.GetDiscordConfig)
 			r.Patch("/discord/config", adminHandler.UpdateDiscordConfig)
 

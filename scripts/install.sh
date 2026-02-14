@@ -17,6 +17,53 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+usage() {
+    echo "Usage: $0 [options]"
+    echo ""
+    echo "Options:"
+    echo "  --domain DOMAIN           Fully qualified domain name"
+    echo "  --admin-email EMAIL       Initial admin user email"
+    echo "  --admin-password PASS     Initial admin user password"
+    echo "  --admin-name NAME         Initial admin display name"
+    echo "  --admin-handle HANDLE     Initial admin RSI handle"
+    echo "  --instance-name NAME      Name of this hub instance"
+    echo "  --allow-reg true|false    Allow public registration"
+    echo "  --require-approval t|f    Require admin approval for new users"
+    echo "  --smtp-host HOST          SMTP server host"
+    echo "  --smtp-port PORT          SMTP server port"
+    echo "  --smtp-user USER          SMTP username"
+    echo "  --smtp-pass PASS          SMTP password"
+    echo "  --smtp-from ADDR          SMTP from address"
+    echo "  --silent                  Non-interactive installation"
+    echo "  --force-local             Force use of local source instead of GitHub"
+    echo "  --help                    Show this help message"
+    echo ""
+    exit 1
+}
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --domain) DOMAIN="$2"; shift 2 ;;
+        --admin-email) ADMIN_EMAIL="$2"; shift 2 ;;
+        --admin-password) ADMIN_PASSWORD="$2"; shift 2 ;;
+        --admin-name) ADMIN_NAME="$2"; shift 2 ;;
+        --admin-handle) ADMIN_HANDLE="$2"; shift 2 ;;
+        --instance-name) INSTANCE_NAME="$2"; shift 2 ;;
+        --allow-reg) ALLOW_REG="$2"; shift 2 ;;
+        --require-approval) REQUIRE_APPROVAL="$2"; shift 2 ;;
+        --smtp-host) SMTP_HOST="$2"; shift 2 ;;
+        --smtp-port) SMTP_PORT="$2"; shift 2 ;;
+        --smtp-user) SMTP_USER="$2"; shift 2 ;;
+        --smtp-pass) SMTP_PASS="$2"; shift 2 ;;
+        --smtp-from) SMTP_FROM="$2"; shift 2 ;;
+        --silent) SILENT=true; shift ;;
+        --force-local) FORCE_LOCAL=true; shift ;;
+        --help) usage ;;
+        *) log_error "Unknown option: $1"; usage ;;
+    esac
+done
+
 # Detect script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -33,6 +80,11 @@ if ! grep -q "Debian" /etc/os-release 2>/dev/null; then
 fi
 
 log_info "Starting Star Citizen Hub installation..."
+
+# Run pre-flight check
+if [[ -f "$SCRIPT_DIR/check_system.sh" ]]; then
+    bash "$SCRIPT_DIR/check_system.sh"
+fi
 
 # Update system packages
 log_info "Updating system packages..."
@@ -103,10 +155,16 @@ log_info "Setting up application directory at $APP_DIR..."
 # Check if we should use local source (if running from a clone)
 USE_LOCAL=false
 if [[ -d "$BASE_DIR/.git" ]] && [[ "$BASE_DIR" != "$APP_DIR" ]]; then
-    log_info "Detected local repository at $BASE_DIR. Use local source? (y/N)"
-    # Non-interactive check for CI/automated scripts
     if [[ "$FORCE_LOCAL" == "true" ]]; then
         USE_LOCAL=true
+    elif [[ "$SILENT" == "true" ]]; then
+        USE_LOCAL=false # Default to GitHub in silent mode unless forced local
+    else
+        log_info "Detected local repository at $BASE_DIR. Use local source? (y/N)"
+        read -p "Selection: " SHOULD_USE_LOCAL
+        if [[ "$SHOULD_USE_LOCAL" =~ ^[Yy]$ ]]; then
+            USE_LOCAL=true
+        fi
     fi
 fi
 
@@ -165,19 +223,42 @@ EOF
 systemctl daemon-reload
 
 log_info "Installation complete!"
-echo ""
-echo "============================================"
-echo "  Star Citizen Hub - Installation Complete"
-echo "============================================"
-echo ""
-echo "Next steps:"
-echo "  1. Run the setup script to configure your instance:"
-echo "     sudo $APP_DIR/scripts/setup.sh"
-echo ""
-echo "  2. The setup script will:"
-echo "     - Ask for your domain name"
-echo "     - Generate a secure secret key"
-echo "     - Configure Caddy reverse proxy"
-echo "     - Run database migrations"
-echo "     - Start the services"
-echo ""
+
+# Prepare setup arguments
+SETUP_ARGS=""
+[[ -n "$DOMAIN" ]] && SETUP_ARGS="$SETUP_ARGS --domain $DOMAIN"
+[[ -n "$ADMIN_EMAIL" ]] && SETUP_ARGS="$SETUP_ARGS --admin-email $ADMIN_EMAIL"
+[[ -n "$ADMIN_PASSWORD" ]] && SETUP_ARGS="$SETUP_ARGS --admin-password $ADMIN_PASSWORD"
+[[ -n "$ADMIN_NAME" ]] && SETUP_ARGS="$SETUP_ARGS --admin-name \"$ADMIN_NAME\""
+[[ -n "$ADMIN_HANDLE" ]] && SETUP_ARGS="$SETUP_ARGS --admin-handle $ADMIN_HANDLE"
+[[ -n "$INSTANCE_NAME" ]] && SETUP_ARGS="$SETUP_ARGS --instance-name \"$INSTANCE_NAME\""
+[[ -n "$ALLOW_REG" ]] && SETUP_ARGS="$SETUP_ARGS --allow-reg $ALLOW_REG"
+[[ -n "$REQUIRE_APPROVAL" ]] && SETUP_ARGS="$SETUP_ARGS --require-approval $REQUIRE_APPROVAL"
+[[ -n "$SMTP_HOST" ]] && SETUP_ARGS="$SETUP_ARGS --smtp-host $SMTP_HOST"
+[[ -n "$SMTP_PORT" ]] && SETUP_ARGS="$SETUP_ARGS --smtp-port $SMTP_PORT"
+[[ -n "$SMTP_USER" ]] && SETUP_ARGS="$SETUP_ARGS --smtp-user $SMTP_USER"
+[[ -n "$SMTP_PASS" ]] && SETUP_ARGS="$SETUP_ARGS --smtp-pass $SMTP_PASS"
+[[ -n "$SMTP_FROM" ]] && SETUP_ARGS="$SETUP_ARGS --smtp-from $SMTP_FROM"
+[[ "$SILENT" == "true" ]] && SETUP_ARGS="$SETUP_ARGS --silent"
+
+if [[ "$SILENT" == "true" ]]; then
+    log_info "Running setup automatically (silent mode)..."
+    bash "$APP_DIR/scripts/setup.sh" $SETUP_ARGS
+else
+    echo ""
+    echo "============================================"
+    echo "  Star Citizen Hub - Installation Complete"
+    echo "============================================"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Run the setup script to configure your instance:"
+    echo "     sudo $APP_DIR/scripts/setup.sh $SETUP_ARGS"
+    echo ""
+    echo "  2. The setup script will:"
+    echo "     - Ask for any missing configuration"
+    echo "     - Generate a secure secret key"
+    echo "     - Configure Caddy reverse proxy"
+    echo "     - Run database migrations"
+    echo "     - Start the services"
+    echo ""
+fi

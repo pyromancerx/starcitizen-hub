@@ -77,3 +77,16 @@ type Message struct {
 
 	Sender User `gorm:"foreignKey:SenderID" json:"sender"`
 }
+
+type VoiceChannel struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Name        string         `gorm:"size:100;uniqueIndex" json:"name"`
+	Description string         `gorm:"size:500" json:"description"`
+	IsPrivate   bool           `gorm:"default:false" json:"is_private"`
+	CreatedByID uint           `json:"created_by_id"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+
+	CreatedBy User `gorm:"foreignKey:CreatedByID" json:"created_by,omitempty"`
+}
