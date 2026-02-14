@@ -95,6 +95,15 @@ func (h *AssetHandler) DeleteShip(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func getString(m map[string]interface{}, key string) string {
+	if val, ok := m[key]; ok {
+		if s, ok := val.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
 func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
 	var rawData interface{}
@@ -106,87 +115,95 @@ func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Reques
 
 	importedCount := 0
 	
-	// Handle different JSON structures
-	switch data := rawData.(type) {
-	case []interface{}:
-		// Standard HangarXPLORER format or simple list
-		for _, entryRaw := range data {
-			entry, ok := entryRaw.(map[string]interface{})
-			if !ok { continue }
+	processEntry := func(entry map[string]interface{}) {
+		// Case 1: HangarXPLORER nested structure (pledge with items)
+		if items, ok := entry["items"].([]interface{}); ok {
+			insurance := getString(entry, "insurance")
+			pledgeName := getString(entry, "name")
 
-			// Case 1: HangarXPLORER structure (pledge with items)
-			if items, ok := entry["items"].([]interface{}); ok {
-				insurance, _ := entry["insurance"].(string)
-				pledgeName, _ := entry["name"].(string)
-
-				for _, itemRaw := range items {
-					item, ok := itemRaw.(map[string]interface{})
-					if !ok { continue }
-					
-					if item["type"] == "Ship" {
-						shipType, _ := item["name"].(string)
-						ship := models.Ship{
-							UserID:          userID,
-							ShipType:        shipType,
-							Name:            pledgeName,
-							InsuranceStatus: insurance,
-							Status:          "ready",
-							Notes:           "Imported from HangarXPLORER",
-						}
-						if err := h.assetService.CreateShip(&ship); err == nil {
-							importedCount++
-						}
-					}
-				}
-			} else {
-				// Case 2: Simple flat list of ships
-				shipType, ok := entry["ship_type"].(string)
-				if !ok {
-					shipType, ok = entry["name"].(string)
-				}
+			for _, itemRaw := range items {
+				item, ok := itemRaw.(map[string]interface{})
+				if !ok { continue }
 				
-				if ok && shipType != "" {
+				if item["type"] == "Ship" {
+					shipType := getString(item, "name")
 					ship := models.Ship{
 						UserID:          userID,
 						ShipType:        shipType,
-						Name:            entry["custom_name"].(string),
-						InsuranceStatus: entry["insurance"].(string),
+						Name:            pledgeName,
+						InsuranceStatus: insurance,
 						Status:          "ready",
-						Notes:           "Imported from custom list",
-					}
-					if ship.Name == "" {
-						ship.Name = shipType
+						Notes:           "Imported from HangarXPLORER",
 					}
 					if err := h.assetService.CreateShip(&ship); err == nil {
 						importedCount++
 					}
 				}
+			}
+			return
+		}
+
+		// Case 2: Flat list (like the user provided or simple custom list)
+		shipType := getString(entry, "ship_name")
+		if shipType == "" {
+			shipType = getString(entry, "ship_type")
+		}
+		if shipType == "" {
+			shipType = getString(entry, "name")
+		}
+
+		if shipType != "" {
+			// Determine insurance
+			insurance := getString(entry, "insurance")
+			if insurance == "" {
+				if lti, ok := entry["lti"].(bool); ok && lti {
+					insurance = "LTI"
+				} else {
+					insurance = "Standard"
+				}
+			}
+
+			customName := getString(entry, "custom_name")
+			if customName == "" {
+				customName = getString(entry, "pledge_name")
+			}
+			if customName == "" {
+				customName = shipType
+			}
+
+			ship := models.Ship{
+				UserID:          userID,
+				ShipType:        shipType,
+				Name:            customName,
+				InsuranceStatus: insurance,
+				Status:          "ready",
+				Notes:           "Imported from fleet list",
+			}
+			if err := h.assetService.CreateShip(&ship); err == nil {
+				importedCount++
+			}
+		}
+	}
+
+	// Handle different JSON structures
+	switch data := rawData.(type) {
+	case []interface{}:
+		for _, entryRaw := range data {
+			if entry, ok := entryRaw.(map[string]interface{}); ok {
+				processEntry(entry)
 			}
 		}
 	case map[string]interface{}:
 		// Single ship or object-wrapped list
-		log.Printf("Received single object import: %v", data)
-		// Try to see if it's a wrapped list
 		if list, ok := data["ships"].([]interface{}); ok {
 			for _, entryRaw := range list {
-				entry, ok := entryRaw.(map[string]interface{})
-				if !ok { continue }
-				shipType, ok := entry["ship_type"].(string)
-				if ok && shipType != "" {
-					ship := models.Ship{
-						UserID:          userID,
-						ShipType:        shipType,
-						Name:            entry["custom_name"].(string),
-						InsuranceStatus: entry["insurance"].(string),
-						Status:          "ready",
-						Notes:           "Imported from object-wrapped list",
-					}
-					if ship.Name == "" { ship.Name = shipType }
-					if err := h.assetService.CreateShip(&ship); err == nil {
-						importedCount++
-					}
+				if entry, ok := entryRaw.(map[string]interface{}); ok {
+					processEntry(entry)
 				}
 			}
+		} else {
+			// Process as single entry
+			processEntry(data)
 		}
 	}
 
@@ -194,7 +211,7 @@ func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": fmt.Sprintf("Successfully imported %d vessels", importedCount),
+		"message": fmt.Sprintf("Successfully synchronized %d vessels with your fleet registry.", importedCount),
 		"count":   importedCount,
 	})
 }
