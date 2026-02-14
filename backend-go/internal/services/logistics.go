@@ -9,12 +9,14 @@ import (
 )
 
 type LogisticsService struct {
-	db *gorm.DB
+	db             *gorm.DB
+	discordService *DiscordService
 }
 
 func NewLogisticsService() *LogisticsService {
 	return &LogisticsService{
-		db: database.DB,
+		db:             database.DB,
+		discordService: NewDiscordService(database.DB),
 	}
 }
 
@@ -41,6 +43,20 @@ func (s *LogisticsService) CreateStockpileTransaction(tx *models.StockpileTransa
 		return dbTx.Model(&models.OrgStockpile{}).Where("id = ?", tx.StockpileID).
 			UpdateColumn("quantity", gorm.Expr("quantity + ?", tx.QuantityChange)).Error
 	})
+}
+
+// Operations
+func (s *LogisticsService) CreateOperation(op *models.Operation) error {
+	if err := s.db.Create(op).Error; err != nil {
+		return err
+	}
+
+	// Trigger Discord Relay
+	go func() {
+		s.discordService.RelayOperation(op)
+	}()
+
+	return nil
 }
 
 // Operations
@@ -99,4 +115,74 @@ func (s *LogisticsService) ListCargoContracts(status string) ([]models.CargoCont
 	}
 	err := query.Find(&contracts).Error
 	return contracts, err
+}
+
+type ProcurementRequirement struct {
+	ItemName      string  `json:"item_name"`
+	RequiredQty   float64 `json:"required_qty"`
+	StockpileQty  float64 `json:"stockpile_qty"`
+	Shortfall     float64 `json:"shortfall"`
+	IsMet         bool    `json:"is_met"`
+}
+
+func (s *LogisticsService) AnalyzeOperationProcurement(opID uint) ([]ProcurementRequirement, error) {
+	var op models.Operation
+	if err := s.db.Preload("RequiredManifest").First(&op, opID).Error; err != nil {
+		return nil, err
+	}
+
+	if op.RequiredManifest == nil {
+		return []ProcurementRequirement{}, nil
+	}
+
+	var reqItems []map[string]interface{}
+	json.Unmarshal([]byte(op.RequiredManifest.Items), &reqItems)
+
+	var analysis []ProcurementRequirement
+	for _, req := range reqItems {
+		name, _ := req["name"].(string)
+		qty, _ := req["quantity"].(float64)
+
+		var stockpile models.OrgStockpile
+		s.db.Where("name = ?", name).First(&stockpile)
+
+		shortfall := qty - stockpile.Quantity
+		if shortfall < 0 {
+			shortfall = 0
+		}
+
+		analysis = append(analysis, ProcurementRequirement{
+			ItemName:     name,
+			RequiredQty:  qty,
+			StockpileQty: stockpile.Quantity,
+			Shortfall:    shortfall,
+			IsMet:        stockpile.Quantity >= qty,
+		})
+	}
+
+	return analysis, nil
+}
+
+type TreasuryAnalytics struct {
+	TotalCredits      int     `json:"total_credits"`
+	TotalTradeProfit  float64 `json:"total_trade_profit"`
+	ActiveContracts   int     `json:"active_contracts"`
+	RecentSpending    int     `json:"recent_spending"`
+}
+
+func (s *LogisticsService) GetTreasuryAnalytics() (TreasuryAnalytics, error) {
+	var analytics TreasuryAnalytics
+	
+	// Total credits from Org Treasury
+	s.db.Table("org_treasuries").Select("SUM(balance_auec)").Row().Scan(&analytics.TotalCredits)
+	
+	// Total profit from Trade Runs
+	s.db.Table("trade_runs").Select("SUM(profit)").Row().Scan(&analytics.TotalTradeProfit)
+	
+	// Active contracts
+	var contractCount int64
+	s.db.Model(&models.CargoContract{}).Where("status = ?", "open").Count(&contractCount)
+	analytics.ActiveContracts = int(contractCount)
+
+	return analytics, nil
 }

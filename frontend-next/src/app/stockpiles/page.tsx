@@ -9,7 +9,9 @@ import {
   Plus,
   ArrowUpRight,
   ArrowDownLeft,
-  Box
+  Box,
+  Clock,
+  User as UserIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -19,6 +21,14 @@ export default function StockpilesPage() {
     queryKey: ['stockpiles'],
     queryFn: async () => {
       const res = await api.get('/stockpiles/');
+      return res.data;
+    },
+  });
+
+  const { data: loans } = useQuery({
+    queryKey: ['asset-loans'],
+    queryFn: async () => {
+      const res = await api.get('/stockpiles/loans');
       return res.data;
     },
   });
@@ -107,6 +117,66 @@ export default function StockpilesPage() {
           </div>
         )}
       </div>
+
+      {/* Asset Loaning Section */}
+      {loans && (
+        <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+                <Clock className="w-4 h-4 text-sc-blue" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest">Active Strategic Asset Loans</h3>
+            </div>
+            
+            <div className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-black/40 border-b border-sc-grey/10">
+                            <tr>
+                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Insignia / Item</th>
+                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Citizen</th>
+                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Quantity</th>
+                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Deployment Date</th>
+                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Due Return</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {loans.map((loan: any) => (
+                                <tr key={loan.id} className="hover:bg-white/5 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="h-8 w-8 bg-sc-dark border border-sc-blue/20 rounded flex items-center justify-center text-sc-blue">
+                                                <Box className="w-4 h-4" />
+                                            </div>
+                                            <span className="text-[10px] font-bold text-white uppercase tracking-widest">{loan.stockpile?.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center space-x-2">
+                                            <UserIcon className="w-3 h-3 text-sc-grey/40" />
+                                            <span className="text-[10px] text-sc-grey/60 font-bold uppercase">{loan.user?.display_name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-[10px] font-mono text-sc-blue font-bold">{loan.quantity} {loan.stockpile?.unit}</td>
+                                    <td className="px-6 py-4 text-[10px] text-sc-grey/40 font-mono">{new Date(loan.loaned_at).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-[10px] text-yellow-500 font-black uppercase tracking-tighter">
+                                            {loan.due_at ? new Date(loan.due_at).toLocaleDateString() : 'MISSION END'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                            {loans.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center text-sc-grey/20 uppercase tracking-[0.3em] font-black italic">
+                                        All strategic assets currently secured in stockpiles.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

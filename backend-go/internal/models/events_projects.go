@@ -18,14 +18,18 @@ type Operation struct {
 	Requirements      string         `gorm:"type:text" json:"requirements"`
 	RequiredRoles     string         `gorm:"type:json" json:"required_roles"`
 	RequiredShipTypes string         `gorm:"type:json" json:"required_ship_types"`
+	RequiredLoadoutID *uint          `gorm:"index" json:"required_loadout_id"`
+	RequiredManifestID *uint         `gorm:"index" json:"required_manifest_id"`
 	IsPublic          bool           `gorm:"default:true" json:"is_public"`
 	CreatedByID       uint           `json:"created_by_id"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
 	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 
-	Creator      User                   `gorm:"foreignKey:CreatedByID" json:"-"`
-	Participants []OperationParticipant `gorm:"foreignKey:OperationID" json:"participants,omitempty"`
+	Creator           User               `gorm:"foreignKey:CreatedByID" json:"-"`
+	RequiredLoadout   *ShipLoadout       `gorm:"foreignKey:RequiredLoadoutID" json:"required_loadout,omitempty"`
+	RequiredManifest  *EquipmentManifest `gorm:"foreignKey:RequiredManifestID" json:"required_manifest,omitempty"`
+	Participants      []OperationParticipant `gorm:"foreignKey:OperationID" json:"participants,omitempty"`
 }
 
 type OperationParticipant struct {

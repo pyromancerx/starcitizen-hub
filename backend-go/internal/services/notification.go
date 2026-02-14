@@ -23,18 +23,27 @@ type NotificationSettings struct {
 }
 
 type NotificationService struct {
-	db          *gorm.DB
-	mailService *MailService
+	db             *gorm.DB
+	mailService    *MailService
+	discordService *DiscordService
 }
 
 func NewNotificationService(db *gorm.DB) *NotificationService {
 	return &NotificationService{
-		db:          db,
-		mailService: NewMailService(db),
+		db:             db,
+		mailService:    NewMailService(db),
+		discordService: NewDiscordService(db),
 	}
 }
 
 func (s *NotificationService) DispatchAnnouncement(announcement *models.Announcement) {
+	// 1. Send to Discord Relay (Global)
+	go func() {
+		if err := s.discordService.RelayAnnouncement(announcement); err != nil {
+			log.Printf("Discord announcement relay failed: %v", err)
+		}
+	}()
+
 	var users []models.User
 	if err := s.db.Find(&users).Error; err != nil {
 		log.Printf("Failed to fetch users for announcement dispatch: %v", err)

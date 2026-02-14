@@ -73,6 +73,7 @@ func main() {
 		{Key: "smtp_user", Value: "", Description: "SMTP Username / Email"},
 		{Key: "smtp_pass", Value: "", Description: "SMTP Password / App Password"},
 		{Key: "smtp_from", Value: "noreply@hub.org", Description: "Email 'From' Address"},
+		{Key: "rsi_org_sid", Value: "", Description: "RSI Organization SID (e.g., NOVACORP)"},
 	}
 
 	for _, s := range defaultSettings {
@@ -184,6 +185,7 @@ func main() {
 	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(customMiddleware.RateLimitMiddleware)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
@@ -198,6 +200,7 @@ func main() {
 	logisticsHandler := handlers.NewLogisticsHandler()
 	socialHandler := handlers.NewSocialHandler()
 	adminHandler := handlers.NewAdminHandler()
+	gameDataHandler := handlers.NewGameDataHandler()
 
 	// Static files for uploads
 	uploadDir := "../uploads"
@@ -238,13 +241,17 @@ func main() {
 			// Logistics
 			r.Get("/stockpiles/", logisticsHandler.ListStockpiles)
 			r.Get("/stockpiles/{id}", logisticsHandler.GetStockpile)
+			r.Get("/stockpiles/loans", logisticsHandler.ListActiveLoans)
 			r.Get("/trade/contracts", logisticsHandler.ListCargoContracts)
 			r.Post("/trade/runs", logisticsHandler.CreateTradeRun)
 			r.Get("/operations/", logisticsHandler.ListOperations)
+			r.Post("/operations/", logisticsHandler.CreateOperation)
 			r.Get("/operations/{id}", logisticsHandler.GetOperation)
 			r.Post("/operations/{id}/signup", logisticsHandler.SignupOperation)
+			r.Get("/operations/{id}/procurement", logisticsHandler.GetOperationProcurement)
 			r.Get("/projects/", logisticsHandler.ListProjects)
 			r.Get("/projects/{id}", logisticsHandler.GetProject)
+			r.Get("/treasury/analytics", logisticsHandler.GetTreasuryAnalytics)
 
 			// Social
 			r.Get("/forum/categories", socialHandler.ListForumCategories)
@@ -272,6 +279,23 @@ func main() {
 			r.Get("/messages/conversations/{id}", socialHandler.GetConversation)
 			r.Post("/messages/", socialHandler.SendMessage)
 
+			// Game Data
+			r.Get("/game-data/ships", gameDataHandler.ListShipModels)
+			r.Get("/game-data/ships/{id}", gameDataHandler.GetShipModel)
+			r.Get("/game-data/items", gameDataHandler.SearchItems)
+			r.Get("/game-data/loadouts", gameDataHandler.ListLoadouts)
+			r.Get("/game-data/loadouts/{id}", gameDataHandler.GetLoadout)
+			r.Post("/game-data/loadouts", gameDataHandler.CreateLoadout)
+			r.Patch("/game-data/loadouts/{id}", gameDataHandler.UpdateLoadout)
+			r.Delete("/game-data/loadouts/{id}", gameDataHandler.DeleteLoadout)
+			r.Post("/game-data/import-erkul", gameDataHandler.ImportErkul)
+			r.Get("/game-data/operations/{id}/readiness", gameDataHandler.GetMissionReadiness)
+			r.Get("/game-data/manifests", gameDataHandler.ListManifests)
+			r.Get("/game-data/manifests/{id}", gameDataHandler.GetManifest)
+			r.Post("/game-data/manifests", gameDataHandler.CreateManifest)
+			r.Patch("/game-data/manifests/{id}", gameDataHandler.UpdateManifest)
+			r.Delete("/game-data/manifests/{id}", gameDataHandler.DeleteManifest)
+
 						// Admin & Integrations
 
 						r.Get("/admin/users", adminHandler.ListUsers)
@@ -296,6 +320,7 @@ func main() {
 
 						r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
 			r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
+			r.Get("/admin/audit-logs", adminHandler.ListAuditLogs)
 			r.Post("/admin/upload-logo", adminHandler.UploadLogo)
 			r.Get("/admin/settings", adminHandler.GetSettings)
 			r.Patch("/admin/settings", adminHandler.UpdateSetting)
@@ -305,6 +330,8 @@ func main() {
 			r.Post("/admin/system/restore", adminHandler.RestoreBackup)
 			r.Get("/admin/system/logs", adminHandler.GetLogs)
 			r.Post("/admin/system/test-email", adminHandler.TestEmail)
+			r.Post("/admin/system/sync-game-data", adminHandler.SyncGameData)
+			r.Post("/admin/system/sync-rsi", adminHandler.SyncRSIMembers)
 			r.Get("/discord/config", adminHandler.GetDiscordConfig)
 			r.Patch("/discord/config", adminHandler.UpdateDiscordConfig)
 

@@ -24,6 +24,14 @@ export default function TreasuryPage() {
     },
   });
 
+  const { data: analytics } = useQuery({
+    queryKey: ['treasury-analytics'],
+    queryFn: async () => {
+      const res = await api.get('/treasury/analytics');
+      return res.data;
+    },
+  });
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -66,12 +74,12 @@ export default function TreasuryPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-black/40 border border-sc-grey/10 rounded p-6">
-              <div className="text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-2">Monthly Inflow</div>
-              <div className="text-xl font-bold text-green-400 font-mono">+2.4M</div>
+              <div className="text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-2">Total Trade Profit</div>
+              <div className="text-xl font-bold text-green-400 font-mono">+{analytics?.total_trade_profit?.toLocaleString() || '0'}</div>
             </div>
             <div className="bg-black/40 border border-sc-grey/10 rounded p-6">
-              <div className="text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-2">Op Expenses</div>
-              <div className="text-xl font-bold text-red-400 font-mono">-840k</div>
+              <div className="text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-2">Active Contracts</div>
+              <div className="text-xl font-bold text-sc-blue font-mono">{analytics?.active_contracts || '0'}</div>
             </div>
           </div>
         </div>

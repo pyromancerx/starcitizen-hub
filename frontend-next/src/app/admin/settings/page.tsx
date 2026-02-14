@@ -18,7 +18,11 @@ import {
   Activity,
   Mail,
   Send,
-  ShieldCheck
+  ShieldCheck,
+  Binary,
+  Combine,
+  Link2,
+  Unlink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useThemeStore } from '@/store/themeStore';
@@ -32,6 +36,24 @@ export default function AdminSettingsPage() {
     queryFn: async () => {
       const res = await api.get('/admin/settings');
       return res.data;
+    },
+  });
+
+  const syncGameDataMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/admin/system/sync-game-data');
+    },
+    onSuccess: (res) => {
+        alert(res.data.status || 'Synchronization sequence initiated.');
+    },
+  });
+
+  const syncRSIMutation = useMutation({
+    mutationFn: async () => {
+      return api.post('/admin/system/sync-rsi');
+    },
+    onSuccess: (res) => {
+        alert(res.data.status || 'RSI synchronization initiated.');
     },
   });
 
@@ -311,6 +333,96 @@ export default function AdminSettingsPage() {
                     <Download className="w-4 h-4 group-hover:bounce" />
                     <span>Generate Cold Storage Backup</span>
                 </button>
+            </div>
+        </div>
+      </div>
+
+      {/* RSI Spectrum Orchestration */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center justify-between mb-6 border-b border-sc-grey/10 pb-4">
+          <div className="flex items-center space-x-3">
+            <Link2 className="w-5 h-5 text-sc-blue" />
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">RSI Spectrum Orchestration</h3>
+          </div>
+          <button 
+            onClick={() => syncRSIMutation.mutate()}
+            disabled={syncRSIMutation.isPending || !settings?.find((s: any) => s.key === 'rsi_org_sid')?.value}
+            className="flex items-center space-x-2 px-4 py-1.5 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[9px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all disabled:opacity-20"
+          >
+            <RefreshCw className={cn("w-3 h-3", syncRSIMutation.isPending && "animate-spin")} />
+            <span>{syncRSIMutation.isPending ? 'Syncing Roster...' : 'Sync Personnel Registry'}</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+                <p className="text-[10px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                    Automatically synchronize your Hub's personnel registry with your official RSI organization roster. This imports members, ranks, and roles directly from Spectrum.
+                </p>
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">RSI Organization SID</label>
+                    <input 
+                        defaultValue={settings?.find((s: any) => s.key === 'rsi_org_sid')?.value}
+                        onBlur={(e) => {
+                            const current = settings?.find((s: any) => s.key === 'rsi_org_sid')?.value;
+                            if (e.target.value !== current) {
+                                updateSettingMutation.mutate({ key: 'rsi_org_sid', value: e.target.value });
+                            }
+                        }}
+                        placeholder="e.g. NOVACORP"
+                        className="w-full bg-black/40 border border-sc-grey/20 rounded px-4 py-2 text-sm text-white focus:outline-none focus:border-sc-blue/50 transition-all font-mono"
+                    />
+                </div>
+            </div>
+
+            <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex flex-col justify-center space-y-3">
+                <div className="flex items-center space-x-2">
+                    <ShieldCheck className="w-4 h-4 text-sc-blue" />
+                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Identity Verification Active</span>
+                </div>
+                <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                    Members synchronized via Spectrum are automatically flagged for RSI identity matching. Rank permissions will be mapped according to organization hierarchy.
+                </p>
+            </div>
+        </div>
+      </div>
+
+      {/* Game Data Intelligence */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center justify-between mb-6 border-b border-sc-grey/10 pb-4">
+          <div className="flex items-center space-x-3">
+            <Binary className="w-5 h-5 text-sc-blue" />
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">Game Data Intelligence</h3>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-1.5 h-1.5 bg-sc-blue rounded-full animate-pulse"></div>
+            <span className="text-[8px] text-sc-blue font-black uppercase tracking-widest">Erkul & Unpacked Sync Ready</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+                <p className="text-[10px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
+                    Synchronize the Hub's local knowledge bank with high-fidelity community data sources. This updates the catalog of available ships, components, weapons, and manifests.
+                </p>
+                <div className="p-3 bg-black/40 border border-white/5 rounded flex items-center justify-between">
+                    <span className="text-[9px] font-black text-sc-grey/40 uppercase">Primary Source</span>
+                    <span className="text-[9px] font-bold text-sc-blue uppercase">scunpacked-v2</span>
+                </div>
+            </div>
+
+            <div className="flex flex-col justify-center space-y-4">
+                <button 
+                    onClick={() => syncGameDataMutation.mutate()}
+                    disabled={syncGameDataMutation.isPending}
+                    className="w-full flex items-center justify-center space-x-3 py-4 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[10px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all group"
+                >
+                    <Combine className={cn("w-4 h-4", syncGameDataMutation.isPending && "animate-spin")} />
+                    <span>{syncGameDataMutation.isPending ? 'Ingesting Data Packets...' : 'Synchronize Intelligence Bank'}</span>
+                </button>
+                <p className="text-[8px] text-sc-grey/30 text-center uppercase font-bold tracking-tighter">
+                    Note: This process runs in the background and may take several minutes to complete a full ingestion.
+                </p>
             </div>
         </div>
       </div>

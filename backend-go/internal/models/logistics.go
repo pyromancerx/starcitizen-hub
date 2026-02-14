@@ -70,3 +70,20 @@ type CargoContract struct {
 	Poster User `gorm:"foreignKey:PosterID" json:"-"`
 	Hauler User `gorm:"foreignKey:HaulerID" json:"-"`
 }
+
+type AssetLoan struct {
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	StockpileID    uint           `gorm:"index" json:"stockpile_id"`
+	UserID         uint           `gorm:"index" json:"user_id"`
+	OperationID    *uint          `gorm:"index" json:"operation_id"`
+	Quantity       float64        `json:"quantity"`
+	Status         string         `gorm:"size:50;default:'active'" json:"status"` // active, returned, lost, damaged
+	LoanedAt       time.Time      `json:"loaned_at"`
+	DueAt          *time.Time     `json:"due_at"`
+	ReturnedAt     *time.Time     `json:"returned_at"`
+	Notes          string         `gorm:"type:text" json:"notes"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+
+	Stockpile      OrgStockpile   `gorm:"foreignKey:StockpileID" json:"stockpile"`
+	User           User           `gorm:"foreignKey:UserID" json:"user"`
+}

@@ -21,16 +21,44 @@ import (
 )
 
 type AdminHandler struct {
-	adminService *services.AdminService
-	mailService  *services.MailService
+	adminService    *services.AdminService
+	mailService     *services.MailService
+	gameDataService *services.GameDataService
+	rsiSyncService  *services.RSISyncService
 }
 
 func NewAdminHandler() *AdminHandler {
 	adminSvc := services.NewAdminService()
 	return &AdminHandler{
-		adminService: adminSvc,
-		mailService:  services.NewMailService(adminSvc.DB),
+		adminService:    adminSvc,
+		mailService:     services.NewMailService(adminSvc.DB),
+		gameDataService: services.NewGameDataService(adminSvc.DB),
+		rsiSyncService:  services.NewRSISyncService(adminSvc.DB),
 	}
+}
+
+func (h *AdminHandler) SyncRSIMembers(w http.ResponseWriter, r *http.Request) {
+	// Trigger sync in background
+	go func() {
+		if err := h.rsiSyncService.SyncOrganizationMembers(); err != nil {
+			log.Printf("Background RSI sync failed: %v", err)
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "RSI Spectrum synchronization sequence initiated"})
+}
+
+func (h *AdminHandler) SyncGameData(w http.ResponseWriter, r *http.Request) {
+	// Trigger sync in background
+	go func() {
+		if err := h.gameDataService.SyncFromCommunityData(); err != nil {
+			log.Printf("Background game data sync failed: %v", err)
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "High-fidelity synchronization sequence initiated"})
 }
 
 func (h *AdminHandler) UploadLogo(w http.ResponseWriter, r *http.Request) {
@@ -467,4 +495,12 @@ func (h *AdminHandler) UpdateMyNotificationSettings(w http.ResponseWriter, r *ht
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *AdminHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
+	var logs []models.AuditLog
+	h.adminService.DB.Preload("User").Order("created_at desc").Limit(100).Find(&logs)
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(logs)
 }

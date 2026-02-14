@@ -75,6 +75,24 @@ func (h *LogisticsHandler) ListOperations(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(ops)
 }
 
+func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var op models.Operation
+	if err := json.NewDecoder(r.Body).Decode(&op); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	op.CreatedByID = userID
+	if err := h.logisticsService.CreateOperation(&op); err != nil {
+		http.Error(w, "Failed to authorize operation", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(op)
+}
+
 func (h *LogisticsHandler) GetOperation(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
@@ -147,4 +165,38 @@ func (h *LogisticsHandler) ListCargoContracts(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(contracts)
+}
+
+func (h *LogisticsHandler) GetOperationProcurement(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	analysis, err := h.logisticsService.AnalyzeOperationProcurement(uint(id))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(analysis)
+}
+
+func (h *LogisticsHandler) GetTreasuryAnalytics(w http.ResponseWriter, r *http.Request) {
+	analytics, err := h.logisticsService.GetTreasuryAnalytics()
+	if err != nil {
+		http.Error(w, "Failed to get analytics", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(analytics)
+}
+
+func (h *LogisticsHandler) ListActiveLoans(w http.ResponseWriter, r *http.Request) {
+	var loans []models.AssetLoan
+	h.logisticsService.DB.Preload("Stockpile").Preload("User").
+		Where("status = ?", "active").Find(&loans)
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loans)
 }
