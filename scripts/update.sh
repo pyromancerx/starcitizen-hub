@@ -17,12 +17,6 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 APP_DIR="/opt/starcitizen-hub"
 
-# Check if running as root
-if [[ $EUID -ne 0 ]]; then
-    log_error "This script must be run as root (use sudo)"
-    exit 1
-fi
-
 # Check if installation exists
 if [[ ! -d "$APP_DIR/.git" ]]; then
     log_error "Installation not found or not a git repository."
@@ -74,7 +68,7 @@ fi
 
 # Stop the service
 log_info "Stopping service..."
-systemctl stop starcitizen-hub
+sudo systemctl stop starcitizen-hub
 
 # Pull updates
 log_info "Pulling updates from GitHub..."
@@ -110,8 +104,8 @@ go build -o server ./cmd/server/main.go
 # Fix Caddyfile if it uses old handle_path logic
 if grep -q "handle_path /api\*" /etc/caddy/Caddyfile 2>/dev/null; then
     log_info "Fixing Caddy API routing..."
-    sed -i 's/handle_path \/api\*/handle \/api\*/g' /etc/caddy/Caddyfile
-    systemctl reload caddy
+    sudo sed -i 's/handle_path \/api\*/handle \/api\*/g' /etc/caddy/Caddyfile
+    sudo systemctl reload caddy
 fi
 
 # Update Frontend
@@ -122,14 +116,14 @@ npm run build
 
 # Restart the service
 log_info "Starting service..."
-systemctl start starcitizen-hub
-systemctl restart caddy
+sudo systemctl start starcitizen-hub
+sudo systemctl restart caddy
 
 # Wait for service to start
 sleep 2
 
 # Check service status
-if systemctl is-active --quiet starcitizen-hub; then
+if sudo systemctl is-active --quiet starcitizen-hub; then
     log_info "Service is running"
 else
     log_error "Service failed to start"

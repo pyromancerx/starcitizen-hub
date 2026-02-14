@@ -373,7 +373,8 @@ func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
 	// Execute the update script
 	go func() {
 		log.Println("Starting system update...")
-		cmd := exec.Command("/bin/bash", "../scripts/update.sh")
+		// Use sudo -n to run without interaction if sudoers is configured
+		cmd := exec.Command("sudo", "-n", "/bin/bash", "../scripts/update.sh")
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Printf("Update failed: %v\nOutput: %s", err, string(output))
