@@ -16,8 +16,10 @@ import {
   Users
 } from 'lucide-react';
 import { useSignaling } from '@/context/SignalingContext';
+import { useIsMounted, formatDate, formatNumber } from '@/lib/utils';
 
 export default function DashboardPage() {
+  const isMounted = useIsMounted();
   const { subscribe } = useSignaling();
   const [roomPresence, setRoomPresence] = React.useState<Map<string, number[]>>(new Map());
 
@@ -53,7 +55,7 @@ export default function DashboardPage() {
   const statCards = [
     { label: 'Fleet Readiness', value: `${stats?.fleet_readiness || 0}%`, icon: Rocket, color: 'text-sc-blue' },
     { label: 'Active Operations', value: stats?.active_operations || 0, icon: Shield, color: 'text-yellow-500' },
-    { label: 'Treasury Balance', value: `${(stats?.org_treasury_balance || 0).toLocaleString()} aUEC`, icon: TrendingUp, color: 'text-green-500' },
+    { label: 'Treasury Balance', value: `${isMounted ? formatNumber(stats?.org_treasury_balance) : '---'} aUEC`, icon: TrendingUp, color: 'text-green-500' },
     { label: 'Total Vessels', value: stats?.total_ships || 0, icon: Rocket, color: 'text-sc-light-blue' },
   ];
 
@@ -110,7 +112,7 @@ export default function DashboardPage() {
                       {' '}{activity.content?.message || activity.content || 'performed an action'}
                     </p>
                     <span className="text-[10px] text-sc-grey/40 font-mono">
-                      {activity.created_at ? new Date(activity.created_at).toLocaleString() : 'Recent'}
+                      {isMounted ? formatDate(activity.created_at) : '---'}
                     </span>
                   </div>
                   <ChevronRight className="w-4 h-4 text-sc-grey/20 opacity-0 group-hover:opacity-100 transition-all" />

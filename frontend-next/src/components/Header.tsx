@@ -7,9 +7,10 @@ import { useAuthStore } from '@/store/authStore';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn, useIsMounted, formatDate } from '@/lib/utils';
 
 const Header = () => {
+  const isMounted = useIsMounted();
   const { settings } = useThemeStore();
   const { user, logout } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,7 +162,7 @@ const Header = () => {
                             </div>
                             <p className="text-[9px] text-sc-grey/60 leading-relaxed uppercase font-medium">{n.message}</p>
                             <div className="pt-2 flex justify-between items-center">
-                                <span className="text-[7px] text-sc-grey/40 font-mono">{new Date(n.created_at).toLocaleTimeString()}</span>
+                                <span className="text-[7px] text-sc-grey/40 font-mono">{isMounted ? formatDate(n.created_at) : '---'}</span>
                                 <div className="flex space-x-3">
                                     <Link href={n.link || '#'} onClick={() => setShowNotifications(false)} className="text-[7px] font-black text-sc-blue uppercase tracking-widest hover:text-white">Link</Link>
                                     {!n.is_read && <button onClick={() => markReadMutation.mutate(n.id)} className="text-[7px] font-black text-sc-grey/40 uppercase tracking-widest hover:text-white">Acknowledge</button>}
