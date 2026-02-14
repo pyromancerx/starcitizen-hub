@@ -11,27 +11,35 @@ import (
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenStr := ""
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Missing Authorization Header", http.StatusUnauthorized)
+		
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				tokenStr = parts[1]
+			}
+		}
+
+		// Fallback to query parameter for WebSockets
+		if tokenStr == "" {
+			tokenStr = r.URL.Query().Get("token")
+		}
+
+		if tokenStr == "" {
+			http.Error(w, "Unauthorized: Missing Token", http.StatusUnauthorized)
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Invalid Authorization Header", http.StatusUnauthorized)
-			return
-		}
-
-		token, err := utils.ValidateToken(parts[1])
+		token, err := utils.ValidateToken(tokenStr)
 		if err != nil || !token.Valid {
-			http.Error(w, "Invalid Token", http.StatusUnauthorized)
+			http.Error(w, "Unauthorized: Invalid Token", http.StatusUnauthorized)
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
-			http.Error(w, "Invalid Token Claims", http.StatusUnauthorized)
+			http.Error(w, "Unauthorized: Invalid Claims", http.StatusUnauthorized)
 			return
 		}
 
