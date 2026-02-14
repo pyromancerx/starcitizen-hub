@@ -8,7 +8,8 @@ import (
 
 type Ship struct {
 	ID                 uint           `gorm:"primaryKey" json:"id"`
-	UserID             uint           `gorm:"index" json:"user_id"`
+	UserID             uint           `gorm:"index:idx_user_external,unique" json:"user_id"`
+	ExternalID         string         `gorm:"size:100;index:idx_user_external,unique" json:"external_id"` // e.g., pledge_id
 	ShipType           string         `gorm:"size:200" json:"ship_type"`
 	Name               string         `gorm:"size:200" json:"name"`
 	SerialNumber       string         `gorm:"size:100" json:"serial_number"`
@@ -18,6 +19,7 @@ type Ship struct {
 	Notes              string         `gorm:"type:text" json:"notes"`
 	Status             string         `gorm:"size:50;default:'ready'" json:"status"`
 	CustomAttributes   string         `gorm:"type:json" json:"custom_attributes"` // JSON string
+	LastSyncedAt       *time.Time     `json:"last_synced_at"`
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
 	DeletedAt          gorm.DeletedAt `gorm:"index" json:"-"`

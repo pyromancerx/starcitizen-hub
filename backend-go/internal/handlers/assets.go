@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
+	"gorm.io/gorm/clause"
 )
 
 type AssetHandler struct {
@@ -114,12 +115,14 @@ func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Reques
 	}
 
 	importedCount := 0
+	now := time.Now()
 	
 	processEntry := func(entry map[string]interface{}) {
 		// Case 1: HangarXPLORER nested structure (pledge with items)
 		if items, ok := entry["items"].([]interface{}); ok {
 			insurance := getString(entry, "insurance")
 			pledgeName := getString(entry, "name")
+			pledgeID := getString(entry, "id")
 
 			for _, itemRaw := range items {
 				item, ok := itemRaw.(map[string]interface{})
@@ -127,61 +130,65 @@ func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Reques
 				
 				if item["type"] == "Ship" {
 					shipType := getString(item, "name")
+					extID := pledgeID
+					if extID == "" { extID = getString(entry, "pledge_id") }
+					if len(items) > 1 { extID = fmt.Sprintf("%s_%s", extID, shipType) }
+
 					ship := models.Ship{
 						UserID:          userID,
+						ExternalID:      extID,
 						ShipType:        shipType,
 						Name:            pledgeName,
 						InsuranceStatus: insurance,
 						Status:          "ready",
-						Notes:           "Imported from HangarXPLORER",
+						Notes:           "Synchronized via HangarXPLORER",
+						LastSyncedAt:    &now,
 					}
-					if err := h.assetService.CreateShip(&ship); err == nil {
-						importedCount++
-					}
+					
+					h.assetService.DB.Clauses(clause.OnConflict{
+						Columns:   []clause.Column{{Name: "user_id"}, {Name: "external_id"}},
+						DoUpdates: clause.AssignmentColumns([]string{"ship_type", "name", "insurance_status", "last_synced_at"}),
+					}).Create(&ship)
+					importedCount++
 				}
 			}
 			return
 		}
 
-		// Case 2: Flat list (like the user provided or simple custom list)
+		// Case 2: Flat list
 		shipType := getString(entry, "ship_name")
-		if shipType == "" {
-			shipType = getString(entry, "ship_type")
-		}
-		if shipType == "" {
-			shipType = getString(entry, "name")
-		}
+		if shipType == "" { shipType = getString(entry, "ship_type") }
+		if shipType == "" { shipType = getString(entry, "name") }
 
 		if shipType != "" {
-			// Determine insurance
+			extID := getString(entry, "pledge_id")
+			if extID == "" { extID = getString(entry, "ship_code") }
+
 			insurance := getString(entry, "insurance")
 			if insurance == "" {
-				if lti, ok := entry["lti"].(bool); ok && lti {
-					insurance = "LTI"
-				} else {
-					insurance = "Standard"
-				}
+				if lti, ok := entry["lti"].(bool); ok && lti { insurance = "LTI" } else { insurance = "Standard" }
 			}
 
 			customName := getString(entry, "custom_name")
-			if customName == "" {
-				customName = getString(entry, "pledge_name")
-			}
-			if customName == "" {
-				customName = shipType
-			}
+			if customName == "" { customName = getString(entry, "pledge_name") }
+			if customName == "" { customName = shipType }
 
 			ship := models.Ship{
 				UserID:          userID,
+				ExternalID:      extID,
 				ShipType:        shipType,
 				Name:            customName,
 				InsuranceStatus: insurance,
 				Status:          "ready",
-				Notes:           "Imported from fleet list",
+				Notes:           "Synchronized via fleet list",
+				LastSyncedAt:    &now,
 			}
-			if err := h.assetService.CreateShip(&ship); err == nil {
-				importedCount++
-			}
+
+			h.assetService.DB.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "user_id"}, {Name: "external_id"}},
+				DoUpdates: clause.AssignmentColumns([]string{"ship_type", "name", "insurance_status", "last_synced_at"}),
+			}).Create(&ship)
+			importedCount++
 		}
 	}
 
@@ -194,7 +201,6 @@ func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Reques
 			}
 		}
 	case map[string]interface{}:
-		// Single ship or object-wrapped list
 		if list, ok := data["ships"].([]interface{}); ok {
 			for _, entryRaw := range list {
 				if entry, ok := entryRaw.(map[string]interface{}); ok {
@@ -202,12 +208,11 @@ func (h *AssetHandler) ImportHangarXPLORER(w http.ResponseWriter, r *http.Reques
 				}
 			}
 		} else {
-			// Process as single entry
 			processEntry(data)
 		}
 	}
 
-	log.Printf("User %d imported %d vessels", userID, importedCount)
+	log.Printf("User %d synchronized %d vessels", userID, importedCount)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
