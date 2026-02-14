@@ -58,6 +58,20 @@ func NewSignalingHub() *SignalingHub {
 func (h *SignalingHub) broadcastRoomState(roomID string) {
 	clients, ok := h.rooms[roomID]
 	if !ok {
+		// If room empty, still broadcast empty state to everyone
+		msg, _ := json.Marshal(map[string]interface{}{
+			"type":     "room-presence",
+			"room_id":  roomID,
+			"user_ids": []uint{},
+		})
+		h.mu.Lock()
+		for _, client := range h.clients {
+			select {
+			case client.Send <- msg:
+			default:
+			}
+		}
+		h.mu.Unlock()
 		return
 	}
 
@@ -72,9 +86,14 @@ func (h *SignalingHub) broadcastRoomState(roomID string) {
 		"user_ids": userIDs,
 	})
 
-	for _, client := range clients {
-		client.Send <- msg
+	h.mu.Lock()
+	for _, client := range h.clients {
+		select {
+		case client.Send <- msg:
+		default:
+		}
 	}
+	h.mu.Unlock()
 }
 
 func (h *SignalingHub) Run() {

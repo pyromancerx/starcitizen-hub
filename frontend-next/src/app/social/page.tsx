@@ -51,6 +51,14 @@ export default function SocialHubPage() {
     },
   });
 
+  const { data: voiceChannels } = useQuery<any[]>({
+    queryKey: ['voice-channels-quick'],
+    queryFn: async () => {
+      const res = await api.get('/social/voice-channels');
+      return res.data;
+    },
+  });
+
   const createChannelMutation = useMutation({
     mutationFn: async (data: any) => {
       return api.post('/social/voice-channels', data);
@@ -59,17 +67,31 @@ export default function SocialHubPage() {
       queryClient.invalidateQueries({ queryKey: ['voice-channels'] });
       setActiveChannel(res.data);
     },
+    onError: (err: any) => {
+        alert(err.response?.data || 'Failed to establish tactical link. Access denied or signal lost.');
+    }
   });
 
   const handleQuickJoin = () => {
-    createChannelMutation.mutate({
-        name: `Direct Tactical Link: ${user?.display_name}`,
-        is_private: false
-    });
+    // 1. Try to find an existing "General" or "Lobby" channel
+    const generalChannel = voiceChannels?.find(c => 
+        c.name.toLowerCase().includes('general') || 
+        c.name.toLowerCase().includes('lobby')
+    );
+
+    if (generalChannel) {
+        setActiveChannel(generalChannel);
+    } else {
+        // 2. Try to create one (might fail if not admin, handled by onError)
+        createChannelMutation.mutate({
+            name: `Direct Tactical Link: ${user?.display_name}`,
+            is_private: false
+        });
+    }
   };
 
   const handleTestSignal = () => {
-    setActiveChannel({ id: 'test_freq', name: 'Local Test Frequency' });
+    setActiveChannel({ id: 'test_echo_pulse', name: 'Local Media Test' });
   };
 
   const totalCitizensActive = roomPresence ? Array.from(roomPresence.values()).flat().length : 0;

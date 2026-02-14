@@ -22,6 +22,11 @@ export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => 
   
   const peersRef = useRef<Map<number, Peer>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
+  const currentRoomRef = useRef<string | undefined>(roomId);
+
+  useEffect(() => {
+    currentRoomRef.current = roomId;
+  }, [roomId]);
 
   const iceServers = {
     iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
@@ -36,7 +41,7 @@ export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => 
           type: 'ice-candidate',
           candidate: event.candidate,
           target_id: peerId,
-          room_id: roomId,
+          room_id: currentRoomRef.current,
         });
       }
     };
@@ -171,11 +176,13 @@ export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => 
   }, [shouldInitMedia]);
 
   useEffect(() => {
-    if (!user || !roomId) return;
+    if (!user) return;
 
     if (isConnected) {
         setConnectionStatus('connected');
-        send({ type: 'join', room_id: roomId });
+        if (roomId) {
+            send({ type: 'join', room_id: roomId });
+        }
     } else {
         setConnectionStatus('connecting');
     }
@@ -188,14 +195,14 @@ export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => 
           const pc = createPeerConnection(sender_id);
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          send({ type: 'offer', offer, target_id: sender_id, room_id: roomId });
+          send({ type: 'offer', offer, target_id: sender_id, room_id: currentRoomRef.current });
           peersRef.current.set(sender_id, { id: sender_id, connection: pc });
         } else if (type === 'offer' && sender_id) {
           const pc = createPeerConnection(sender_id);
           await pc.setRemoteDescription(new RTCSessionDescription(offer));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          send({ type: 'answer', answer, target_id: sender_id, room_id: roomId });
+          send({ type: 'answer', answer, target_id: sender_id, room_id: currentRoomRef.current });
           peersRef.current.set(sender_id, { id: sender_id, connection: pc });
         } else if (type === 'answer' && sender_id) {
           const peer = peersRef.current.get(sender_id);
@@ -229,8 +236,8 @@ export const useWebRTC = (roomId?: string, shouldInitMedia: boolean = false) => 
 
     return () => {
       unsubscribe();
-      if (isConnected) {
-          send({ type: 'leave', room_id: roomId });
+      if (currentRoomRef.current && isConnected) {
+          send({ type: 'leave', room_id: currentRoomRef.current });
       }
       peersRef.current.forEach(peer => peer.connection.close());
     };
