@@ -25,21 +25,21 @@ export default function HelpManualPage() {
       icon: <Radio className="w-5 h-5" />,
       content: [
         {
+          sub: 'Unified Signaling Matrix',
+          desc: 'The Social Hub utilizes a centralized WebSocket signaling matrix. This high-fidelity link manages voice, video, and real-time data synchronization across all organizational frequencies.'
+        },
+        {
           sub: 'Voice & Video Comm Frequencies',
-          desc: 'The Social Hub provides real-time WebRTC-based peer-to-peer communication. You can join persistent organization frequencies listed in the "Social Matrix" or establish direct links with other citizens.'
+          desc: 'Establish peer-to-peer WebRTC links via the Social Matrix. You can join persistent organization channels or initialize secure 1-on-1 direct links with other citizens.'
         },
         {
-          sub: 'Signal Presence',
-          desc: 'Active personnel on any frequency are visible via the "Citizens Active" indicator. A green pulse indicates a live, stable signal.'
-        },
-        {
-          sub: 'Media Controls',
-          desc: 'Use the prominent control bar to toggle your microphone (Audio), camera (Video), or share your tactical display (Screen Share) with the group.'
+          sub: 'Media & Display Controls',
+          desc: 'Use the integrated control bar to toggle biometric sensors (Camera), audio intake (Microphone), or broadcast your tactical display (Screen Share).'
         }
       ]
     },
     {
-      title: 'Fleet & Asset Management',
+      title: 'Fleet & Tactical Assets',
       icon: <Rocket className="w-5 h-5" />,
       content: [
         {
@@ -47,8 +47,12 @@ export default function HelpManualPage() {
           desc: 'Track every vessel in your personal hangar. Use the "HangarXPLORER Import" feature to quickly synchronize your RSI hangar with the organization database.'
         },
         {
-          sub: 'Org Stockpiles',
-          desc: 'Centralized tracking for shared resources, commodities, and gear. View total organization holdings and recent inventory movements.'
+          sub: 'Tactical Blueprints',
+          desc: 'Design high-fidelity ship configurations in the Blueprint Data-Bank. View real-time performance analytics including Burst DPS, Shield HP, and Power Excess.'
+        },
+        {
+          sub: 'Equip to Vessel',
+          desc: 'Authorize tactical blueprints to be cryptographically matched with your registered vessels, ensuring mission-ready configurations are broadcast to the organization.'
         }
       ]
     },
@@ -57,12 +61,16 @@ export default function HelpManualPage() {
       icon: <ShieldCheck className="w-5 h-5" />,
       content: [
         {
-          sub: 'Operation Signups',
-          desc: 'View upcoming organization events and combat operations. Sign up to secure your slot in the flight wing and receive pre-op briefings.'
+          sub: 'Mission Readiness HUD',
+          desc: 'Authorized operations feature an automated Readiness HUD. The system scans your personal registry and gear to calculate a tactical readiness score (0-100%).'
+        },
+        {
+          sub: 'Procurement Intelligence',
+          desc: 'The logistics engine automatically cross-references organization stockpiles against mission requirements to identify and mitigate resource shortfalls.'
         },
         {
           sub: 'Trade Runs & Contracts',
-          desc: 'Plan profitable cargo routes and manage escrowed trade contracts. Ensure every credit is accounted for in the Org Treasury.'
+          desc: 'Log commercial flight data and manage cargo contracts with automatic escrow security. Ensure every credit is accounted for in the Strategic Initiatives ledger.'
         }
       ]
     },

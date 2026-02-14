@@ -8,33 +8,35 @@ A self-hosted, full-stack logistics and community platform for Star Citizen orga
 
 ## Architecture
 
-- **Backend:** Go 1.24+, SQLite (WAL Mode), GORM
+- **Backend:** Go 1.24+, SQLite (WAL Mode), GORM, gorilla/websocket
 - **Frontend:** Next.js 15 (App Router), TailwindCSS (Sci-Fi Theme), React Query, Zustand
-- **Infrastructure:** Caddy (Reverse Proxy & HTTPS), Systemd
+- **Infrastructure:** Caddy (Reverse Proxy & HTTPS), Systemd, WebRTC (Peer-to-Peer)
 
 ## Features
 
 ### 🚀 Asset Management
 - **Fleet Registry:** Track organization and member ships with loadout details and real-time readiness status (Ready, Damaged, etc.).
-- **Tactical Blueprints:** Design and share ship loadouts with real-time performance analytics.
-- **Bulk Import:** Seamlessly import your entire RSI hangar using HangarXPLORER JSON exports.
-- **Inventory Tracking:** Manage personal and shared items across the verse.
-- **Financial Terminal:** Track aUEC balances and transactions securely.
-- **Planetary Outposts:** Register and manage player-owned bases and outposts.
+- **Tactical Blueprints:** Design and share ship loadouts with real-time performance analytics (DPS, Shield HP, Power Draw).
+- **Equip to Vessel:** One-click synchronization of tactical blueprints with your registered fleet.
+- **Bulk Import:** Seamlessly import your entire RSI hangar using HangarXPLORER JSON exports or Erkul ship configurations.
+- **Inventory Tracking:** Manage personal and shared items across the verse with automated scanning.
+- **Financial Terminal:** Track aUEC balances and transactions securely within the organization.
+- **Planetary Outposts:** Register and manage player-owned bases and outposts with coordinate tracking.
 
 ### 📦 Logistics
-- **Org Stockpiles:** Shared resource management with transaction history and asset loaning.
+- **Org Stockpiles:** Shared resource management with transaction history and strategic asset loaning.
 - **Project Management:** Organize strategic initiatives with phases, tasks, and completion tracking.
 - **Crowdfunding:** Create contribution goals for projects (e.g., "Fund a Javelin") with automatic progress tracking.
+- **Procurement Intelligence:** Automated analysis of organization stockpiles against mission requirements to identify logistical shortfalls.
 
 ### 📡 Communications
-- **Sub-Space Social Hub:** Real-time WebRTC voice and video communication matrix.
-- **Global Search:** Quickly find members, ships, projects, and forum threads from the universal search bar.
-- **Spectrum Forum:** Secure, hierarchical discussion boards for permanent organization records.
-- **Operations Calendar:** Event scheduling with mandatory ship/gear requirements and participant notifications.
-- **Direct Messaging:** Private 1-on-1 messaging between members with real-time WebSocket delivery.
-- **Activity Feed:** Organization timeline showing member activities.
-- **Notification Center:** In-app HUD alerts for mentions, operation invites, and system updates.
+- **Sub-Space Social Hub:** Real-time WebRTC voice and video communication matrix with a centralized signaling layer.
+- **Global Command Search:** Quickly find members, vessels, and active operations from the unified search bar.
+- **Spectrum Forum:** Secure, hierarchical discussion boards for permanent organization records and tactical briefings.
+- **Operations Console:** Advanced mission planning with mandatory ship/gear requirements and automated readiness HUDs.
+- **Direct Messaging:** Private 1-on-1 messaging between members with real-time WebSocket delivery and presence.
+- **Activity Feed:** Organization timeline showing member activities, achievements, and fleet additions.
+- **Notification Center:** In-app HUD alerts for mentions, operation invites, and critical system updates.
 
 ### 🎮 Social & Engagement
 - **Achievement System:** Gamification with auto-awarded and custom merit citations.
@@ -165,294 +167,80 @@ cd /opt/starcitizen-hub/backend-go
 
 ---
 
-## 🎯 Activity Feed
+## 🎯 Achievement System
 
-The Activity Feed provides a real-time timeline of organization activities, creating community engagement and awareness.
 
-### Features
-- **Activity Types:** Tracks member joins, member approvals, fleet imports, ship additions, trade completions, contract updates (posted/completed), project updates, LFG posts, and price reports.
-- **Real-time Updates:** Automatic updates via polling.
-- **Reactions:** Emoji reactions (👍, ❤️, 🎉, etc.) on activities.
-- **Filtering:** Filter by activity type or view all.
-- **Dashboard Widget:** Integrated into the main dashboard.
 
-### API Endpoints
-- `GET /api/activity/feed` - Get paginated activity feed
-- `GET /api/activity/recent` - Get recent activities (last N hours)
-- `POST /api/activity/{id}/react` - Add reaction to activity
-- `DELETE /api/activity/{id}/react/{emoji}` - Remove reaction
+Gamification layer to recognize and reward member accomplishments via auto-awarded and custom merit citations.
+
+
 
 ---
 
-## 🔔 Notification System
 
-In-app notification center for alerts, mentions, and updates.
-
-### Notification Types
-- **Mentions:** When someone @mentions you in forum posts or comments.
-- **Operation Invites:** Invitations to operations/events.
-- **Operation Reminders:** Alerts when operations are starting soon.
-- **Contract Updates:** Contract accepted, completed, or cancelled notifications.
-- **LFG Responses:** When someone responds to your crew-finding post.
-- **Achievement Unlocks:** New achievement earned.
-- **Approval Requests:** Admin notifications for pending member approvals.
-
-### Features
-- **Unread Count Badge:** Shows on notification bell and Messages nav item.
-- **Notification Preferences:** Enable/disable specific notification types.
-- **Mark All as Read:** One-click clearing.
-- **Mobile Responsive:** Dropdown notifications in header.
-
-### API Endpoints
-- `GET /api/notifications/` - Get notifications list
-- `GET /api/notifications/unread-count` - Get unread count
-- `POST /api/notifications/mark-read` - Mark as read
-- `PUT /api/notifications/preferences/me` - Update preferences
-
----
-
-## 🏆 Achievement System
-
-Gamification layer to recognize and reward member accomplishments.
-
-### Achievement Types
-- **System Achievements:** Auto-awarded based on tracked activities:
-  - *First Steps* (1 trade run) - Common, 10 pts
-  - *Trader* (10 trade runs) - Common, 25 pts
-  - *Merchant Prince* (50 trade runs) - Rare, 100 pts
-  - *Fleet Admiral* (5 ships) - Rare, 50 pts
-  - *Reliable Hauler* (5 contracts) - Common, 25 pts
-  - *Operation Veteran* (10 operations) - Common, 25 pts
-  - *Community Voice* (20 forum posts) - Common, 25 pts
-  - *Founding Member* (30 days) - Epic, 75 pts
-  - *Legend* (365 days) - Legendary, 500 pts
-
-- **Custom Achievements:** Created and manually awarded by admins.
-
-### Rarity Levels
-- **Common** (10-25 points)
-- **Rare** (50-100 points)
-- **Epic** (75-150 points)
-- **Legendary** (500 points)
-
-### Features
-- **Achievement Center:** View earned and available achievements.
-- **Leaderboard:** Top achievers by total points.
-- **Rarity Breakdown:** Visual breakdown of achievement rarities earned.
-- **Unlock Notifications:** Celebrate new achievements with modal popup.
-
-### API Endpoints
-- `GET /api/achievements/` - List all achievements
-- `GET /api/achievements/my/achievements` - Get my achievements
-- `GET /api/achievements/my/summary` - Get achievement summary
-- `POST /api/achievements/check` - Check for new achievements
-- `POST /api/achievements/award` - Admin: manually award achievement
-- `POST /api/achievements/setup/defaults` - Admin: create default achievements
-
----
-
-## 💬 Direct Messaging
-
-Private 1-on-1 messaging system for member communication.
-
-### Features
-- **Conversations:** Persistent message threads with last message preview.
-- **Real-time:** Polling every 10 seconds for new messages.
-- **Read Receipts:** Shows when messages are read.
-- **Soft Delete:** Delete conversations (removed from your view only).
-- **Unread Counts:** Badge on navigation showing unread messages.
-- **Compose:** Start new conversations from member list.
-
-### UI
-- **Split Pane:** Conversation list on left, message thread on right.
-- **Bubble Style:** Different colors for sent vs received messages.
-- **Responsive:** Works on desktop and mobile.
-
-### API Endpoints
-- `GET /api/messages/conversations` - Get conversation list
-- `GET /api/messages/conversations/{id}` - Get conversation with messages
-- `POST /api/messages/send` - Send message
-- `POST /api/messages/conversations/{id}/read` - Mark as read
-- `GET /api/messages/unread-count` - Get unread count
-- `DELETE /api/messages/conversations/{id}` - Delete conversation
-
----
-
-## 🎮 Discord Integration
-
-Connect your Star Citizen Hub with Discord for seamless community management.
-
-### Features
-
-#### 1. OAuth Login
-- Users can link Discord accounts to their hub profile.
-- Automatic Discord guild/server joining.
-- Profile sync (username, avatar).
-
-#### 2. Webhook Announcements
-Configure webhooks to auto-post to Discord channels:
-- **Announcements** - New organization announcements
-- **Events** - Operation scheduling and updates
-- **Trades** - Trade completions (opt-in privacy)
-- **Achievements** - Member achievement unlocks
-- **Contracts** - New cargo contracts posted
-
-Each post includes rich Discord embeds with appropriate colors.
-
-#### 3. Role Synchronization
-- Map hub roles to Discord roles.
-- Automatic role assignment when linking accounts.
-- Manual sync option for existing users.
-- Admin bulk sync capability.
-
-### Setup Instructions
-
-1. **Create Discord Application:**
-   - Go to https://discord.com/developers/applications
-   - Create New Application
-   - Go to OAuth2 → Add Redirect URL: `https://your-domain.com/api/discord/callback`
-   - Copy Client ID and Client Secret
-
-2. **Create Bot:**
-   - Go to Bot tab → Add Bot
-   - Enable "Server Members Intent"
-   - Copy Bot Token
-   - Invite bot to your server with permissions: Manage Roles, Send Messages
-
-3. **Configure Webhooks:**
-   - In Discord, go to Channel Settings → Integrations → Webhooks
-   - Create webhook for each channel you want to post to
-   - Copy webhook URLs
-
-4. **Hub Configuration:**
-   - Log in as admin
-   - Go to **System Admin** → **Discord Integration**
-   - Enter OAuth Client ID, Client Secret, Bot Token
-   - Configure webhook URLs
-   - Toggle auto-post settings
-   - Set up role mappings
-
-### API Endpoints
-- `GET/POST /api/discord/settings` - Manage integration settings (admin)
-- `GET/POST /api/discord/webhooks` - Manage webhooks (admin)
-- `GET /api/discord/login-url` - Get Discord OAuth URL
-- `POST /api/discord/callback` - OAuth callback handler
-- `GET/DELETE /api/discord/my-link` - View/unlink Discord account
-- `GET/POST /api/discord/role-mappings` - Manage role mappings (admin)
-- `POST /api/discord/sync-my-roles` - Sync my Discord roles
-
----
-
-## ✓ RSI Integration
-
-Verify Star Citizen accounts to prove identity and display verified RSI handles on profiles.
-
-### Features
-
-#### 1. Account Verification
-- Users submit their RSI handle with a screenshot proof.
-- Admins review and approve/reject verification requests.
-- Verified users get a badge and link to their RSI profile.
-- Prevents impersonation and builds trust within the organization.
-
-#### 2. Verification Workflow
-1. **User Submits:** Provides RSI handle and screenshot URL
-2. **Admin Review:** Screenshot is checked for validity
-3. **Approval:** Handle is linked to user profile with verified badge
-4. **Rejection:** User is notified with reason (optional)
-
-#### 3. Profile Display
-- Verified RSI handle shown on member profiles
-- Direct link to RSI profile page
-- Visual verification badge
-
-### Verification Instructions for Users
-
-1. Go to your RSI profile: https://robertsspaceindustries.com/account/profile
-2. Take a screenshot showing your handle clearly
-3. Upload to an image host (Imgur, Discord, etc.)
-4. Submit via Profile → RSI Verification
-5. Wait for admin approval
-
-### Admin Review Process
-
-1. Go to **Command** → **RSI Verification**
-2. Review pending requests
-3. Check screenshot for:
-   - Handle matches submission
-   - Screenshot is clear and valid
-   - Profile appears legitimate
-4. Approve or reject with notes
-
-### API Endpoints
-- `POST /api/rsi/verify` - Submit verification request
-- `GET /api/rsi/status` - Get my verification status
-- `GET /api/rsi/profile/{user_id}` - Get user's RSI profile
-- `GET /api/rsi/admin/pending` - Get pending requests (admin)
-- `POST /api/rsi/admin/review/{request_id}` - Review request (admin)
-
----
 
 ## 📡 Federation Guide
 
-Federation allows multiple Star Citizen Hub instances to peer with each other, enabling shared situational awareness and logistics across allied organizations.
+
+
+Federation allows multiple Star Citizen Hub instances to peer with each other, enabling shared situational awareness across allied organizations.
+
+
 
 ### 🔗 Establishing a Link
+
 To link two hubs (Instance A and Instance B):
 
-1.  **Exchange URLs:** Determine the public `Instance URL` for both hubs (e.g., `https://hub.org-a.com` and `https://hub.org-b.com`).
-2.  **Agree on a Secret:** Both organization admins must agree on a **Shared Secret Key** (a long, random string).
-3.  **Add Peer on Instance A:**
-    *   Go to **Logistics** -> **Federation**.
-    *   Click **Establish Link**.
-    *   Enter Instance B's name, URL, and the Shared Secret.
-4.  **Add Peer on Instance B:**
-    *   Repeat the process entering Instance A's details and the **same** Shared Secret.
+
+
+1.  **Exchange URLs:** Determine the public `Instance URL` for both hubs.
+
+2.  **Agree on a Secret:** Both organization admins must agree on a **Shared Secret Key**.
+
+3.  **Add Peer:** Register the entity in the **Inter-Org Federation** console.
+
+
 
 ### 🛡️ Security Model
-- **HMAC-SHA256:** All server-to-server requests are signed using the Shared Secret.
-- **Timestamp Verification:** Requests include a timestamp to prevent replay attacks.
-- **Source Validation:** The `X-Hub-Source-Host` header is verified against the registered peer database.
 
-### 📊 Shared Data
-Once linked, the hubs will automatically perform the following:
-- **Event Sync:** Public operations and events from the peer will appear in your **Cross-Instance Intelligence** feed.
-- **Trade Requests:** Organizations can broadcast resource needs (e.g., "Buying Quantainium") which become visible to verified peers.
+- **HMAC-SHA256:** All server-to-server requests are signed using the Shared Secret.
+
+- **Timestamp Verification:** Requests include a timestamp to prevent replay attacks.
+
+
 
 ---
+
+
 
 ## 🔄 Maintenance
 
-### Managing the Backend (Standalone)
-If you are not using systemd (e.g., in development), use the following scripts:
 
-```bash
-# Start backend in background
-./scripts/start_backend.sh
-
-# Stop backend gracefully
-./scripts/stop_backend.sh
-```
 
 ### Updating the Hub
+
 To pull the latest changes, rebuild the frontend, and run migrations:
 
+
+
 ```bash
+
 sudo /opt/starcitizen-hub/scripts/update.sh
+
 ```
+
+
 
 ### Uninstalling
+
 To completely remove the application and service:
 
+
+
 ```bash
+
 sudo /opt/starcitizen-hub/scripts/uninstall.sh
+
 ```
+
 *You will be prompted to back up your database before deletion.*
-
----
-
-## 📚 API Documentation
-
-The backend provides auto-generated API docs (available only to authenticated users or if configured):
-- **Swagger UI:** `https://your-domain.com/api/docs`
-- **ReDoc:** `https://your-domain.com/api/redoc`
