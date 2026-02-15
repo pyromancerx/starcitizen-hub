@@ -74,12 +74,16 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 		}
 
 		var htmlContent string
+		var totalRows int
 		switch d := result.Data.(type) {
 		case string:
 			htmlContent = d
 		case map[string]interface{}:
 			if h, ok := d["html"].(string); ok {
 				htmlContent = h
+			}
+			if tr, ok := d["totalrows"].(float64); ok {
+				totalRows = int(tr)
 			}
 		}
 
@@ -115,11 +119,8 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 		}
 
 		totalCount += pageCount
-		log.Printf("Synchronized page %d (%d members found)", page, pageCount)
+		log.Printf("Synchronized page %d (%d/%d members found so far)", page, totalCount, totalRows)
 		
-		if len(matches) < 100 {
-			break // Last page
-		}
 		page++
 	}
 
