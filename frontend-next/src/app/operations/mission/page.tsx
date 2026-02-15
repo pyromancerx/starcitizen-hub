@@ -75,6 +75,36 @@ function MissionContent() {
     enabled: !!id,
   });
 
+  const { data: user } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: async () => {
+      const res = await api.get('/auth/me');
+      return res.data;
+    }
+  });
+
+  const volunteerMutation = useMutation({
+    mutationFn: async (role: string) => {
+      return api.post(`/operations/${id}/volunteer-sub`, { role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operation', id] });
+      alert('Application transmitted. Awaiting command approval.');
+    },
+  });
+
+  const processSubMutation = useMutation({
+    mutationFn: async ({ subId, status }: { subId: number, status: string }) => {
+      return api.post(`/operations/sub-leaders/${subId}/process`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operation', id] });
+      alert('Sub-leader status updated.');
+    },
+  });
+
+  const isLeader = operation?.created_by_id === user?.id;
+
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="flex items-center space-x-4">
@@ -241,6 +271,51 @@ function MissionContent() {
           )}
 
           <div className="bg-sc-panel border border-sc-grey/10 rounded-lg p-8">
+            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 border-b border-sc-grey/10 pb-2">Command Staff</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+              {operation?.sub_leaders?.map((sub: any) => (
+                <div key={sub.id} className={cn(
+                    "p-4 rounded flex items-center justify-between transition-all border",
+                    sub.status === 'active' ? "bg-sc-blue/5 border-sc-blue/20" : "bg-sc-dark/50 border-white/5 opacity-60"
+                )}>
+                  <div className="flex items-center space-x-3">
+                    <div className={cn(
+                        "w-10 h-10 rounded flex items-center justify-center border",
+                        sub.status === 'active' ? "bg-sc-panel border-sc-blue text-sc-blue" : "bg-sc-dark border-sc-grey/20 text-sc-grey/40"
+                    )}>
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white uppercase">{sub.user?.display_name}</div>
+                      <div className="text-[8px] text-sc-blue font-black uppercase tracking-widest">{sub.role_title} • {sub.status}</div>
+                    </div>
+                  </div>
+                  
+                  {isLeader && sub.status === 'candidate' && (
+                    <div className="flex space-x-2">
+                        <button 
+                            onClick={() => processSubMutation.mutate({ subId: sub.id, status: 'active' })}
+                            className="p-1 hover:text-green-500 transition-colors"
+                        >
+                            <Shield className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={() => processSubMutation.mutate({ subId: sub.id, status: 'rejected' })}
+                            className="p-1 hover:text-red-500 transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              {(!operation?.sub_leaders || operation.sub_leaders.length === 0) && (
+                <div className="col-span-full p-4 border border-dashed border-white/5 rounded text-center text-[10px] text-sc-grey/20 uppercase font-black italic">
+                    No sub-commanders assigned to this operation.
+                </div>
+              )}
+            </div>
+
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 border-b border-sc-grey/10 pb-2">Crew Manifest</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {operation?.participants?.map((p: any) => (
@@ -289,6 +364,18 @@ function MissionContent() {
             >
               Enlist for Deployment
             </button>
+
+            {!isLeader && !operation?.sub_leaders?.find((s: any) => s.user_id === user?.id) && (
+                <button 
+                    onClick={() => {
+                        const role = prompt("Enter requested sub-leader role (e.g. Flight Lead, Ground Lead):");
+                        if (role) volunteerMutation.mutate(role);
+                    }}
+                    className="w-full py-3 mt-3 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                >
+                    Volunteer for Command Position
+                </button>
+            )}
           </div>
 
           <div className="bg-sc-panel border border-sc-grey/10 rounded-lg p-6">

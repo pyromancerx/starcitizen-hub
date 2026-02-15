@@ -178,14 +178,56 @@ func (h *LogisticsHandler) GetOperation(w http.ResponseWriter, r *http.Request) 
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
 
-	op, err := h.logisticsService.GetOperation(uint(id))
-	if err != nil {
+	op := h.logisticsService.GetOperation(uint(id))
+	if op.ID == 0 {
 		http.Error(w, "Operation not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(op)
+}
+
+func (h *LogisticsHandler) VolunteerSubLeader(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	idStr := chi.URLParam(r, "id")
+	opID, _ := strconv.ParseUint(idStr, 10, 32)
+
+	var req struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.logisticsService.VolunteerSubLeader(uint(opID), userID, req.Role); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h *LogisticsHandler) ProcessSubLeader(w http.ResponseWriter, r *http.Request) {
+	adminID := r.Context().Value("user_id").(uint)
+	subIDStr := chi.URLParam(r, "subId")
+	subID, _ := strconv.ParseUint(subIDStr, 10, 32)
+
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.logisticsService.ProcessSubLeaderApplication(uint(subID), adminID, req.Status); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *LogisticsHandler) SignupOperation(w http.ResponseWriter, r *http.Request) {

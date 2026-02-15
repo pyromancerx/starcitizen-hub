@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"time"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
@@ -86,10 +87,40 @@ func (s *LogisticsService) ListOperations(status []string) ([]models.Operation, 
 	return ops, err
 }
 
-func (s *LogisticsService) GetOperation(id uint) (*models.Operation, error) {
+func (s *LogisticsService) GetOperation(id uint) (*models.Operation) {
 	var op models.Operation
-	err := s.DB.Preload("Participants.User").Preload("Participants.Ship").First(&op, id).Error
-	return &op, err
+	s.DB.Preload("Participants.User").
+		Preload("Participants.Ship").
+		Preload("SubLeaders.User").
+		First(&op, id)
+	return &op
+}
+
+func (s *LogisticsService) VolunteerSubLeader(opID uint, userID uint, role string) error {
+	sub := models.OperationSubLeader{
+		OperationID: opID,
+		UserID:      userID,
+		RoleTitle:   role,
+		Status:      "candidate",
+		JoinedAt:    time.Now(),
+	}
+	return s.DB.Create(&sub).Error
+}
+
+func (s *LogisticsService) ProcessSubLeaderApplication(subID uint, adminID uint, status string) error {
+	var sub models.OperationSubLeader
+	if err := s.DB.Preload("Operation").First(&sub, subID).Error; err != nil {
+		return err
+	}
+
+	// Verify the processor is the operation leader
+	var op models.Operation
+	s.DB.First(&op, sub.OperationID)
+	if op.CreatedByID != adminID {
+		return errors.New("unauthorized: only the operation leader can process sub-leader applications")
+	}
+
+	return s.DB.Model(&sub).Update("status", status).Error
 }
 
 func (s *LogisticsService) SignupForOperation(participant *models.OperationParticipant) error {

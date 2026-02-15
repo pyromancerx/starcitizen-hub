@@ -27,6 +27,18 @@ type Operation struct {
 
 	Creator           User               `gorm:"foreignKey:CreatedByID" json:"-"`
 	Participants      []OperationParticipant `gorm:"foreignKey:OperationID" json:"participants,omitempty"`
+	SubLeaders        []OperationSubLeader   `gorm:"foreignKey:OperationID" json:"sub_leaders,omitempty"`
+}
+
+type OperationSubLeader struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	OperationID uint      `gorm:"index" json:"operation_id"`
+	UserID      uint      `gorm:"index" json:"user_id"`
+	RoleTitle   string    `gorm:"size:100" json:"role_title"`
+	Status      string    `gorm:"size:20;default:'candidate'" json:"status"` // candidate, active, rejected
+	JoinedAt    time.Time `json:"joined_at"`
+
+	User User `gorm:"foreignKey:UserID" json:"user"`
 }
 
 type Event struct {
