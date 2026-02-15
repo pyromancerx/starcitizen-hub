@@ -1,6 +1,8 @@
 package services
 
 import (
+	"strings"
+
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"gorm.io/gorm"
@@ -140,20 +142,33 @@ type SearchResult struct {
 
 func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 	var results []SearchResult
-	searchTerm := "%" + query + "%"
+	words := strings.Fields(query)
+	if len(words) == 0 {
+		return results, nil
+	}
 
 	// 1. Search Users
 	var users []models.User
-	s.DB.Where("(display_name LIKE ? OR rsi_handle LIKE ?) AND is_active = ? AND is_rsi_verified = ? AND is_approved = ?", searchTerm, searchTerm, true, true, true).Limit(5).Find(&users)
+	dbUsers := s.DB.Where("is_active = ? AND is_rsi_verified = ? AND is_approved = ?", true, true, true)
+	for _, word := range words {
+		searchTerm := "%" + word + "%"
+		dbUsers = dbUsers.Where("(display_name LIKE ? OR rsi_handle LIKE ?)", searchTerm, searchTerm)
+	}
+	dbUsers.Limit(5).Find(&users)
 	for _, u := range users {
 		results = append(results, SearchResult{
 			Type: "Citizen", ID: u.ID, Title: u.DisplayName, Sub: u.RSIHandle, Link: "/members",
 		})
 	}
 
-	// 2. Search Ships
+	// 2. Search Ships (User vessels)
 	var ships []models.Ship
-	s.DB.Where("name LIKE ? OR ship_type LIKE ?", searchTerm, searchTerm).Limit(5).Find(&ships)
+	dbShips := s.DB
+	for _, word := range words {
+		searchTerm := "%" + word + "%"
+		dbShips = dbShips.Where("(name LIKE ? OR ship_type LIKE ?)", searchTerm, searchTerm)
+	}
+	dbShips.Limit(5).Find(&ships)
 	for _, ship := range ships {
 		results = append(results, SearchResult{
 			Type: "Vessel", ID: ship.ID, Title: ship.Name, Sub: ship.ShipType, Link: "/fleet",
@@ -162,7 +177,12 @@ func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 
 	// 3. Search Operations
 	var ops []models.Operation
-	s.DB.Where("title LIKE ?", searchTerm).Limit(5).Find(&ops)
+	dbOps := s.DB
+	for _, word := range words {
+		searchTerm := "%" + word + "%"
+		dbOps = dbOps.Where("title LIKE ?", searchTerm)
+	}
+	dbOps.Limit(5).Find(&ops)
 	for _, op := range ops {
 		results = append(results, SearchResult{
 			Type: "Operation", ID: op.ID, Title: op.Title, Sub: op.Status, Link: "/operations",
@@ -171,7 +191,12 @@ func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 
 	// 4. Search Ship Models
 	var shipModels []models.ShipModel
-	s.DB.Where("name LIKE ? OR manufacturer LIKE ?", searchTerm, searchTerm).Limit(5).Find(&shipModels)
+	dbShipModels := s.DB
+	for _, word := range words {
+		searchTerm := "%" + word + "%"
+		dbShipModels = dbShipModels.Where("(name LIKE ? OR manufacturer LIKE ?)", searchTerm, searchTerm)
+	}
+	dbShipModels.Limit(5).Find(&shipModels)
 	for _, sm := range shipModels {
 		results = append(results, SearchResult{
 			Type: "Ship Model", ID: sm.ID, Title: sm.Name, Sub: sm.Manufacturer, Link: "/fleet", Tab: "database",
@@ -180,7 +205,12 @@ func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 
 	// 5. Search Game Items
 	var items []models.GameItem
-	s.DB.Where("name LIKE ? OR manufacturer LIKE ?", searchTerm, searchTerm).Limit(5).Find(&items)
+	dbItems := s.DB
+	for _, word := range words {
+		searchTerm := "%" + word + "%"
+		dbItems = dbItems.Where("(name LIKE ? OR manufacturer LIKE ?)", searchTerm, searchTerm)
+	}
+	dbItems.Limit(5).Find(&items)
 	for _, item := range items {
 		results = append(results, SearchResult{
 			Type: "Item", ID: item.ID, Title: item.Name, Sub: item.Category + " (" + item.Manufacturer + ")", Link: "/inventory", Tab: "database",

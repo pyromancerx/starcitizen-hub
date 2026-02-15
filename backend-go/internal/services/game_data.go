@@ -469,7 +469,16 @@ func (s *GameDataService) GetShipModel(id uint) (*models.ShipModel, error) {
 
 func (s *GameDataService) SearchShipModels(query string, manufacturer string, shipClass string) ([]models.ShipModel, error) {
 	var ships []models.ShipModel
-	db := s.DB.Where("name LIKE ?", "%"+query+"%").Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
+	db := s.DB.Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
+
+	if query != "" {
+		words := strings.Fields(query)
+		for _, word := range words {
+			searchTerm := "%" + word + "%"
+			db = db.Where("(name LIKE ? OR manufacturer LIKE ? OR class_name LIKE ?)", searchTerm, searchTerm, searchTerm)
+		}
+	}
+
 	if manufacturer != "" {
 		db = db.Where("manufacturer LIKE ?", "%"+manufacturer+"%")
 	}
@@ -482,7 +491,16 @@ func (s *GameDataService) SearchShipModels(query string, manufacturer string, sh
 
 func (s *GameDataService) SearchItems(query string, category string, subCategory string, size int) ([]models.GameItem, error) {
 	var items []models.GameItem
-	db := s.DB.Where("name LIKE ?", "%"+query+"%").Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
+	db := s.DB.Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
+
+	if query != "" {
+		words := strings.Fields(query)
+		for _, word := range words {
+			searchTerm := "%" + word + "%"
+			db = db.Where("(name LIKE ? OR manufacturer LIKE ? OR sub_category LIKE ?)", searchTerm, searchTerm, searchTerm)
+		}
+	}
+
 	if category != "" {
 		if strings.Contains(category, ",") {
 			cats := strings.Split(category, ",")
