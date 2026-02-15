@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -170,13 +171,17 @@ func (s *GameDataService) SyncShips() error {
 
 		uuid := getFirstString(shipData, "UUID", "uuid", "reference")
 		name := getFirstString(shipData, "Name", "name")
-		className := getFirstString(shipData, "ClassName", "className", "Reference")
+		// The ships.json from StarCitizenWiki uses 'ClassName'
+		className := getFirstString(shipData, "ClassName", "className", "Reference", "class_name")
 		if name == "" || uuid == "" {
 			continue
 		}
 
-		// Clean up className if it's a full path
-		if strings.Contains(className, ".") {
+		// Clean up className if it's a full path (e.g., Data/Libs/Foundry/Records/Entities/Ships/...)
+		if strings.Contains(className, "/") || strings.Contains(className, "\\") {
+			className = filepath.Base(strings.ReplaceAll(className, "\\", "/"))
+			className = strings.TrimSuffix(className, filepath.Ext(className))
+		} else if strings.Contains(className, ".") {
 			parts := strings.Split(className, ".")
 			className = parts[len(parts)-1]
 		}
@@ -195,7 +200,7 @@ func (s *GameDataService) SyncShips() error {
 		var detailedStats string
 
 		if className != "" {
-			// Try StarCitizenWiki first, then scunpacked/scunpacked-data
+			// Try both potential technical repositories
 			sources := []string{
 				"https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/master/ships/%s.json",
 				"https://raw.githubusercontent.com/scunpacked/scunpacked-data/master/v2/ships/%s.json",
@@ -236,7 +241,6 @@ func (s *GameDataService) SyncShips() error {
 		}
 
 		if hardpoints == "" {
-			// Fallback to basic data
 			hpBytes, _ := json.Marshal(shipData["hardpoints"])
 			hardpoints = string(hpBytes)
 		}
@@ -264,8 +268,8 @@ func (s *GameDataService) SyncShips() error {
 		}).Create(&ship)
 
 		count++
-		if count%10 == 0 || className == "" {
-			log.Printf("Synchronized %d/%d vessels (Current: %s, Class: %s)...", count, len(rawShips), name, className)
+		if count%20 == 0 {
+			log.Printf("Synchronized %d vessels (Current: %s)...", count, name)
 		}
 	}
 

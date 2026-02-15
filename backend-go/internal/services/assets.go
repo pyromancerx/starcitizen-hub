@@ -25,12 +25,26 @@ func (s *AssetService) ListShips(userID uint) ([]models.Ship, error) {
 		return nil, err
 	}
 
-	// Populate default loadouts if empty
+	// Dynamic linking to master database
 	for i := range ships {
 		if ships[i].Loadout == "" || ships[i].Loadout == "{}" || ships[i].Loadout == "null" {
 			var model models.ShipModel
-			// Match by ShipType which stores the Model Name
-			if err := s.DB.Where("name = ?", ships[i].ShipType).First(&model).Error; err == nil {
+			targetType := ships[i].ShipType
+			
+			// 1. Exact Match
+			err := s.DB.Where("name = ?", targetType).First(&model).Error
+			
+			// 2. Try adding manufacturer prefix if missing (common in user lists)
+			if err != nil {
+				err = s.DB.Where("name LIKE ?", "%"+targetType).First(&model).Error
+			}
+			
+			// 3. Try partial name match (e.g., "Cutlass Black" -> "Drake Cutlass Black")
+			if err != nil {
+				err = s.DB.Where("? LIKE '%' || name || '%'", targetType).First(&model).Error
+			}
+
+			if err == nil {
 				ships[i].Loadout = model.DefaultLoadout
 			}
 		}
