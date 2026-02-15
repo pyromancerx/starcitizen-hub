@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
 )
 
@@ -46,5 +48,36 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// Inject user_id into context
 		ctx := context.WithValue(r.Context(), "user_id", uint(claims["user_id"].(float64)))
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func AdminMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		userID, ok := r.Context().Value("user_id").(uint)
+		if !ok {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		var user models.User
+		if err := database.DB.Preload("Roles").First(&user, userID).Error; err != nil {
+			http.Error(w, "Unauthorized: User not found", http.StatusUnauthorized)
+			return
+		}
+
+		isAdmin := false
+		for _, role := range user.Roles {
+			if role.Tier == models.RoleTierAdmin || role.Tier == models.RoleTierOfficer {
+				isAdmin = true
+				break
+			}
+		}
+
+		if !isAdmin {
+			http.Error(w, "Forbidden: Command clearance required", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }

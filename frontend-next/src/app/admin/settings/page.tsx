@@ -101,6 +101,8 @@ export default function AdminSettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      // Also refresh the global theme store to apply changes immediately
+      useThemeStore.getState().fetchTheme();
     },
   });
 

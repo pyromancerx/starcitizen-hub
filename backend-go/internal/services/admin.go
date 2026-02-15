@@ -5,6 +5,7 @@ import (
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type AdminService struct {
@@ -155,15 +156,10 @@ func (s *AdminService) GetSettings() ([]models.SystemSetting, error) {
 }
 
 func (s *AdminService) UpdateSetting(key string, value string) error {
-	var setting models.SystemSetting
-	err := s.DB.Where("key = ?", key).First(&setting).Error
-	if err != nil {
-		// Create if not exists
-		setting = models.SystemSetting{Key: key, Value: value}
-		return s.DB.Create(&setting).Error
-	}
-	// Update if exists
-	return s.DB.Model(&setting).Update("value", value).Error
+	return s.DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.AssignmentColumns([]string{"value"}),
+	}).Create(&models.SystemSetting{Key: key, Value: value}).Error
 }
 
 // Stats (extended)

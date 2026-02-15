@@ -37,10 +37,20 @@ func NewAdminHandler() *AdminHandler {
 }
 
 func (h *AdminHandler) SyncRSIMembers(w http.ResponseWriter, r *http.Request) {
+	// 1. Check if RSI Org SID is configured before starting
+	var orgSID models.SystemSetting
+	if err := h.adminService.DB.Where("key = ?", "rsi_org_sid").First(&orgSID).Error; err != nil || orgSID.Value == "" {
+		http.Error(w, "RSI Organization SID not configured. Please set it in System Settings.", http.StatusBadRequest)
+		return
+	}
+
 	// Trigger sync in background
 	go func() {
+		log.Printf("Background RSI sync initiated for Org: %s", orgSID.Value)
 		if err := h.rsiSyncService.SyncOrganizationMembers(); err != nil {
 			log.Printf("Background RSI sync failed: %v", err)
+		} else {
+			log.Printf("Background RSI sync completed successfully")
 		}
 	}()
 
@@ -51,8 +61,11 @@ func (h *AdminHandler) SyncRSIMembers(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) SyncGameData(w http.ResponseWriter, r *http.Request) {
 	// Trigger sync in background
 	go func() {
+		log.Println("Background game data sync initiated")
 		if err := h.gameDataService.SyncFromCommunityData(); err != nil {
 			log.Printf("Background game data sync failed: %v", err)
+		} else {
+			log.Println("Background game data sync completed successfully")
 		}
 	}()
 
@@ -335,7 +348,10 @@ func (h *AdminHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("Admin %d updating setting: %s = %s", adminID, req.Key, req.Value)
+
 	if err := h.adminService.UpdateSetting(req.Key, req.Value); err != nil {
+		log.Printf("Failed to update setting %s: %v", req.Key, err)
 		http.Error(w, "Failed to update setting", http.StatusInternalServerError)
 		return
 	}
@@ -374,7 +390,7 @@ func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		log.Println("Starting system update...")
 		// Use sudo -n to run without interaction if sudoers is configured
-		cmd := exec.Command("sudo", "-n", "/bin/bash", "../scripts/update.sh")
+		cmd := exec.Command("sudo", "-n", "/bin/bash", "../scripts/update.sh", "--yes")
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Printf("Update failed: %v\nOutput: %s", err, string(output))

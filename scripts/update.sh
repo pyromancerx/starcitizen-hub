@@ -15,14 +15,32 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Default APP_DIR
 APP_DIR="/opt/starcitizen-hub"
+
+# Auto-detect if not in /opt
+if [[ ! -d "$APP_DIR" ]]; then
+    # Assume we are in the project root or scripts directory
+    if [[ -d "./.git" ]]; then
+        APP_DIR=$(pwd)
+    elif [[ -d "../.git" ]]; then
+        APP_DIR=$(cd .. && pwd)
+    fi
+fi
 
 # Check if installation exists
 if [[ ! -d "$APP_DIR/.git" ]]; then
     log_error "Installation not found or not a git repository."
-    log_error "Please run install.sh first."
     exit 1
 fi
+
+# Parse flags
+SKIP_CONFIRM=false
+for arg in "$@"; do
+    if [[ "$arg" == "--yes" || "$arg" == "-y" ]]; then
+        SKIP_CONFIRM=true
+    fi
+done
 
 echo ""
 echo -e "${CYAN}============================================${NC}"
@@ -57,18 +75,22 @@ fi
 log_info "Updates available:"
 git log --oneline HEAD..origin/main
 
-echo ""
-read -p "Apply these updates? (Y/n): " CONFIRM
-CONFIRM="${CONFIRM:-Y}"
+if [ "$SKIP_CONFIRM" = false ]; then
+    echo ""
+    read -p "Apply these updates? (Y/n): " CONFIRM
+    CONFIRM="${CONFIRM:-Y}"
 
-if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-    log_info "Update cancelled"
-    exit 0
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        log_info "Update cancelled"
+        exit 0
+    fi
 fi
 
-# Stop the service
+# Stop the service (only if it exists and is managed by systemd)
 log_info "Stopping service..."
-sudo systemctl stop starcitizen-hub
+if systemctl list-unit-files | grep -q starcitizen-hub.service; then
+    sudo systemctl stop starcitizen-hub || true
+fi
 
 # Pull updates
 log_info "Pulling updates from GitHub..."

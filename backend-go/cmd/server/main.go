@@ -379,42 +379,34 @@ func main() {
 			r.Get("/game-data/items", gameDataHandler.SearchItems)
 
 						// Admin & Integrations
-
-						r.Get("/admin/users", adminHandler.ListUsers)
-						r.Patch("/admin/users/me/notifications", adminHandler.UpdateMyNotificationSettings)
-						r.Post("/admin/users", adminHandler.CreateUser)
-
-						r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
-
-						r.Post("/admin/users/{id}/roles", adminHandler.AssignUserRole)
-
-						r.Delete("/admin/users/{id}/roles/{roleId}", adminHandler.RemoveUserRole)
-
-			
-
-						r.Get("/admin/roles", adminHandler.ListRoles)
-
-						r.Post("/admin/roles", adminHandler.CreateRole)
-
-						r.Patch("/admin/roles/{id}", adminHandler.UpdateRole)
-
-			
-
-						r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
-			r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
-			r.Get("/admin/audit-logs", adminHandler.ListAuditLogs)
-			r.Post("/admin/upload-logo", adminHandler.UploadLogo)
-			r.Patch("/admin/settings", adminHandler.UpdateSetting)
-			r.Get("/admin/system/version", adminHandler.GetSystemVersion)
-			r.Post("/admin/system/update", adminHandler.PerformUpdate)
-			r.Get("/admin/system/backup", adminHandler.CreateBackup)
-			r.Post("/admin/system/restore", adminHandler.RestoreBackup)
-			r.Get("/admin/system/logs", adminHandler.GetLogs)
-			r.Post("/admin/system/test-email", adminHandler.TestEmail)
-			r.Post("/admin/system/sync-game-data", adminHandler.SyncGameData)
-			r.Post("/admin/system/sync-rsi", adminHandler.SyncRSIMembers)
-			r.Get("/discord/config", adminHandler.GetDiscordConfig)
-			r.Patch("/discord/config", adminHandler.UpdateDiscordConfig)
+						r.Group(func(r chi.Router) {
+							r.Use(customMiddleware.AdminMiddleware)
+							
+							r.Get("/admin/users", adminHandler.ListUsers)
+							r.Patch("/admin/users/me/notifications", adminHandler.UpdateMyNotificationSettings)
+							r.Post("/admin/users", adminHandler.CreateUser)
+							r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
+							r.Post("/admin/users/{id}/roles", adminHandler.AssignUserRole)
+							r.Delete("/admin/users/{id}/roles/{roleId}", adminHandler.RemoveUserRole)
+							r.Get("/admin/roles", adminHandler.ListRoles)
+							r.Post("/admin/roles", adminHandler.CreateRole)
+							r.Patch("/admin/roles/{id}", adminHandler.UpdateRole)
+							r.Get("/admin/rsi-requests", adminHandler.ListRSIRequests)
+							r.Post("/admin/rsi-requests/{id}/process", adminHandler.ProcessRSIRequest)
+							r.Get("/admin/audit-logs", adminHandler.ListAuditLogs)
+							r.Post("/admin/upload-logo", adminHandler.UploadLogo)
+							r.Patch("/admin/settings", adminHandler.UpdateSetting)
+							r.Get("/admin/system/version", adminHandler.GetSystemVersion)
+							r.Post("/admin/system/update", adminHandler.PerformUpdate)
+							r.Get("/admin/system/backup", adminHandler.CreateBackup)
+							r.Post("/admin/system/restore", adminHandler.RestoreBackup)
+							r.Get("/admin/system/logs", adminHandler.GetLogs)
+							r.Post("/admin/system/test-email", adminHandler.TestEmail)
+							r.Post("/admin/system/sync-game-data", adminHandler.SyncGameData)
+							r.Post("/admin/system/sync-rsi", adminHandler.SyncRSIMembers)
+							r.Get("/discord/config", adminHandler.GetDiscordConfig)
+							r.Patch("/discord/config", adminHandler.UpdateDiscordConfig)
+						})
 
 			// Stats
 			r.Get("/stats/dashboard", adminHandler.GetDashboardStats)
