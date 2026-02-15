@@ -40,11 +40,50 @@ export default function LoadoutBuilderClient() {
     queryFn: async () => {
       if (id === 'new') {
         const res = await api.get(`/game-data/ships/${modelId || 1}`); 
-        return { ship_model: res.data, configuration: "{}" };
+        return { 
+          ship_model: res.data, 
+          configuration: res.data.default_loadout || "{}" 
+        };
       }
       const res = await api.get(`/game-data/loadouts/${id}`);
       return res.data;
     },
+  });
+
+  // Prepopulate configuration when loading
+  useEffect(() => {
+    if (loadout?.configuration && Object.keys(configuration).length === 0) {
+        try {
+            const config = typeof loadout.configuration === 'string' 
+                ? JSON.parse(loadout.configuration) 
+                : loadout.configuration;
+            
+            // If it's a map of hpName -> itemUUID (like our default_loadout), 
+            // we need to fetch or handle item objects.
+            // For now, let's just parse what we have.
+            setConfiguration(config);
+        } catch(e) { console.error("Failed to parse stored config", e); }
+    }
+  }, [loadout, configuration]);
+
+  // Fetch item objects for the configuration if they are just UUIDs
+  const { data: fullConfigItems } = useQuery({
+    queryKey: ['config-items', loadout?.configuration],
+    queryFn: async () => {
+        const config = typeof loadout.configuration === 'string' 
+            ? JSON.parse(loadout.configuration) 
+            : loadout.configuration;
+        
+        const itemMap: Record<string, any> = {};
+        const uuids = Object.values(config).filter(v => typeof v === 'string') as string[];
+        
+        if (uuids.length === 0) return null;
+
+        // Batch fetch would be better, but for now we'll rely on cache or specific searches
+        // Let's at least try to resolve them
+        return config; 
+    },
+    enabled: !!loadout?.configuration
   });
 
   const { data: myShips } = useQuery({
@@ -67,16 +106,6 @@ export default function LoadoutBuilderClient() {
       alert('Blueprint successfully synchronized with vessel systems.');
     },
   });
-
-  // Prepopulate configuration when loading existing
-  useEffect(() => {
-    if (loadout?.configuration) {
-        try {
-            const config = JSON.parse(loadout.configuration);
-            setConfiguration(config);
-        } catch(e) { console.error("Failed to parse stored config", e); }
-    }
-  }, [loadout]);
 
   // 2. Fetch compatible items for selected hardpoint
   const activeHp = selectedHardpoint ? JSON.parse(loadout?.ship_model?.hardpoints || '{}')[selectedHardpoint] : null;
@@ -445,7 +474,7 @@ const HardpointGroup = ({ title, icon, items, selected, onSelect, configuration 
                                 "text-[8px] uppercase font-mono italic truncate max-w-[120px]",
                                 equipped ? "text-sc-blue font-bold" : "text-sc-grey/40"
                             )}>
-                                {equipped ? equipped.name : hp.type || 'Standard Slot'}
+                                {equipped ? (typeof equipped === 'string' ? equipped.replace(/_/g, ' ') : equipped.name) : hp.type || 'Standard Slot'}
                             </span>
                             <span className="text-[8px] text-sc-grey/20 font-black uppercase">Size {hp.size}</span>
                         </div>
