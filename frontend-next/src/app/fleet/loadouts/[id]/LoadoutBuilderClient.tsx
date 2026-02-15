@@ -107,6 +107,59 @@ export default function LoadoutBuilderClient() {
     },
   });
 
+  // 3. Robust Hardpoint Normalization & Grouping (Recursive)
+  const normalizedHardpoints = (() => {
+    const results: any[] = [];
+
+    const recurse = (hps: any, parentName?: string) => {
+        if (Array.isArray(hps)) {
+            hps.forEach((hp, idx) => {
+                const id = hp.HardpointName || hp.name || (parentName ? `${parentName}_${idx}` : `hp_${idx}`);
+                const name = hp.name || hp.HardpointName || hp.category || 'Hardpoint';
+                const type = hp.type || (hp.ItemTypes?.[0]?.Type) || 'Unknown';
+                const size = hp.size || hp.MaxSize || 0;
+
+                results.push({
+                    id,
+                    name: parentName ? `${parentName} > ${name}` : name,
+                    type,
+                    size,
+                    defaultItem: hp.databaseItem
+                });
+
+                if (hp.Loadout) recurse(hp.Loadout, name);
+            });
+        } else if (typeof hps === 'object' && hps !== null) {
+            Object.entries(hps).forEach(([key, val]: [string, any]) => {
+                const name = val.name || val.HardpointName || key;
+                const type = val.type || (val.ItemTypes?.[0]?.Type) || 'Unknown';
+                const size = val.size || val.MaxSize || 0;
+
+                results.push({
+                    id: key,
+                    name: parentName ? `${parentName} > ${name}` : name,
+                    type,
+                    size,
+                    defaultItem: val.databaseItem
+                });
+
+                if (val.Loadout) recurse(val.Loadout, name);
+            });
+        }
+    };
+
+    try {
+      const parsed = typeof loadout?.ship_model?.hardpoints === 'string' 
+        ? JSON.parse(loadout.ship_model.hardpoints) 
+        : loadout?.ship_model?.hardpoints;
+      
+      recurse(parsed);
+      return results;
+    } catch (e) {
+      return [];
+    }
+  })();
+  
   // 2. Fetch compatible items for selected hardpoint
   const activeHp = normalizedHardpoints.find(hp => hp.id === selectedHardpoint);
 
@@ -164,59 +217,6 @@ export default function LoadoutBuilderClient() {
 
   if (isLoading) return <div className="p-20 text-center uppercase font-black text-sc-blue animate-pulse tracking-[0.5em]">Synchronizing Blueprint...</div>;
 
-  // 3. Robust Hardpoint Normalization & Grouping (Recursive)
-  const normalizedHardpoints = (() => {
-    const results: any[] = [];
-
-    const recurse = (hps: any, parentName?: string) => {
-        if (Array.isArray(hps)) {
-            hps.forEach((hp, idx) => {
-                const id = hp.HardpointName || hp.name || (parentName ? `${parentName}_${idx}` : `hp_${idx}`);
-                const name = hp.name || hp.HardpointName || hp.category || 'Hardpoint';
-                const type = hp.type || (hp.ItemTypes?.[0]?.Type) || 'Unknown';
-                const size = hp.size || hp.MaxSize || 0;
-
-                results.push({
-                    id,
-                    name: parentName ? `${parentName} > ${name}` : name,
-                    type,
-                    size,
-                    defaultItem: hp.databaseItem
-                });
-
-                if (hp.Loadout) recurse(hp.Loadout, name);
-            });
-        } else if (typeof hps === 'object' && hps !== null) {
-            Object.entries(hps).forEach(([key, val]: [string, any]) => {
-                const name = val.name || val.HardpointName || key;
-                const type = val.type || (val.ItemTypes?.[0]?.Type) || 'Unknown';
-                const size = val.size || val.MaxSize || 0;
-
-                results.push({
-                    id: key,
-                    name: parentName ? `${parentName} > ${name}` : name,
-                    type,
-                    size,
-                    defaultItem: val.databaseItem
-                });
-
-                if (val.Loadout) recurse(val.Loadout, name);
-            });
-        }
-    };
-
-    try {
-      const parsed = typeof loadout?.ship_model?.hardpoints === 'string' 
-        ? JSON.parse(loadout.ship_model.hardpoints) 
-        : loadout?.ship_model?.hardpoints;
-      
-      recurse(parsed);
-      return results;
-    } catch (e) {
-      return [];
-    }
-  })();
-  
   const groupedHardpoints = {
     weapons: [] as any[],
     systems: [] as any[],
