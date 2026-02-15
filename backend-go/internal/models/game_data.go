@@ -29,6 +29,7 @@ type GameItem struct {
 type ShipModel struct {
 	ID               uint           `gorm:"primaryKey" json:"id"`
 	UUID             string         `gorm:"size:100;uniqueIndex" json:"uuid"`
+	ClassName        string         `gorm:"size:200" json:"class_name"`
 	Name             string         `gorm:"size:255;uniqueIndex" json:"name"`
 	Manufacturer     string         `gorm:"size:100;index" json:"manufacturer"`
 	Description      string         `gorm:"type:text" json:"description"`
@@ -37,6 +38,7 @@ type ShipModel struct {
 	CargoCapacity    float64        `json:"cargo_capacity"`
 	Hardpoints       string         `gorm:"type:json" json:"hardpoints"` // Mapping of slots to sizes/types
 	BaseStats        string         `gorm:"type:json" json:"base_stats"` // Hull HP, SCM speed, etc.
+	DefaultLoadout   string         `gorm:"type:json" json:"default_loadout"` // Map of slot -> item_uuid
 	LastSyncedAt     time.Time      `json:"last_synced_at"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`

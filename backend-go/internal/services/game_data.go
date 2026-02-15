@@ -148,7 +148,7 @@ func (s *GameDataService) SyncItems() error {
 }
 
 func (s *GameDataService) SyncShips() error {
-	log.Println("Fetching Ship Manufacturing Data...")
+	log.Println("Fetching Ship Manufacturing Index...")
 	resp, err := http.Get(ShipsDataURL)
 	if err != nil {
 		return err
@@ -160,14 +160,20 @@ func (s *GameDataService) SyncShips() error {
 		return err
 	}
 
+	client := &http.Client{Timeout: 10 * time.Second}
 	count := 0
 	for _, data := range rawShips {
 		shipData, ok := data.(map[string]interface{})
-		if !ok { continue }
-		
+		if !ok {
+			continue
+		}
+
 		uuid := getFirstString(shipData, "UUID", "uuid", "reference")
 		name := getFirstString(shipData, "Name", "name")
-		if name == "" || uuid == "" { continue }
+		className := getFirstString(shipData, "ClassName", "className")
+		if name == "" || uuid == "" {
+			continue
+		}
 
 		manufacturer := getNestedString(shipData, "Manufacturer", "Name")
 		if manufacturer == "" {
@@ -177,30 +183,80 @@ func (s *GameDataService) SyncShips() error {
 		shipClass := getFirstString(shipData, "Role", "Career", "type", "ShipClass")
 		description := getFirstString(shipData, "Description", "description")
 
-		// Map hardpoints
-		hardpointsBytes, _ := json.Marshal(shipData["hardpoints"])
-		baseStatsBytes, _ := json.Marshal(shipData)
+		// Fetch Detailed Layout Data
+		var hardpoints string
+		var defaultLoadout string
+		var detailedStats string
+
+		if className != "" {
+			detailURL := fmt.Sprintf("https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/master/ships/%s.json", strings.ToLower(className))
+			dResp, err := client.Get(detailURL)
+			if err == nil && dResp.StatusCode == 200 {
+				var detail map[string]interface{}
+				if err := json.NewDecoder(dResp.Body).Decode(&detail); err == nil {
+					// Map detailed hardpoints
+					hpData, _ := json.Marshal(detail["hardpoints"])
+					hardpoints = string(hpData)
+
+					// Generate Default Loadout Map
+					defMap := make(map[string]string)
+					if hps, ok := detail["hardpoints"].([]interface{}); ok {
+						for _, hpRaw := range hps {
+							if hp, ok := hpRaw.(map[string]interface{}); ok {
+								hpName := getFirstString(hp, "name", "Name")
+								installed := getFirstString(hp, "installedItem", "InstalledItem")
+								if hpName != "" && installed != "" {
+									defMap[hpName] = installed
+								}
+							}
+						}
+					}
+					defJSON, _ := json.Marshal(defMap)
+					defaultLoadout = string(defJSON)
+
+					// Use detailed stats if available
+					statsData, _ := json.Marshal(detail)
+					detailedStats = string(statsData)
+				}
+				dResp.Body.Close()
+			}
+		}
+
+		if hardpoints == "" {
+			// Fallback to basic data
+			hpBytes, _ := json.Marshal(shipData["hardpoints"])
+			hardpoints = string(hpBytes)
+		}
+		if detailedStats == "" {
+			bsBytes, _ := json.Marshal(shipData)
+			detailedStats = string(bsBytes)
+		}
 
 		ship := models.ShipModel{
-			UUID:         uuid,
-			Name:         name,
-			Manufacturer: manufacturer,
-			ShipClass:    shipClass,
-			Description:  description,
-			Hardpoints:   string(hardpointsBytes),
-			BaseStats:    string(baseStatsBytes),
-			LastSyncedAt: time.Now(),
+			UUID:           uuid,
+			ClassName:      className,
+			Name:           name,
+			Manufacturer:   manufacturer,
+			ShipClass:      shipClass,
+			Description:    description,
+			Hardpoints:     hardpoints,
+			BaseStats:      detailedStats,
+			DefaultLoadout: defaultLoadout,
+			LastSyncedAt:   time.Now(),
 		}
 
 		s.DB.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "uuid"}},
 			UpdateAll: true,
 		}).Create(&ship)
-		
+
 		count++
+		if count%10 == 0 {
+			log.Printf("Synchronized %d/%d vessels...", count, len(rawShips))
+		}
 	}
 
-	log.Printf("Successfully synchronized %d ship models", count)
+	log.Printf("Successfully synchronized %d ship models with detailed layouts", count)
 	return nil
 }
 

@@ -21,8 +21,22 @@ func NewAssetService() *AssetService {
 // Ships
 func (s *AssetService) ListShips(userID uint) ([]models.Ship, error) {
 	var ships []models.Ship
-	err := s.DB.Where("user_id = ?", userID).Find(&ships).Error
-	return ships, err
+	if err := s.DB.Where("user_id = ?", userID).Find(&ships).Error; err != nil {
+		return nil, err
+	}
+
+	// Populate default loadouts if empty
+	for i := range ships {
+		if ships[i].Loadout == "" || ships[i].Loadout == "{}" || ships[i].Loadout == "null" {
+			var model models.ShipModel
+			// Match by ShipType which stores the Model Name
+			if err := s.DB.Where("name = ?", ships[i].ShipType).First(&model).Error; err == nil {
+				ships[i].Loadout = model.DefaultLoadout
+			}
+		}
+	}
+
+	return ships, nil
 }
 
 func (s *AssetService) CreateShip(ship *models.Ship) error {
