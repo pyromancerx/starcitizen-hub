@@ -55,6 +55,15 @@ func (h *GameDataHandler) GetShipModel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ship model not found", http.StatusNotFound)
 		return
 	}
+
+	// Resolve default loadout if it exists
+	if model.DefaultLoadout != "" && model.DefaultLoadout != "{}" {
+		enriched, err := h.gameDataService.ResolveConfiguration(model.DefaultLoadout)
+		if err == nil {
+			model.DefaultLoadout = enriched
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(model)
 }
@@ -114,6 +123,14 @@ func (h *GameDataHandler) GetLoadout(w http.ResponseWriter, r *http.Request) {
 	if err := h.gameDataService.DB.Preload("ShipModel").First(&loadout, uint(id)).Error; err != nil {
 		http.Error(w, "Loadout not found", http.StatusNotFound)
 		return
+	}
+
+	// Resolve configuration to full items
+	if loadout.Configuration != "" && loadout.Configuration != "{}" {
+		enriched, err := h.gameDataService.ResolveConfiguration(loadout.Configuration)
+		if err == nil {
+			loadout.Configuration = enriched
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

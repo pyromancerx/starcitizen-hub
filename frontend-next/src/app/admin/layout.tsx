@@ -11,6 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const tabs = [
     { name: 'Personnel', href: '/admin/personnel' },
     { name: 'Command Roles', href: '/admin/personnel/roles' },
+    { name: 'Data Management', href: '/admin/data' },
     { name: 'System Theme', href: '/admin/theme' },
     { name: 'RSI Verification', href: '/admin/rsi' },
     { name: 'Announcements', href: '/admin/announcements' },

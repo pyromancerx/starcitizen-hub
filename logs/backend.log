@@ -1,0 +1,72 @@
+2026/02/15 00:09:37 Database connection established
+2026/02/15 00:09:37 Database migrations applied successfully
+2026/02/15 00:10:09 Database connection established
+2026/02/15 00:10:09 Database migrations applied successfully
+2026/02/15 00:10:09 Manual RSI sync failed: RSI Org SID not configured
+2026/02/15 00:10:39 Database connection established
+2026/02/15 00:10:39 Database migrations applied successfully
+2026/02/15 00:10:39 Setting rsi_org_sid updated to test
+2026/02/15 00:10:39 Database connection established
+2026/02/15 00:10:39 Database migrations applied successfully
+2026/02/15 00:10:39 Initiating RSI Roster Sync for Org: test
+2026/02/15 00:10:39 Manual RSI sync failed: RSI API reported failure at page 1 (Success=0)
+2026/02/15 00:10:43 Database connection established
+2026/02/15 00:10:43 Database migrations applied successfully
+2026/02/15 00:10:43 Setting rsi_org_sid updated to NOVACORP
+2026/02/15 00:10:43 Database connection established
+2026/02/15 00:10:43 Database migrations applied successfully
+2026/02/15 00:10:43 Initiating RSI Roster Sync for Org: NOVACORP
+2026/02/15 00:10:43 Manual RSI sync failed: RSI API reported failure at page 1 (Success=0)
+2026/02/15 00:10:59 Database connection established
+2026/02/15 00:10:59 Database migrations applied successfully
+2026/02/15 00:10:59 Initiating RSI Roster Sync for Org: NOVACORP
+2026/02/15 00:11:00 Manual RSI sync failed: RSI API reported failure at page 1 (Success=0)
+2026/02/15 00:11:19 Database connection established
+2026/02/15 00:11:19 Database migrations applied successfully
+2026/02/15 00:11:19 Initiating RSI Roster Sync for Org: NOVACORP
+2026/02/15 00:11:19 Manual RSI sync failed: RSI API reported failure at page 1 (Success=0)
+2026/02/15 00:12:02 Database connection established
+2026/02/15 00:12:02 Database migrations applied successfully
+2026/02/15 00:12:02 Setting rsi_org_sid updated to NOVA
+2026/02/15 00:12:04 Database connection established
+2026/02/15 00:12:04 Database migrations applied successfully
+2026/02/15 00:12:04 Initiating RSI Roster Sync for Org: NOVA
+2026/02/15 00:12:04 Synchronized page 1 (1 members found)
+2026/02/15 00:12:04 Successfully synchronized 1 total RSI members for NOVA (0 de-verified)
+2026/02/15 00:12:04 Manual RSI sync completed successfully
+2026/02/15 00:17:40 Database connection established
+2026/02/15 00:17:40 Database migrations applied successfully
+2026/02/15 00:17:40 Setting rsi_org_sid updated to NOVA
+2026/02/15 00:17:40 Database connection established
+2026/02/15 00:17:40 Database migrations applied successfully
+2026/02/15 00:17:40 Initiating RSI Roster Sync for Org: NOVA
+2026/02/15 00:17:40 Synchronized page 1 (1/1 members found so far)
+2026/02/15 00:17:40 Successfully synchronized 1 total RSI members for NOVA (0 de-verified)
+2026/02/15 00:17:40 Manual RSI sync completed successfully
+2026/02/15 00:19:00 Database connection established
+2026/02/15 00:19:00 Database migrations applied successfully
+2026/02/15 00:19:16 Database connection established
+2026/02/15 00:19:16 Database migrations applied successfully
+2026/02/15 00:19:16 Setting rsi_org_sid updated to CASH
+2026/02/15 00:19:16 Database connection established
+2026/02/15 00:19:16 Database migrations applied successfully
+2026/02/15 00:19:16 Initiating RSI Roster Sync for Org: CASH
+2026/02/15 00:19:16 Synchronized page 1 (28/169 members found so far)
+2026/02/15 00:19:16 Synchronized page 2 (58/169 members found so far)
+2026/02/15 00:19:16 Synchronized page 3 (90/169 members found so far)
+2026/02/15 00:19:16 Synchronized page 4 (120/169 members found so far)
+2026/02/15 00:19:17 Synchronized page 5 (151/169 members found so far)
+2026/02/15 00:19:17 Synchronized page 6 (159/169 members found so far)
+2026/02/15 00:19:17 Successfully synchronized 159 total RSI members for CASH (1 de-verified)
+2026/02/15 00:19:17 Manual RSI sync completed successfully
+2026/02/15 00:19:34 Database connection established
+2026/02/15 00:19:34 Database migrations applied successfully
+2026/02/15 00:19:34 Setting rsi_org_sid updated to 
+2026/02/15 00:24:36 Database connection established
+2026/02/15 00:24:36 Database migrations applied successfully
+2026/02/15 00:24:36 Initiating High-Fidelity Game Data Sync...
+2026/02/15 00:24:36 Fetching Global Item Registry...
+2026/02/15 00:25:55 Successfully synchronized 19000 game items
+2026/02/15 00:25:55 Fetching Ship Manufacturing Data...
+2026/02/15 00:26:04 Successfully synchronized 288 ship models
+2026/02/15 00:26:04 Manual game data sync completed successfully

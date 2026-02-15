@@ -108,7 +108,7 @@ export default function LoadoutBuilderClient() {
   });
 
   // 2. Fetch compatible items for selected hardpoint
-  const activeHp = selectedHardpoint ? JSON.parse(loadout?.ship_model?.hardpoints || '{}')[selectedHardpoint] : null;
+  const activeHp = normalizedHardpoints.find(hp => hp.id === selectedHardpoint);
 
   const { data: items } = useQuery({
     queryKey: ['game-items', selectedHardpoint, searchTerm, activeHp?.size],
@@ -180,7 +180,8 @@ export default function LoadoutBuilderClient() {
                     id,
                     name: parentName ? `${parentName} > ${name}` : name,
                     type,
-                    size
+                    size,
+                    defaultItem: hp.databaseItem
                 });
 
                 if (hp.Loadout) recurse(hp.Loadout, name);
@@ -195,7 +196,8 @@ export default function LoadoutBuilderClient() {
                     id: key,
                     name: parentName ? `${parentName} > ${name}` : name,
                     type,
-                    size
+                    size,
+                    defaultItem: val.databaseItem
                 });
 
                 if (val.Loadout) recurse(val.Loadout, name);
@@ -501,6 +503,8 @@ const HardpointGroup = ({ title, icon, items, selected, onSelect, configuration 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {items.map((hp) => {
                 const equipped = configuration[hp.id];
+                const displayItem = equipped || hp.defaultItem;
+                
                 return (
                     <button 
                         key={hp.id}
@@ -523,9 +527,9 @@ const HardpointGroup = ({ title, icon, items, selected, onSelect, configuration 
                         <div className="mt-1 flex items-center justify-between">
                             <span className={cn(
                                 "text-[8px] uppercase font-mono italic truncate max-w-[120px]",
-                                equipped ? "text-sc-blue font-bold" : "text-sc-grey/40"
+                                equipped ? "text-sc-blue font-bold" : (hp.defaultItem ? "text-sc-blue/60" : "text-sc-grey/40")
                             )}>
-                                {equipped ? (typeof equipped === 'string' ? equipped.replace(/_/g, ' ') : equipped.name) : hp.type || 'Standard Slot'}
+                                {displayItem ? (typeof displayItem === 'string' ? displayItem.replace(/_/g, ' ') : displayItem.name) : hp.type || 'Standard Slot'}
                             </span>
                             <span className="text-[8px] text-sc-grey/20 font-black uppercase">Size {hp.size}</span>
                         </div>
