@@ -24,6 +24,7 @@ export default function AdminPersonnelPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'rsi'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -122,11 +123,24 @@ export default function AdminPersonnelPage() {
   });
 
   const pendingCount = users?.filter((u: any) => !u.is_approved).length || 0;
-  const filteredUsers = filter === 'all' ? users : filter === 'pending' ? users?.filter((u: any) => !u.is_approved) : [];
+  
+  const filteredUsers = React.useMemo(() => {
+    let list = filter === 'all' ? (users || []) : filter === 'pending' ? users?.filter((u: any) => !u.is_approved) || [] : [];
+    
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        list = list.filter((u: any) => 
+            u.display_name?.toLowerCase().includes(query) || 
+            u.rsi_handle?.toLowerCase().includes(query) ||
+            u.email?.toLowerCase().includes(query)
+        );
+    }
+    return list;
+  }, [users, filter, searchQuery]);
 
   return (
     <section className="space-y-6">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 max-w-3xl">
           <button 
             onClick={() => setFilter('all')}
@@ -164,13 +178,24 @@ export default function AdminPersonnelPage() {
             <RefreshCw className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-white opacity-5" />
           </button>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="px-6 py-3 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)] flex items-center"
-        >
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add Citizen
-        </button>
+        <div className="flex items-center space-x-3">
+            <div className="relative">
+                <Settings className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sc-grey/40" />
+                <input 
+                    placeholder="Search personnel..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-sc-dark/50 border border-sc-grey/10 rounded pl-9 pr-4 py-2 text-[10px] text-white focus:outline-none focus:border-sc-blue/50 uppercase tracking-widest font-bold w-64"
+                />
+            </div>
+            <button 
+                onClick={() => setShowAddModal(true)}
+                className="px-6 py-2.5 bg-sc-blue text-sc-dark text-xs font-black uppercase tracking-widest hover:bg-white transition-all shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)] flex items-center whitespace-nowrap"
+            >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Add Citizen
+            </button>
+        </div>
       </div>
 
       {showAddModal && (
