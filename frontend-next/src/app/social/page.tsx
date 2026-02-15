@@ -110,25 +110,25 @@ export default function SocialHubPage() {
               roomPresence={roomPresence}
             />
             
-            <div className="mt-8 border-t border-white/5 pt-6 px-4">
-                <h3 className="text-[10px] font-black text-sc-grey/40 uppercase tracking-[0.3em] mb-4">Direct Links</h3>
-                <div className="space-y-2">
+            <div className="mt-8 border-t border-white/5 pt-6 px-4 flex flex-col min-h-0 overflow-hidden">
+                <h3 className="text-[10px] font-black text-sc-grey/40 uppercase tracking-[0.3em] mb-4 flex-shrink-0">Direct Links</h3>
+                <div className="space-y-2 overflow-y-auto custom-scrollbar pr-2">
                     {membersLoading ? (
                         <div className="text-[10px] uppercase font-bold text-center italic py-4 text-sc-grey/20">Scanning frequencies...</div>
                     ) : members?.filter((m: any) => m.id !== user?.id).length > 0 ? (
-                        members.filter((m: any) => m.id !== user?.id).slice(0, 10).map((member: any) => (
+                        members.filter((m: any) => m.id !== user?.id).map((member: any) => (
                             <button 
                                 key={member.id}
                                 onClick={() => initiateCall(member.id, member.display_name)}
                                 className="w-full flex items-center justify-between p-2 rounded hover:bg-sc-blue/5 border border-transparent hover:border-sc-blue/20 transition-all group"
                             >
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-6 h-6 rounded bg-sc-dark border border-white/5 flex items-center justify-center text-[10px] font-bold text-sc-grey/40 group-hover:text-sc-blue transition-colors">
+                                <div className="flex items-center space-x-3 min-w-0">
+                                    <div className="w-6 h-6 rounded bg-sc-dark border border-white/5 flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-sc-grey/40 group-hover:text-sc-blue transition-colors">
                                         {member.display_name[0]}
                                     </div>
                                     <span className="text-[10px] font-bold text-sc-grey/60 group-hover:text-white uppercase truncate">{member.display_name}</span>
                                 </div>
-                                <Phone className="w-3 h-3 text-sc-blue/40 opacity-0 group-hover:opacity-100 transition-all" />
+                                <Phone className="w-3 h-3 text-sc-blue/40 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0" />
                             </button>
                         ))
                     ) : (
