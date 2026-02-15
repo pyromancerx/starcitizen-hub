@@ -18,6 +18,11 @@ type Operation struct {
 	Requirements      string         `gorm:"type:text" json:"requirements"`
 	RequiredRoles     string         `gorm:"type:json" json:"required_roles"`
 	RequiredShipTypes string         `gorm:"type:json" json:"required_ship_types"`
+	ObjectiveList     string         `gorm:"type:json" json:"objective_list"` // JSON array of {title, completed}
+	CommsFrequency    string         `gorm:"size:100" json:"comms_frequency"`
+	IntelURL          string         `gorm:"size:255" json:"intel_url"`
+	SecurityLevel     string         `gorm:"size:50;default:'public'" json:"security_level"` // public, internal, restricted, classified
+	Hazards           string         `gorm:"type:text" json:"hazards"`
 	IsPublic          bool           `gorm:"default:true" json:"is_public"`
 	CreatedByID       uint           `json:"created_by_id"`
 	EventID           *uint          `gorm:"index" json:"event_id"`

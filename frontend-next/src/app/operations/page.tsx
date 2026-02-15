@@ -29,6 +29,9 @@ export default function OperationsPage() {
     max_participants: 10,
     required_roles: '',
     required_ship_types: '',
+    security_level: 'public',
+    comms_frequency: '',
+    intel_url: '',
   });
 
   const { data: operations, isLoading } = useQuery({
@@ -202,6 +205,37 @@ export default function OperationsPage() {
                                 <option value="Training">Training</option>
                                 <option value="Social">Social</option>
                             </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Security Classification</label>
+                            <select 
+                                value={newOp.security_level}
+                                onChange={(e) => setNewOp({...newOp, security_level: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none font-bold uppercase"
+                            >
+                                <option value="public">Public (Open to All)</option>
+                                <option value="internal">Internal (Org Only)</option>
+                                <option value="restricted">Restricted (Staff Only)</option>
+                                <option value="classified">Classified (Need to Know)</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Primary Comms Frequency</label>
+                            <input 
+                                value={newOp.comms_frequency}
+                                onChange={(e) => setNewOp({...newOp, comms_frequency: e.target.value})}
+                                placeholder="e.g. 124.5 MHz or Discord Link"
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Tactical Intel URL</label>
+                            <input 
+                                value={newOp.intel_url}
+                                onChange={(e) => setNewOp({...newOp, intel_url: e.target.value})}
+                                placeholder="Link to briefing docs/maps..."
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Briefing Description</label>

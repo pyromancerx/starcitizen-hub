@@ -345,6 +345,17 @@ function MissionContent() {
           <div className="bg-sc-panel border border-sc-blue/20 rounded-lg p-6 space-y-6 shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
             <div className="space-y-4">
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                <span className="text-sc-grey/40">Security Level</span>
+                <span className={cn(
+                    "px-2 py-0.5 rounded border",
+                    operation?.security_level === 'public' ? "text-green-500 border-green-500/20" :
+                    operation?.security_level === 'internal' ? "text-sc-blue border-sc-blue/20" :
+                    "text-red-500 border-red-500/20 animate-pulse"
+                )}>
+                    {operation?.security_level || 'Public'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                 <span className="text-sc-grey/40">Operation Status</span>
                 <span className="text-sc-blue">{operation?.status || 'Planning'}</span>
               </div>
@@ -352,6 +363,26 @@ function MissionContent() {
                 <span className="text-sc-grey/40">Deployment Time</span>
                 <span className="text-white font-mono">{operation?.scheduled_at ? new Date(operation.scheduled_at).toLocaleString() : 'TBD'}</span>
               </div>
+              {operation?.comms_frequency && (
+                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                    <span className="text-sc-grey/40">Primary Frequency</span>
+                    <span className="text-sc-blue font-mono">{operation.comms_frequency}</span>
+                </div>
+              )}
+              {operation?.intel_url && (
+                <a 
+                    href={operation.intel_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest group hover:text-sc-blue transition-colors"
+                >
+                    <span className="text-sc-grey/40 group-hover:text-sc-blue/60">Tactical Intel</span>
+                    <div className="flex items-center space-x-1">
+                        <span className="text-white group-hover:text-sc-blue border-b border-white/20 group-hover:border-sc-blue/40">Secure Link</span>
+                        <ChevronRight className="w-3 h-3" />
+                    </div>
+                </a>
+              )}
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
                 <span className="text-sc-grey/40">Max Capacity</span>
                 <span className="text-white">{operation?.max_participants || 'Unrestricted'}</span>

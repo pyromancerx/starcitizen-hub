@@ -129,6 +129,11 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 		ScheduledAt       string `json:"scheduled_at"`
 		RequiredRoles     string `json:"required_roles"`
 		RequiredShipTypes string `json:"required_ship_types"`
+		ObjectiveList     string `json:"objective_list"`
+		CommsFrequency    string `json:"comms_frequency"`
+		IntelURL          string `json:"intel_url"`
+		SecurityLevel     string `json:"security_level"`
+		Hazards           string `json:"hazards"`
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -155,6 +160,11 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 		Status:            "planning",
 		RequiredRoles:     req.RequiredRoles,
 		RequiredShipTypes: req.RequiredShipTypes,
+		ObjectiveList:     req.ObjectiveList,
+		CommsFrequency:    req.CommsFrequency,
+		IntelURL:          req.IntelURL,
+		SecurityLevel:     req.SecurityLevel,
+		Hazards:           req.Hazards,
 	}
 
 	if err := h.logisticsService.CreateOperation(&op); err != nil {
