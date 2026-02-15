@@ -220,6 +220,17 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
+func (h *AdminHandler) ListRSIMembers(w http.ResponseWriter, r *http.Request) {
+	var members []models.KnownRSIMember
+	if err := h.adminService.DB.Order("rsi_handle asc").Find(&members).Error; err != nil {
+		http.Error(w, "Failed to list RSI members", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(members)
+}
+
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Email       string `json:"email"`
@@ -248,17 +259,26 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)
 
-	var req struct {
-		IsActive   bool `json:"is_active"`
-		IsApproved bool `json:"is_approved"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.adminService.UpdateUserStatus(uint(id), req.IsActive, req.IsApproved); err != nil {
+	if err := h.adminService.DB.Model(&models.User{}).Where("id = ?", uint(id)).Updates(updates).Error; err != nil {
 		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	if err := h.adminService.DB.Delete(&models.User{}, uint(id)).Error; err != nil {
+		http.Error(w, "Failed to delete user", http.StatusInternalServerError)
 		return
 	}
 

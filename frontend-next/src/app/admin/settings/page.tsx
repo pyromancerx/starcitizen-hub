@@ -108,6 +108,62 @@ export default function AdminSettingsPage() {
 
   return (
     <section className="max-w-4xl space-y-6">
+      {/* Access Control & Enrollment */}
+      <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
+        <div className="flex items-center space-x-3 mb-6 border-b border-sc-grey/10 pb-4">
+          <ShieldCheck className="w-5 h-5 text-sc-blue" />
+          <h3 className="text-sm font-black text-white uppercase tracking-widest">Access Control & Enrollment</h3>
+        </div>
+
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 group">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Public Registration</label>
+                    <p className="text-[10px] text-sc-grey/40 italic">Allow new users to create accounts via the login page.</p>
+                </div>
+                <div className="md:col-span-2 flex items-center space-x-4">
+                    <button 
+                        onClick={() => {
+                            const current = settings?.find((s: any) => s.key === 'allow_public_signup')?.value === 'true';
+                            updateSettingMutation.mutate({ key: 'allow_public_signup', value: (!current).toString() });
+                        }}
+                        className={cn(
+                            "px-6 py-2 rounded text-[10px] font-black uppercase tracking-widest border transition-all",
+                            settings?.find((s: any) => s.key === 'allow_public_signup')?.value === 'true'
+                                ? "bg-green-500/10 border-green-500 text-green-500"
+                                : "bg-red-500/10 border-red-500 text-red-500"
+                        )}
+                    >
+                        {settings?.find((s: any) => s.key === 'allow_public_signup')?.value === 'true' ? 'Enabled' : 'Disabled'}
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 group">
+                <div className="space-y-1">
+                    <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Administrative Approval</label>
+                    <p className="text-[10px] text-sc-grey/40 italic">Require manual authorization for all new registrations.</p>
+                </div>
+                <div className="md:col-span-2 flex items-center space-x-4">
+                    <button 
+                        onClick={() => {
+                            const current = settings?.find((s: any) => s.key === 'require_admin_approval')?.value === 'true';
+                            updateSettingMutation.mutate({ key: 'require_admin_approval', value: (!current).toString() });
+                        }}
+                        className={cn(
+                            "px-6 py-2 rounded text-[10px] font-black uppercase tracking-widest border transition-all",
+                            settings?.find((s: any) => s.key === 'require_admin_approval')?.value === 'true'
+                                ? "bg-sc-blue/10 border-sc-blue text-sc-blue"
+                                : "bg-white/5 border-white/10 text-sc-grey/40"
+                        )}
+                    >
+                        {settings?.find((s: any) => s.key === 'require_admin_approval')?.value === 'true' ? 'Mandatory' : 'Bypassed'}
+                    </button>
+                </div>
+            </div>
+        </div>
+      </div>
+
       <div className="bg-sc-panel border border-sc-blue/20 p-6 rounded relative overflow-hidden shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.05)]">
         <div className="flex items-center space-x-3 mb-6 border-b border-sc-grey/10 pb-4">
           <Settings className="w-5 h-5 text-sc-blue" />

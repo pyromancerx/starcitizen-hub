@@ -50,6 +50,18 @@ func (s *AuthService) Login(input LoginInput) (string, *models.User, error) {
 }
 
 func (s *AuthService) Register(input RegisterInput) (*models.User, error) {
+	// 1. Check if public signup is allowed
+	var allowSignup models.SystemSetting
+	s.DB.Where("key = ?", "allow_public_signup").First(&allowSignup)
+	if allowSignup.Value == "false" {
+		return nil, errors.New("public registration is currently disabled by command")
+	}
+
+	// 2. Check if admin approval is required
+	var requireApproval models.SystemSetting
+	s.DB.Where("key = ?", "require_admin_approval").First(&requireApproval)
+	isApproved := requireApproval.Value == "false"
+
 	hashedPassword, err := utils.HashPassword(input.Password)
 	if err != nil {
 		return nil, err
@@ -61,7 +73,15 @@ func (s *AuthService) Register(input RegisterInput) (*models.User, error) {
 		DisplayName:  input.DisplayName,
 		RSIHandle:    input.RSIHandle,
 		IsActive:     true,
-		IsApproved:   false,
+		IsApproved:   isApproved,
+	}
+
+	// 3. Check for RSI auto-verification
+	var knownMember models.KnownRSIMember
+	if err := s.DB.Where("rsi_handle = ?", input.RSIHandle).First(&knownMember).Error; err == nil {
+		user.IsRSIVerified = true
+		// If they are a known RSI member of the org, maybe auto-approve them too?
+		user.IsApproved = true
 	}
 
 	if err := s.DB.Create(&user).Error; err != nil {

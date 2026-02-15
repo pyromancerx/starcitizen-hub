@@ -102,20 +102,21 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 			if handle == "" { continue }
 			foundHandles[handle] = true
 
-			user := models.User{
-				RSIHandle:     handle,
-				DisplayName:   handle,
-				Email:         fmt.Sprintf("%s@sync-pending.hub", handle),
-				IsActive:      true,
-				IsRSIVerified: true,
+			member := models.KnownRSIMember{
+				RSIHandle:    handle,
+				LastSyncedAt: time.Now(),
 			}
 
 			err := s.db.Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "rsi_handle"}},
-				DoUpdates: clause.AssignmentColumns([]string{"is_rsi_verified"}),
-			}).Create(&user).Error
+				DoUpdates: clause.AssignmentColumns([]string{"last_synced_at"}),
+			}).Create(&member).Error
 
-			if err == nil { pageCount++ }
+			if err == nil { 
+				pageCount++ 
+				// Auto-verify existing users with this handle
+				s.db.Model(&models.User{}).Where("rsi_handle = ?", handle).Update("is_rsi_verified", true)
+			}
 		}
 
 		totalCount += pageCount
@@ -124,20 +125,19 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 		page++
 	}
 
-	// De-verify members no longer in the RSI roster
-	var handlesInDB []string
-	s.db.Model(&models.User{}).Where("is_rsi_verified = ?", true).Pluck("rsi_handle", &handlesInDB)
-	
-	deverifiedCount := 0
-	for _, dbHandle := range handlesInDB {
-		if !foundHandles[dbHandle] {
-			s.db.Model(&models.User{}).Where("rsi_handle = ?", dbHandle).Update("is_rsi_verified", false)
-			deverifiedCount++
-		}
-	}
+	// Remove members no longer in the RSI roster (optional, or just update verification)
+	s.db.Model(&models.User{}).Where("rsi_handle NOT IN (?) AND is_rsi_verified = ?", getKeys(foundHandles), true).Update("is_rsi_verified", false)
 
-	log.Printf("Successfully synchronized %d total RSI members for %s (%d de-verified)", totalCount, orgSID.Value, deverifiedCount)
+	log.Printf("Successfully synchronized %d total RSI members for %s", totalCount, orgSID.Value)
 	return nil
+}
+
+func getKeys(m map[string]bool) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func (s *RSISyncService) VerifyMember(handle string) (bool, error) {

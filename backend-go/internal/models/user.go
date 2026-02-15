@@ -64,13 +64,55 @@ type User struct {
 
 	
 
-	Roles []Role `gorm:"many2many:user_roles;constraint:OnDelete:CASCADE;" json:"roles"`
+		Roles []Role `gorm:"many2many:user_roles;constraint:OnDelete:CASCADE;" json:"roles"`
 
-}
+	
 
+	}
 
+	
 
-type Role struct {
+	
+
+	
+
+	type KnownRSIMember struct {
+
+	
+
+		ID           uint           `gorm:"primaryKey" json:"id"`
+
+	
+
+		RSIHandle    string         `gorm:"uniqueIndex;size:100" json:"rsi_handle"`
+
+	
+
+		LastSyncedAt time.Time      `json:"last_synced_at"`
+
+	
+
+		CreatedAt    time.Time      `json:"created_at"`
+
+	
+
+		UpdatedAt    time.Time      `json:"updated_at"`
+
+	
+
+		DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+
+	
+
+	}
+
+	
+
+	
+
+	
+
+	type Role struct {
 
 
 

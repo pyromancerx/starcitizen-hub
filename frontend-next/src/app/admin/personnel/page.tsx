@@ -12,14 +12,18 @@ import {
   Clock,
   UserPlus,
   X,
-  Plus
+  Plus,
+  RefreshCw,
+  Trash2,
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AdminPersonnelPage() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'pending'>('all');
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [filter, setFilter] = useState<'all' | 'pending' | 'rsi'>('all');
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -88,13 +92,42 @@ export default function AdminPersonnelPage() {
     },
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return api.delete(`/admin/users/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      alert('Personnel record purged from system.');
+    },
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: any) => {
+      return api.patch(`/admin/users/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setEditingUser(null);
+    },
+  });
+
+  const { data: rsiMembers } = useQuery({
+    queryKey: ['rsi-members'],
+    queryFn: async () => {
+      const res = await api.get('/admin/rsi-members');
+      return res.data;
+    },
+    enabled: filter === 'rsi',
+  });
+
   const pendingCount = users?.filter((u: any) => !u.is_approved).length || 0;
-  const filteredUsers = filter === 'all' ? users : users?.filter((u: any) => !u.is_approved);
+  const filteredUsers = filter === 'all' ? users : filter === 'pending' ? users?.filter((u: any) => !u.is_approved) : [];
 
   return (
     <section className="space-y-6">
       <div className="flex justify-between items-end">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1 max-w-3xl">
           <button 
             onClick={() => setFilter('all')}
             className={cn(
@@ -117,6 +150,18 @@ export default function AdminPersonnelPage() {
             <div className="text-[10px] text-yellow-500/50 uppercase font-black tracking-widest mb-1">Pending Authorization</div>
             <div className="text-3xl font-bold text-yellow-500 font-mono">{pendingCount}</div>
             <ShieldAlert className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-yellow-500 opacity-10" />
+          </button>
+
+          <button 
+            onClick={() => setFilter('rsi')}
+            className={cn(
+                "bg-sc-panel border p-6 rounded relative overflow-hidden text-left transition-all",
+                filter === 'rsi' ? "border-sc-blue/50 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]" : "border-sc-grey/10"
+            )}
+          >
+            <div className="text-[10px] text-sc-grey/40 uppercase font-black tracking-widest mb-1">RSI Sync Registry</div>
+            <div className="text-3xl font-bold text-white font-mono">{rsiMembers?.length || 0}</div>
+            <RefreshCw className="absolute bottom-[-10px] right-[-10px] w-16 h-16 text-white opacity-5" />
           </button>
         </div>
         <button 
@@ -217,7 +262,13 @@ export default function AdminPersonnelPage() {
       )}
 
       <div className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden shadow-2xl">
-        <table className="w-full text-left border-collapse">
+        {filter === 'rsi' ? (
+            <RSIMemberTable members={rsiMembers} onAdd={(m: any) => {
+                setNewUser({ ...newUser, rsi_handle: m.rsi_handle, display_name: m.rsi_handle });
+                setShowAddModal(true);
+            }} />
+        ) : (
+            <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-black/40 border-b border-sc-grey/10">
               <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Citizen</th>
@@ -238,7 +289,7 @@ export default function AdminPersonnelPage() {
                 <td className="p-4">
                   <div className="flex items-center space-x-3">
                     <div className="h-10 w-10 rounded bg-sc-dark border border-sc-grey/10 flex items-center justify-center text-sc-blue">
-                      {user.avatar_url ? <img src={user.avatar_url} className="rounded" /> : <Users className="w-5 h-5" />}
+                      {user.avatar_url ? <img src={user.avatar_url} className="rounded" alt="Avatar" /> : <Users className="w-5 h-5" />}
                     </div>
                     <div>
                       <div className="text-sm font-bold text-white uppercase tracking-tight">{user.display_name}</div>
@@ -265,7 +316,7 @@ export default function AdminPersonnelPage() {
                   </div>
                 </td>
                 <td className="p-4">
-                  <div className="flex flex-wrap gap-1 items-center">
+                  <div className="flex flex-wrap gap-1 items-center justify-center">
                     {user.roles?.map((role: any) => (
                       <span key={role.id} className="group/role px-1.5 py-0.5 bg-sc-dark border border-sc-blue/20 rounded text-[8px] uppercase text-sc-blue flex items-center">
                         {role.name}
@@ -297,6 +348,13 @@ export default function AdminPersonnelPage() {
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end space-x-2">
+                    <button 
+                        onClick={() => setEditingUser(user)}
+                        className="p-2 hover:bg-white/5 text-sc-grey hover:text-white rounded transition-all"
+                        title="Edit User"
+                    >
+                        <Settings className="w-4 h-4" />
+                    </button>
                     {!user.is_approved && (
                       <button 
                         onClick={() => updateStatusMutation.mutate({ id: user.id, is_active: true, is_approved: true })}
@@ -318,13 +376,113 @@ export default function AdminPersonnelPage() {
                     >
                       {user.is_active ? <UserX className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
                     </button>
+                    <button 
+                      onClick={() => {
+                        if(confirm('Are you sure you want to permanently delete this user?')) {
+                            deleteUserMutation.mutate(user.id);
+                        }
+                      }}
+                      className="p-2 hover:bg-red-500/10 text-sc-grey hover:text-red-500 rounded transition-all"
+                      title="Delete User"
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        )}
       </div>
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <EditUserModal 
+            user={editingUser} 
+            onClose={() => setEditingUser(null)} 
+            onSave={(data: any) => updateUserMutation.mutate({ id: editingUser.id, data })}
+            isPending={updateUserMutation.isPending}
+        />
+      )}
     </section>
   );
 }
+
+const RSIMemberTable = ({ members, onAdd }: { members: any[], onAdd: (m: any) => void }) => (
+    <table className="w-full text-left border-collapse">
+        <thead>
+            <tr className="bg-black/40 border-b border-sc-grey/10">
+                <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">RSI Handle</th>
+                <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Last Synced</th>
+                <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest text-right">Action</th>
+            </tr>
+        </thead>
+        <tbody className="divide-y divide-sc-grey/5">
+            {members?.map((member: any) => (
+                <tr key={member.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="p-4">
+                        <div className="text-sm font-bold text-white uppercase tracking-tight font-mono">{member.rsi_handle}</div>
+                    </td>
+                    <td className="p-4">
+                        <div className="text-[10px] text-sc-grey/40 uppercase font-bold">{new Date(member.last_synced_at).toLocaleString()}</div>
+                    </td>
+                    <td className="p-4 text-right">
+                        <button 
+                            onClick={() => onAdd(member)}
+                            className="px-3 py-1 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[8px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all"
+                        >
+                            Setup Account
+                        </button>
+                    </td>
+                </tr>
+            ))}
+        </tbody>
+    </table>
+);
+
+const EditUserModal = ({ user, onClose, onSave, isPending }: any) => {
+    const [form, setForm] = useState({
+        display_name: user.display_name,
+        rsi_handle: user.rsi_handle,
+        email: user.email,
+        is_active: user.is_active,
+        is_approved: user.is_approved
+    });
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="relative bg-sc-panel border border-sc-blue/30 rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-6 border-b border-sc-grey/10 flex justify-between items-center bg-black/20">
+                    <h3 className="text-sm font-black text-sc-blue uppercase tracking-[0.2em]">Edit Personnel Record</h3>
+                    <button onClick={onClose} className="text-sc-grey hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Callsign</label>
+                        <input value={form.display_name} onChange={e => setForm({...form, display_name: e.target.value})} className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">RSI Handle</label>
+                        <input value={form.rsi_handle} onChange={e => setForm({...form, rsi_handle: e.target.value})} className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Email</label>
+                        <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white" />
+                    </div>
+                    <div className="flex justify-end space-x-3 pt-4">
+                        <button onClick={onClose} className="px-4 py-2 text-xs font-black text-sc-grey/40 uppercase">Cancel</button>
+                        <button 
+                            onClick={() => onSave(form)} 
+                            disabled={isPending}
+                            className="px-6 py-2 bg-sc-blue text-sc-dark text-xs font-black rounded uppercase hover:bg-white transition-all disabled:opacity-50"
+                        >
+                            {isPending ? 'Updating...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};

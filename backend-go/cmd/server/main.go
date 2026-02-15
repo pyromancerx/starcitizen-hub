@@ -76,6 +76,8 @@ func main() {
 		{Key: "smtp_pass", Value: "", Description: "SMTP Password / App Password"},
 		{Key: "smtp_from", Value: "noreply@hub.org", Description: "Email 'From' Address"},
 		{Key: "rsi_org_sid", Value: "", Description: "RSI Organization SID (e.g., NOVACORP)"},
+		{Key: "allow_public_signup", Value: "true", Description: "Allow new users to register via the public signup page"},
+		{Key: "require_admin_approval", Value: "true", Description: "Require an administrator to approve new accounts before they can login"},
 	}
 
 	for _, s := range defaultSettings {
@@ -383,9 +385,11 @@ func main() {
 							r.Use(customMiddleware.AdminMiddleware)
 							
 							r.Get("/admin/users", adminHandler.ListUsers)
+							r.Get("/admin/rsi-members", adminHandler.ListRSIMembers)
 							r.Patch("/admin/users/me/notifications", adminHandler.UpdateMyNotificationSettings)
 							r.Post("/admin/users", adminHandler.CreateUser)
 							r.Patch("/admin/users/{id}", adminHandler.UpdateUser)
+							r.Delete("/admin/users/{id}", adminHandler.DeleteUser)
 							r.Post("/admin/users/{id}/roles", adminHandler.AssignUserRole)
 							r.Delete("/admin/users/{id}/roles/{roleId}", adminHandler.RemoveUserRole)
 							r.Get("/admin/roles", adminHandler.ListRoles)
