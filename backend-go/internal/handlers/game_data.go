@@ -62,10 +62,11 @@ func (h *GameDataHandler) GetShipModel(w http.ResponseWriter, r *http.Request) {
 func (h *GameDataHandler) SearchItems(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	category := r.URL.Query().Get("category")
+	subCategory := r.URL.Query().Get("sub_category")
 	sizeStr := r.URL.Query().Get("size")
 	size, _ := strconv.Atoi(sizeStr)
 
-	items, err := h.gameDataService.SearchItems(query, category, size)
+	items, err := h.gameDataService.SearchItems(query, category, subCategory, size)
 	if err != nil {
 		http.Error(w, "Failed to search items", http.StatusInternalServerError)
 		return

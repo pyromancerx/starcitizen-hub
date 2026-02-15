@@ -17,7 +17,8 @@ import {
   Info,
   ShoppingCart,
   Box,
-  X
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Suspense } from 'react';
@@ -28,6 +29,7 @@ function InventoryContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dbSearchQuery, setDbSearchQuery] = useState('');
   const [dbCategory, setDbCategory] = useState('');
+  const [dbSubCategory, setDbSubCategory] = useState('');
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => {
@@ -49,11 +51,12 @@ function InventoryContent() {
 
   // Global Database Query
   const { data: dbItems, isLoading: isDbLoading } = useQuery({
-    queryKey: ['game-items', dbSearchQuery, dbCategory],
+    queryKey: ['game-items', dbSearchQuery, dbCategory, dbSubCategory],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (dbSearchQuery) params.append('q', dbSearchQuery);
       if (dbCategory) params.append('category', dbCategory);
+      if (dbSubCategory) params.append('sub_category', dbSubCategory);
       const res = await api.get(`/game-data/items?${params.toString()}`);
       return res.data;
     },
@@ -66,16 +69,40 @@ function InventoryContent() {
     item.location?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const categories = [
-    { id: '', label: 'All Items' },
-    { id: 'Weapon', label: 'Weapons' },
-    { id: 'Shield', label: 'Shields' },
-    { id: 'PowerPlant', label: 'Power Plants' },
-    { id: 'Cooler', label: 'Coolers' },
-    { id: 'QuantumDrive', label: 'Quantum Drives' },
-    { id: 'Armor', label: 'Armor' },
-    { id: 'Undersuit', label: 'Undersuits' },
+  const categoryGroups = [
+    {
+      name: 'Ship Components',
+      items: [
+        { id: 'Weapon', label: 'Ship Weapons', sub: 'Laser Repeater,Laser Cannon,Ballistic Repeater,Ballistic Cannon,Distortion Repeater,Distortion Cannon' },
+        { id: 'Shield', label: 'Shield Generators' },
+        { id: 'PowerPlant', label: 'Power Plants' },
+        { id: 'Cooler', label: 'Coolers' },
+        { id: 'QuantumDrive', label: 'Quantum Drives' },
+        { id: 'Missile', label: 'Missiles' },
+        { id: 'Paint', label: 'Liveries & Paints' },
+      ]
+    },
+    {
+      name: 'Player Gear',
+      items: [
+        { id: 'Armor', label: 'Armor Sets', sub: 'Helmet,Core,Arms,Legs' },
+        { id: 'Undersuit', label: 'Undersuits' },
+        { id: 'WeaponPersonal', label: 'Personal Weapons', apiCategory: 'Weapon', sub: 'Pistol,Rifle,Sniper,Shotgun,SMG' },
+        { id: 'Gadget', label: 'Tools & Gadgets' },
+        { id: 'Medical', label: 'Medical Supplies', sub: 'MedPen,Multi-Tool,Drug' },
+        { id: 'Clothing', label: 'Civilian Clothing' },
+      ]
+    }
   ];
+
+  const handleCategorySelect = (catId: string, apiCat?: string) => {
+    setDbSubCategory(''); // Reset sub on main category change
+    if (catId === dbCategory && !apiCat) {
+      setDbCategory('');
+    } else {
+      setDbCategory(apiCat || catId);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -208,26 +235,68 @@ function InventoryContent() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Categories Sidebar */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1 space-y-6">
             <div className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden">
               <div className="bg-black/40 p-3 border-b border-sc-grey/10 flex items-center space-x-2">
                 <Layers className="w-3 h-3 text-sc-blue" />
-                <span className="text-[10px] font-black text-white uppercase tracking-widest">Classifications</span>
+                <span className="text-[10px] font-black text-white uppercase tracking-widest">Asset Classification</span>
               </div>
-              <div className="p-2 space-y-1">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setDbCategory(cat.id)}
-                    className={cn(
-                      "w-full text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold transition-all border-l-2",
-                      dbCategory === cat.id 
-                        ? "bg-sc-blue/10 border-sc-blue text-sc-blue" 
-                        : "border-transparent text-sc-grey/40 hover:text-sc-grey hover:bg-white/5"
-                    )}
-                  >
-                    {cat.label}
-                  </button>
+              
+              <div className="p-2 space-y-4">
+                <button
+                  onClick={() => { setDbCategory(''); setDbSubCategory(''); }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold transition-all border-l-2",
+                    dbCategory === '' 
+                      ? "bg-sc-blue/10 border-sc-blue text-sc-blue" 
+                      : "border-transparent text-sc-grey/40 hover:text-sc-grey hover:bg-white/5"
+                  )}
+                >
+                  All Hub Records
+                </button>
+
+                {categoryGroups.map((group) => (
+                  <div key={group.name} className="space-y-1">
+                    <div className="px-3 pt-2 pb-1 text-[8px] font-black text-sc-grey/30 uppercase tracking-[0.2em]">
+                      {group.name}
+                    </div>
+                    {group.items.map((cat) => (
+                      <div key={cat.id} className="space-y-0.5">
+                        <button
+                          onClick={() => handleCategorySelect(cat.id, cat.apiCategory)}
+                          className={cn(
+                            "w-full text-left px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold transition-all border-l-2 flex justify-between items-center",
+                            dbCategory === (cat.apiCategory || cat.id)
+                              ? "bg-sc-blue/5 border-sc-blue text-sc-blue" 
+                              : "border-transparent text-sc-grey/40 hover:text-sc-grey hover:bg-white/5"
+                          )}
+                        >
+                          <span>{cat.label}</span>
+                          {dbCategory === (cat.apiCategory || cat.id) && <ChevronRight className="w-2.5 h-2.5" />}
+                        </button>
+
+                        {/* Sub-categories if main category is selected */}
+                        {dbCategory === (cat.apiCategory || cat.id) && cat.sub && (
+                          <div className="pl-4 pr-1 py-1 grid grid-cols-1 gap-1">
+                            {cat.sub.split(',').map((sub) => (
+                              <button
+                                key={sub}
+                                onClick={() => setDbSubCategory(dbSubCategory === sub ? '' : sub)}
+                                className={cn(
+                                  "text-left px-2 py-1 text-[9px] uppercase tracking-tighter font-bold transition-all rounded",
+                                  dbSubCategory === sub 
+                                    ? "bg-sc-blue text-sc-dark" 
+                                    : "text-sc-grey/30 hover:text-sc-blue hover:bg-sc-blue/5"
+                                )}
+                              >
+                                {sub}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>
@@ -275,7 +344,9 @@ function InventoryContent() {
                         <div className="flex items-center space-x-2">
                           <span className="text-[8px] text-sc-grey/40 uppercase font-mono">{item.manufacturer}</span>
                           <span className="text-[8px] text-sc-grey/20">•</span>
-                          <span className="text-[8px] text-sc-blue uppercase font-bold tracking-tighter">{item.category}</span>
+                          <span className="text-[8px] text-sc-blue uppercase font-bold tracking-tighter">
+                            {item.category} {item.sub_category ? `(${item.sub_category})` : ''}
+                          </span>
                         </div>
                       </div>
                       <span className="bg-black/40 border border-sc-grey/10 px-2 py-0.5 rounded text-[10px] font-mono text-sc-light-blue">
