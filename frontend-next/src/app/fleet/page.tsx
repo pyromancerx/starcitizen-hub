@@ -175,7 +175,8 @@ const ShipSystemsModal = ({ ship, onClose, onUpdate }: { ship: any, onClose: () 
 const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => void }) => {
   const stats = (() => {
     try {
-      return typeof model.base_stats === 'string' ? JSON.parse(model.base_stats) : (model.base_stats || {});
+      const parsed = typeof model.base_stats === 'string' ? JSON.parse(model.base_stats) : model.base_stats;
+      return parsed || {};
     } catch (e) {
       return {};
     }
@@ -183,7 +184,8 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
 
   const hardpoints = (() => {
     try {
-      return typeof model.hardpoints === 'string' ? JSON.parse(model.hardpoints) : (model.hardpoints || []);
+      const parsed = typeof model.hardpoints === 'string' ? JSON.parse(model.hardpoints) : model.hardpoints;
+      return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
       return [];
     }
