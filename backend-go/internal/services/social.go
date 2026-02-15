@@ -135,6 +135,7 @@ type SearchResult struct {
 	Title string      `json:"title"`
 	Sub   string      `json:"sub"`
 	Link  string      `json:"link"`
+	Tab   string      `json:"tab,omitempty"`
 }
 
 func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
@@ -165,6 +166,24 @@ func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 	for _, op := range ops {
 		results = append(results, SearchResult{
 			Type: "Operation", ID: op.ID, Title: op.Title, Sub: op.Status, Link: "/operations",
+		})
+	}
+
+	// 4. Search Ship Models
+	var shipModels []models.ShipModel
+	s.DB.Where("name LIKE ? OR manufacturer LIKE ?", searchTerm, searchTerm).Limit(5).Find(&shipModels)
+	for _, sm := range shipModels {
+		results = append(results, SearchResult{
+			Type: "Ship Model", ID: sm.ID, Title: sm.Name, Sub: sm.Manufacturer, Link: "/fleet",
+		})
+	}
+
+	// 5. Search Game Items
+	var items []models.GameItem
+	s.DB.Where("name LIKE ? OR manufacturer LIKE ?", searchTerm, searchTerm).Limit(5).Find(&items)
+	for _, item := range items {
+		results = append(results, SearchResult{
+			Type: "Item", ID: item.ID, Title: item.Name, Sub: item.Category + " (" + item.Manufacturer + ")", Link: "/inventory", Tab: "database",
 		})
 	}
 

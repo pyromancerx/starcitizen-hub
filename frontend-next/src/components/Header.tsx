@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User as UserIcon, ChevronDown, LogOut, Book, User as UserCircle, Rocket, Shield, MessageSquare } from 'lucide-react';
+import { Search, Bell, User as UserIcon, ChevronDown, LogOut, Book, User as UserCircle, Rocket, Shield, MessageSquare, Database, Box } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -100,7 +100,7 @@ const Header = () => {
                     {Array.isArray(searchResults) && searchResults.map((res: any, idx: number) => (
                         <Link 
                             key={idx} 
-                            href={res.link} 
+                            href={res.tab ? `${res.link}?tab=${res.tab}` : res.link} 
                             onClick={() => setShowSearch(false)}
                             className="flex items-center space-x-4 px-4 py-2 hover:bg-sc-blue/5 group transition-all"
                         >
@@ -108,6 +108,8 @@ const Header = () => {
                                 {res.type === 'Citizen' && <UserCircle className="w-4 h-4" />}
                                 {res.type === 'Vessel' && <Rocket className="w-4 h-4" />}
                                 {res.type === 'Operation' && <Shield className="w-4 h-4" />}
+                                {res.type === 'Ship Model' && <Database className="w-4 h-4" />}
+                                {res.type === 'Item' && <Box className="w-4 h-4" />}
                             </div>
                             <div>
                                 <div className="text-[10px] font-black text-white uppercase tracking-widest group-hover:text-sc-blue transition-colors">{res.title}</div>
