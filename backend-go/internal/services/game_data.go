@@ -367,7 +367,7 @@ func (s *GameDataService) GetShipModel(id uint) (*models.ShipModel, error) {
 
 func (s *GameDataService) SearchShipModels(query string, manufacturer string, shipClass string) ([]models.ShipModel, error) {
 	var ships []models.ShipModel
-	db := s.DB.Where("name LIKE ?", "%"+query+"%")
+	db := s.DB.Where("name LIKE ?", "%"+query+"%").Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
 	if manufacturer != "" {
 		db = db.Where("manufacturer LIKE ?", "%"+manufacturer+"%")
 	}
@@ -380,7 +380,7 @@ func (s *GameDataService) SearchShipModels(query string, manufacturer string, sh
 
 func (s *GameDataService) SearchItems(query string, category string, size int) ([]models.GameItem, error) {
 	var items []models.GameItem
-	db := s.DB.Where("name LIKE ?", "%"+query+"%")
+	db := s.DB.Where("name LIKE ?", "%"+query+"%").Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
 	if category != "" {
 		db = db.Where("category LIKE ?", "%"+category+"%")
 	}

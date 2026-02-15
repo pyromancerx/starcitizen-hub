@@ -16,7 +16,8 @@ import {
   Layers,
   Info,
   ShoppingCart,
-  Box
+  Box,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Suspense } from 'react';
@@ -27,6 +28,7 @@ function InventoryContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dbSearchQuery, setDbSearchQuery] = useState('');
   const [dbCategory, setDbCategory] = useState('');
+  const [selectedItem, setSelectedItem] = useState<any>(null);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -285,18 +287,37 @@ function InventoryContent() {
                       {item.description || "No official technical documentation available for this asset."}
                     </p>
 
-                    <div className="flex justify-between items-center mt-auto pt-4 border-t border-sc-grey/5">
-                      <div className="flex items-center space-x-1">
-                        <ShoppingCart className="w-3 h-3 text-sc-grey/40" />
-                        <span className="text-[10px] font-mono text-sc-grey/60">
-                          {item.base_price > 0 ? `${item.base_price.toLocaleString()} UEC` : 'Unavailable'}
-                        </span>
-                      </div>
-                      <button className="text-[9px] font-black uppercase tracking-widest text-sc-blue hover:text-white transition-colors flex items-center space-x-1">
-                        <span>Details</span>
-                        <Info className="w-2.5 h-2.5" />
-                      </button>
-                    </div>
+                                          <div className="flex justify-between items-center mt-auto pt-4 border-t border-sc-grey/5">
+
+                                            <div className="flex items-center space-x-1">
+
+                                              <ShoppingCart className="w-3 h-3 text-sc-grey/40" />
+
+                                              <span className="text-[10px] font-mono text-sc-grey/60">
+
+                                                {item.base_price > 0 ? `${item.base_price.toLocaleString()} UEC` : 'Unavailable'}
+
+                                              </span>
+
+                                            </div>
+
+                                            <button 
+
+                                              onClick={() => setSelectedItem(item)}
+
+                                              className="text-[9px] font-black uppercase tracking-widest text-sc-blue hover:text-white transition-colors flex items-center space-x-1"
+
+                                            >
+
+                                              <span>Details</span>
+
+                                              <Info className="w-2.5 h-2.5" />
+
+                                            </button>
+
+                                          </div>
+
+                    
                   </div>
                 ))
               ) : (
@@ -309,6 +330,87 @@ function InventoryContent() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Item Detail Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-2xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Box className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Asset Technical Specifications</h3>
+                    </div>
+                    <button onClick={() => setSelectedItem(null)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                            <div className="text-[10px] font-black text-sc-blue uppercase tracking-[0.2em]">{selectedItem.manufacturer}</div>
+                            <h2 className="text-2xl font-bold text-white italic tracking-tight uppercase">{selectedItem.name}</h2>
+                        </div>
+                        <div className="bg-sc-blue/10 border border-sc-blue/20 px-4 py-2 rounded text-center">
+                            <div className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Classification</div>
+                            <div className="text-xs font-bold text-white uppercase">{selectedItem.category}</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="bg-black/20 border border-white/5 p-3 rounded text-center">
+                            <div className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Size</div>
+                            <div className="text-sm font-mono text-white">SZ {selectedItem.size}</div>
+                        </div>
+                        <div className="bg-black/20 border border-white/5 p-3 rounded text-center">
+                            <div className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Grade</div>
+                            <div className="text-sm font-mono text-white">{selectedItem.grade || 'C'}</div>
+                        </div>
+                        <div className="bg-black/20 border border-white/5 p-3 rounded text-center">
+                            <div className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Base Price</div>
+                            <div className="text-sm font-mono text-sc-light-blue">{selectedItem.base_price > 0 ? `${selectedItem.base_price.toLocaleString()} UEC` : 'N/A'}</div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className="text-[10px] font-black text-sc-grey/40 uppercase tracking-widest border-b border-white/5 pb-1">Technical Overview</div>
+                        <p className="text-xs text-sc-grey/80 leading-relaxed italic">
+                            {selectedItem.description || "No official UEE technical documentation available for this asset. Field reports suggest standard performance within its classification."}
+                        </p>
+                    </div>
+
+                    {selectedItem.locations && (
+                        <div className="space-y-2">
+                            <div className="text-[10px] font-black text-sc-grey/40 uppercase tracking-widest border-b border-white/5 pb-1">Known Procurement Locations</div>
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                {(() => {
+                                    try {
+                                        const locs = JSON.parse(selectedItem.locations);
+                                        return Array.isArray(locs) && locs.length > 0 ? locs.map((loc: string, i: number) => (
+                                            <span key={i} className="px-2 py-1 bg-sc-dark border border-sc-grey/10 rounded text-[9px] text-sc-grey font-bold uppercase tracking-tighter">
+                                                {loc}
+                                            </span>
+                                        )) : <span className="text-[9px] text-sc-grey/40 italic uppercase">Coordinates Encrypted or Restricted</span>;
+                                    } catch (e) {
+                                        return <span className="text-[9px] text-sc-grey/40 italic uppercase">Coordinates Encrypted or Restricted</span>;
+                                    }
+                                })()}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-4 bg-black/40 border-t border-sc-blue/10 flex justify-end">
+                    <button 
+                        onClick={() => setSelectedItem(null)}
+                        className="px-8 py-2 bg-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all"
+                    >
+                        Close Registry Entry
+                    </button>
+                </div>
+            </div>
         </div>
       )}
     </div>
