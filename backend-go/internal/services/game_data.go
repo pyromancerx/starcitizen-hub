@@ -170,9 +170,15 @@ func (s *GameDataService) SyncShips() error {
 
 		uuid := getFirstString(shipData, "UUID", "uuid", "reference")
 		name := getFirstString(shipData, "Name", "name")
-		className := getFirstString(shipData, "ClassName", "className")
+		className := getFirstString(shipData, "ClassName", "className", "Reference")
 		if name == "" || uuid == "" {
 			continue
+		}
+
+		// Clean up className if it's a full path
+		if strings.Contains(className, ".") {
+			parts := strings.Split(className, ".")
+			className = parts[len(parts)-1]
 		}
 
 		manufacturer := getNestedString(shipData, "Manufacturer", "Name")
@@ -189,36 +195,38 @@ func (s *GameDataService) SyncShips() error {
 		var detailedStats string
 
 		if className != "" {
-			detailURL := fmt.Sprintf("https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/master/ships/%s.json", strings.ToLower(className))
-			dResp, err := client.Get(detailURL)
-			if err == nil && dResp.StatusCode == 200 {
-				var detail map[string]interface{}
-				if err := json.NewDecoder(dResp.Body).Decode(&detail); err == nil {
-					// Map detailed hardpoints
-					hpData, _ := json.Marshal(detail["hardpoints"])
-					hardpoints = string(hpData)
+			// Try StarCitizenWiki first, then scunpacked/scunpacked-data
+			sources := []string{
+				"https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/master/ships/%s.json",
+				"https://raw.githubusercontent.com/scunpacked/scunpacked-data/master/v2/ships/%s.json",
+			}
 
-					// Generate Default Loadout Map
-					defMap := make(map[string]string)
-					if hps, ok := detail["hardpoints"].([]interface{}); ok {
-						for _, hpRaw := range hps {
-							if hp, ok := hpRaw.(map[string]interface{}); ok {
-								hpName := getFirstString(hp, "name", "Name")
-								installed := getFirstString(hp, "installedItem", "InstalledItem")
-								if hpName != "" && installed != "" {
-									defMap[hpName] = installed
-								}
-							}
+			for _, source := range sources {
+				detailURL := fmt.Sprintf(source, strings.ToLower(className))
+				dResp, err := client.Get(detailURL)
+				if err == nil && dResp.StatusCode == 200 {
+					var detail map[string]interface{}
+					if err := json.NewDecoder(dResp.Body).Decode(&detail); err == nil {
+						// Map detailed hardpoints
+						if hpSource, ok := detail["hardpoints"]; ok {
+							hpData, _ := json.Marshal(hpSource)
+							hardpoints = string(hpData)
+
+							// Generate Default Loadout Map
+							defMap := make(map[string]string)
+							processHPs(hpSource, defMap)
+							defJSON, _ := json.Marshal(defMap)
+							defaultLoadout = string(defJSON)
 						}
-					}
-					defJSON, _ := json.Marshal(defMap)
-					defaultLoadout = string(defJSON)
 
-					// Use detailed stats if available
-					statsData, _ := json.Marshal(detail)
-					detailedStats = string(statsData)
+						// Use detailed stats
+						statsData, _ := json.Marshal(detail)
+						detailedStats = string(statsData)
+						dResp.Body.Close()
+						break
+					}
+					dResp.Body.Close()
 				}
-				dResp.Body.Close()
 			}
 		}
 
@@ -251,13 +259,37 @@ func (s *GameDataService) SyncShips() error {
 		}).Create(&ship)
 
 		count++
-		if count%10 == 0 {
-			log.Printf("Synchronized %d/%d vessels...", count, len(rawShips))
+		if count%10 == 0 || className == "" {
+			log.Printf("Synchronized %d/%d vessels (Current: %s, Class: %s)...", count, len(rawShips), name, className)
 		}
 	}
 
 	log.Printf("Successfully synchronized %d ship models with detailed layouts", count)
 	return nil
+}
+
+func processHPs(hpSource interface{}, defMap map[string]string) {
+	switch hps := hpSource.(type) {
+	case []interface{}:
+		for _, hpRaw := range hps {
+			if hp, ok := hpRaw.(map[string]interface{}); ok {
+				hpName := getFirstString(hp, "name", "Name")
+				installed := getFirstString(hp, "installedItem", "InstalledItem")
+				if hpName != "" && installed != "" {
+					defMap[hpName] = installed
+				}
+			}
+		}
+	case map[string]interface{}:
+		for hpName, hpRaw := range hps {
+			if hp, ok := hpRaw.(map[string]interface{}); ok {
+				installed := getFirstString(hp, "installedItem", "InstalledItem")
+				if installed != "" {
+					defMap[hpName] = installed
+				}
+			}
+		}
+	}
 }
 
 // ImportErkulLoadout parses an Erkul export JSON and creates/updates a loadout

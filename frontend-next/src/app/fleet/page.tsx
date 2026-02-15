@@ -185,7 +185,14 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
   const hardpoints = (() => {
     try {
       const parsed = typeof model.hardpoints === 'string' ? JSON.parse(model.hardpoints) : model.hardpoints;
-      return Array.isArray(parsed) ? parsed : [];
+      if (Array.isArray(parsed)) return parsed;
+      if (typeof parsed === 'object' && parsed !== null) {
+        return Object.entries(parsed).map(([key, val]: [string, any]) => ({
+          name: key,
+          ...(typeof val === 'object' ? val : { installedItem: val })
+        }));
+      }
+      return [];
     } catch (e) {
       return [];
     }
@@ -220,10 +227,10 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
                     </p>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <StatBox label="Mass" value={`${model.mass?.toLocaleString() || '--'} kg`} />
-                        <StatBox label="Cargo" value={`${model.cargo_capacity || '0'} SCU`} />
-                        <StatBox label="SCM Speed" value={`${stats.ScmSpeed || '--'} m/s`} />
-                        <StatBox label="Afterburner" value={`${stats.AfterburnerSpeed || '--'} m/s`} />
+                        <StatBox label="Mass" value={`${(model.mass || stats.Mass || stats.MassTotal || 0).toLocaleString()} kg`} />
+                        <StatBox label="Cargo" value={`${model.cargo_capacity || stats.Cargo || stats.CargoCapacity || 0} SCU`} />
+                        <StatBox label="SCM Speed" value={`${stats.ScmSpeed || stats.scm_speed || stats.Speed || '--'} m/s`} />
+                        <StatBox label="Afterburner" value={`${stats.AfterburnerSpeed || stats.afterburner_speed || stats.MaxSpeed || '--'} m/s`} />
                     </div>
                 </div>
 
