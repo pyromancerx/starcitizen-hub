@@ -32,38 +32,14 @@ import { cn } from '@/lib/utils';
 
 const ShipSystemsModal = ({ ship, onClose, onUpdate }: { ship: any, onClose: () => void, onUpdate: any }) => {
   const [location, setLocation] = useState(ship.location || '');
-  const [loadout, setLoadout] = useState<any>(() => {
-    try {
-      const parsed = typeof ship.loadout === 'string' ? JSON.parse(ship.loadout || '{}') : (ship.loadout || {});
-      return parsed;
-    } catch (e) {
-      return {};
-    }
-  });
-  const [newKey, setNewKey] = useState('');
-  const [newVal, setNewVal] = useState('');
 
   const handleSave = () => {
     onUpdate.mutate({
       id: ship.id,
       updates: {
         location,
-        loadout: JSON.stringify(loadout)
       }
     });
-  };
-
-  const addComponent = () => {
-    if (!newKey) return;
-    setLoadout({ ...loadout, [newKey]: newVal });
-    setNewKey('');
-    setNewVal('');
-  };
-
-  const removeComponent = (key: string) => {
-    const next = { ...loadout };
-    delete next[key];
-    setLoadout(next);
   };
 
   return (
@@ -93,60 +69,6 @@ const ShipSystemsModal = ({ ship, onClose, onUpdate }: { ship: any, onClose: () 
                             placeholder="e.g. Port Olisar, Stanton II"
                             className="flex-1 bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
                         />
-                    </div>
-                </div>
-
-                {/* Loadout Section */}
-                <div className="space-y-4">
-                    <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
-                        <Shield className="w-4 h-4 text-sc-blue" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Component Manifest</span>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        {Object.entries(loadout).map(([key, val]: [string, any]) => (
-                            <div key={key} className="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded group">
-                                <div className="flex flex-col">
-                                    <span className="text-[8px] font-black text-sc-blue uppercase tracking-widest">{key}</span>
-                                    <span className="text-xs text-white font-bold">{val}</span>
-                                </div>
-                                <button 
-                                    onClick={() => removeComponent(key)}
-                                    className="p-1 text-sc-grey/20 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
-
-                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
-                            <div className="space-y-1">
-                                <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Hardpoint Name</label>
-                                <input 
-                                    value={newKey}
-                                    onChange={(e) => setNewKey(e.target.value)}
-                                    placeholder="e.g. Weapon 1"
-                                    className="w-full bg-sc-dark border border-white/10 rounded px-3 py-1.5 text-[10px] text-white focus:border-sc-blue/50 outline-none"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Component Designation</label>
-                                <div className="flex space-x-2">
-                                    <input 
-                                        value={newVal}
-                                        onChange={(e) => setNewVal(e.target.value)}
-                                        placeholder="e.g. CF-337 Panther"
-                                        className="flex-1 bg-sc-dark border border-white/10 rounded px-3 py-1.5 text-[10px] text-white focus:border-sc-blue/50 outline-none"
-                                    />
-                                    <button 
-                                        onClick={addComponent}
-                                        className="px-3 bg-sc-blue/10 border border-sc-blue text-sc-blue rounded hover:bg-sc-blue hover:text-sc-dark transition-all"
-                                    >
-                                        <Plus className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

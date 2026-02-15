@@ -27,7 +27,6 @@ export default function OperationsPage() {
     type: 'Combat',
     scheduled_at: '',
     max_participants: 10,
-    required_loadout_id: undefined as number | undefined,
     required_manifest_id: undefined as number | undefined,
   });
 
@@ -35,14 +34,6 @@ export default function OperationsPage() {
     queryKey: ['operations'],
     queryFn: async () => {
       const res = await api.get('/operations/');
-      return res.data;
-    },
-  });
-
-  const { data: blueprints } = useQuery({
-    queryKey: ['loadout-templates'],
-    queryFn: async () => {
-      const res = await api.get('/game-data/loadouts');
       return res.data;
     },
   });
@@ -211,19 +202,6 @@ export default function OperationsPage() {
 
                     {/* Requirements */}
                     <div className="space-y-6">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mandatory Ship Blueprint</label>
-                            <select 
-                                value={newOp.required_loadout_id}
-                                onChange={(e) => setNewOp({...newOp, required_loadout_id: Number(e.target.value)})}
-                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
-                            >
-                                <option value="">No Requirement</option>
-                                {blueprints?.map((bp: any) => (
-                                    <option key={bp.id} value={bp.id}>{bp.ship_model?.name} - {bp.template_name}</option>
-                                ))}
-                            </select>
-                        </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mandatory Gear Manifest</label>
                             <select 

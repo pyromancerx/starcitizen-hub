@@ -375,19 +375,6 @@ func main() {
 			r.Get("/game-data/ships", gameDataHandler.ListShipModels)
 			r.Get("/game-data/ships/{id}", gameDataHandler.GetShipModel)
 			r.Get("/game-data/items", gameDataHandler.SearchItems)
-			r.Get("/game-data/loadouts", gameDataHandler.ListLoadouts)
-			r.Get("/game-data/loadouts/{id}", gameDataHandler.GetLoadout)
-			r.Post("/game-data/loadouts", gameDataHandler.CreateLoadout)
-			r.Patch("/game-data/loadouts/{id}", gameDataHandler.UpdateLoadout)
-			r.Delete("/game-data/loadouts/{id}", gameDataHandler.DeleteLoadout)
-			r.Post("/game-data/loadouts/apply", gameDataHandler.ApplyLoadoutToShip)
-			r.Post("/game-data/import-erkul", gameDataHandler.ImportErkul)
-			r.Get("/game-data/operations/{id}/readiness", gameDataHandler.GetMissionReadiness)
-			r.Get("/game-data/manifests", gameDataHandler.ListManifests)
-			r.Get("/game-data/manifests/{id}", gameDataHandler.GetManifest)
-			r.Post("/game-data/manifests", gameDataHandler.CreateManifest)
-			r.Patch("/game-data/manifests/{id}", gameDataHandler.UpdateManifest)
-			r.Delete("/game-data/manifests/{id}", gameDataHandler.DeleteManifest)
 
 						// Admin & Integrations
 

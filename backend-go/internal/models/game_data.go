@@ -44,35 +44,3 @@ type ShipModel struct {
 	UpdatedAt        time.Time      `json:"updated_at"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
-
-type ShipLoadout struct {
-	ID               uint           `gorm:"primaryKey" json:"id"`
-	ShipID           *uint          `gorm:"index" json:"ship_id"` // Link to a personal ship (optional for templates)
-	OperationID      *uint          `gorm:"index" json:"operation_id"` // Link to a specific mission (optional)
-	TemplateName     string         `gorm:"size:200" json:"template_name"` // For standard issue templates
-	ShipModelID      uint           `gorm:"index" json:"ship_model_id"`
-	CreatedByID      uint           `json:"created_by_id"`
-	Configuration    string         `gorm:"type:json" json:"configuration"` // Map of hardpoint_uuid -> game_item_uuid
-	Notes            string         `gorm:"type:text" json:"notes"`
-	IsStandardIssue  bool           `gorm:"default:false" json:"is_standard_issue"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
-
-	ShipModel ShipModel `gorm:"foreignKey:ShipModelID" json:"ship_model"`
-	CreatedBy User      `gorm:"foreignKey:CreatedByID" json:"created_by"`
-}
-
-type EquipmentManifest struct {
-	ID               uint           `gorm:"primaryKey" json:"id"`
-	Name             string         `gorm:"size:200" json:"name"`
-	Description      string         `gorm:"type:text" json:"description"`
-	Items            string         `gorm:"type:json" json:"items"` // JSON array of {game_item_uuid, quantity}
-	CreatedByID      uint           `json:"created_by_id"`
-	IsStandardIssue  bool           `gorm:"default:false" json:"is_standard_issue"`
-	CreatedAt        time.Time      `json:"created_at"`
-	UpdatedAt        time.Time      `json:"updated_at"`
-	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
-
-	CreatedBy User `gorm:"foreignKey:CreatedByID" json:"created_by"`
-}

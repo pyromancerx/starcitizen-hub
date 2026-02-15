@@ -42,8 +42,6 @@ const Sidebar = () => {
       items: [
         { name: 'Dashboard', href: '/', icon: LayoutDashboard },
         { name: 'Fleet Registry', href: '/fleet', icon: Rocket },
-        { name: 'Tactical Blueprints', href: '/fleet/loadouts', icon: FileCode },
-        { name: 'Logistics Manifests', href: '/fleet/manifests', icon: Package2 },
         { name: 'Planetary Outposts', href: '/bases', icon: Warehouse },
         { name: 'Inventory', href: '/inventory', icon: Package },
         { name: 'Financials', href: '/wallet', icon: Wallet },
