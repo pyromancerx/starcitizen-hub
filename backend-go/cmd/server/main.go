@@ -266,6 +266,10 @@ func main() {
 	adminHandler := handlers.NewAdminHandler()
 	gameDataHandler := handlers.NewGameDataHandler()
 
+	// Initialize and start background scheduler
+	scheduler := services.NewSchedulerService(database.DB)
+	scheduler.Start()
+
 	// Static files for uploads
 	uploadDir := "../uploads"
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
