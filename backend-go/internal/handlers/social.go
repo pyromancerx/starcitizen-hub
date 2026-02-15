@@ -641,8 +641,8 @@ func (h *SocialHandler) SubmitRSIVerification(w http.ResponseWriter, r *http.Req
 
 func (h *SocialHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
-	// Fetch active, RSI-verified members with their roles
-	if err := h.socialService.DB.Preload("Roles").Where("is_active = ? AND is_rsi_verified = ?", true, true).Order("display_name asc").Find(&users).Error; err != nil {
+	// Fetch active, RSI-verified, and approved members with their roles
+	if err := h.socialService.DB.Preload("Roles").Where("is_active = ? AND is_rsi_verified = ? AND is_approved = ?", true, true, true).Order("display_name asc").Find(&users).Error; err != nil {
 		http.Error(w, "Failed to retrieve personnel records", http.StatusInternalServerError)
 		return
 	}

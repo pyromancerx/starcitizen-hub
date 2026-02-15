@@ -144,7 +144,7 @@ func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 
 	// 1. Search Users
 	var users []models.User
-	s.DB.Where("(display_name LIKE ? OR rsi_handle LIKE ?) AND is_active = ? AND is_rsi_verified = ?", searchTerm, searchTerm, true, true).Limit(5).Find(&users)
+	s.DB.Where("(display_name LIKE ? OR rsi_handle LIKE ?) AND is_active = ? AND is_rsi_verified = ? AND is_approved = ?", searchTerm, searchTerm, true, true, true).Limit(5).Find(&users)
 	for _, u := range users {
 		results = append(results, SearchResult{
 			Type: "Citizen", ID: u.ID, Title: u.DisplayName, Sub: u.RSIHandle, Link: "/members",
