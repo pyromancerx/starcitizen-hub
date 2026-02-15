@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
@@ -382,7 +383,12 @@ func (s *GameDataService) SearchItems(query string, category string, subCategory
 	var items []models.GameItem
 	db := s.DB.Where("name LIKE ?", "%"+query+"%").Where("name NOT LIKE ?", "%<= PLACEHOLDER =>%")
 	if category != "" {
-		db = db.Where("category LIKE ?", "%"+category+"%")
+		if strings.Contains(category, ",") {
+			cats := strings.Split(category, ",")
+			db = db.Where("category IN ?", cats)
+		} else {
+			db = db.Where("category LIKE ?", "%"+category+"%")
+		}
 	}
 	if subCategory != "" {
 		db = db.Where("sub_category LIKE ?", "%"+subCategory+"%")

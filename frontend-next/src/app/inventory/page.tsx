@@ -95,17 +95,17 @@ function InventoryContent() {
         { id: 'Char_Armor_Backpack', label: 'Backpacks', sub: 'Personal,LightArmor' },
         { id: 'WeaponPersonal', label: 'Personal Weapons', sub: 'Small,Medium,Large,Knife,Grenade' },
         { id: 'FPS_Consumable', label: 'Medical & Utility', sub: 'Medical,Hacking,MedPack' },
-        { id: 'Char_Clothing_Torso_1', label: 'Clothing', sub: 'Male,Female,Heavy' },
+        { id: 'Clothing', label: 'Civilian Clothing', apiCategory: 'Char_Clothing_Feet,Char_Clothing_Hands,Char_Clothing_Hat,Char_Clothing_Legs,Char_Clothing_Torso_0,Char_Clothing_Torso_1,Char_Clothing_Torso_2' },
       ]
     }
   ];
 
-  const handleCategorySelect = (catId: string) => {
+  const handleCategorySelect = (catId: string, apiCat?: string) => {
     setDbSubCategory(''); // Reset sub on main category change
-    if (catId === dbCategory) {
+    if (catId === dbCategory || (apiCat && apiCat === dbCategory)) {
       setDbCategory('');
     } else {
-      setDbCategory(catId);
+      setDbCategory(apiCat || catId);
     }
   };
 
@@ -265,23 +265,23 @@ function InventoryContent() {
                     <div className="px-3 pt-2 pb-1 text-[8px] font-black text-sc-grey/30 uppercase tracking-[0.2em]">
                       {group.name}
                     </div>
-                    {group.items.map((cat) => (
+                    {group.items.map((cat: any) => (
                       <div key={cat.id} className="space-y-0.5">
                         <button
-                          onClick={() => handleCategorySelect(cat.id)}
+                          onClick={() => handleCategorySelect(cat.id, cat.apiCategory)}
                           className={cn(
                             "w-full text-left px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold transition-all border-l-2 flex justify-between items-center",
-                            dbCategory === cat.id
+                            (dbCategory === cat.id || (cat.apiCategory && dbCategory === cat.apiCategory))
                               ? "bg-sc-blue/5 border-sc-blue text-sc-blue" 
                               : "border-transparent text-sc-grey/40 hover:text-sc-grey hover:bg-white/5"
                           )}
                         >
                           <span>{cat.label}</span>
-                          {dbCategory === cat.id && <ChevronRight className="w-2.5 h-2.5" />}
+                          {(dbCategory === cat.id || (cat.apiCategory && dbCategory === cat.apiCategory)) && <ChevronRight className="w-2.5 h-2.5" />}
                         </button>
 
                         {/* Sub-categories if main category is selected */}
-                        {dbCategory === cat.id && cat.sub && (
+                        {(dbCategory === cat.id || (cat.apiCategory && dbCategory === cat.apiCategory)) && cat.sub && (
                           <div className="pl-4 pr-1 py-1 grid grid-cols-1 gap-1">
                             {cat.sub.split(',').map((sub) => (
                               <button
