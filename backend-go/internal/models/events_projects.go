@@ -20,12 +20,29 @@ type Operation struct {
 	RequiredShipTypes string         `gorm:"type:json" json:"required_ship_types"`
 	IsPublic          bool           `gorm:"default:true" json:"is_public"`
 	CreatedByID       uint           `json:"created_by_id"`
+	EventID           *uint          `gorm:"index" json:"event_id"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
 	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 
 	Creator           User               `gorm:"foreignKey:CreatedByID" json:"-"`
 	Participants      []OperationParticipant `gorm:"foreignKey:OperationID" json:"participants,omitempty"`
+}
+
+type Event struct {
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Title       string         `gorm:"size:200" json:"title"`
+	Description string         `gorm:"type:text" json:"description"`
+	StartTime   time.Time      `json:"start_time"`
+	EndTime     *time.Time     `json:"end_time"`
+	Location    string         `gorm:"size:200" json:"location"`
+	Type        string         `gorm:"size:50" json:"type"` // Meeting, Operation, Social, Training
+	CreatedByID uint           `json:"created_by_id"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+
+	Creator User `gorm:"foreignKey:CreatedByID" json:"-"`
 }
 
 type OperationParticipant struct {

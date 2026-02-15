@@ -121,15 +121,40 @@ func (h *LogisticsHandler) ListOperations(w http.ResponseWriter, r *http.Request
 
 func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
-	var op models.Operation
-	if err := json.NewDecoder(r.Body).Decode(&op); err != nil {
+	
+	var req struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		Type        string `json:"type"`
+		ScheduledAt string `json:"scheduled_at"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	op.CreatedByID = userID
+	scheduledTime, err := time.Parse("2006-01-02T15:04", req.ScheduledAt)
+	if err != nil {
+		// Try alternative format if common
+		scheduledTime, err = time.Parse(time.RFC3339, req.ScheduledAt)
+		if err != nil {
+			http.Error(w, "Invalid timestamp format. Use YYYY-MM-DDTHH:MM", http.StatusBadRequest)
+			return
+		}
+	}
+
+	op := models.Operation{
+		Title:       req.Title,
+		Description: req.Description,
+		Type:        req.Type,
+		ScheduledAt: scheduledTime,
+		CreatedByID: userID,
+		Status:      "planning",
+	}
+
 	if err := h.logisticsService.CreateOperation(&op); err != nil {
-		http.Error(w, "Failed to authorize operation", http.StatusInternalServerError)
+		http.Error(w, "Failed to authorize operation: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

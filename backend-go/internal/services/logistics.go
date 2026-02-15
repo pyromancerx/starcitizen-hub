@@ -47,16 +47,32 @@ func (s *LogisticsService) CreateStockpileTransaction(tx *models.StockpileTransa
 
 // Operations
 func (s *LogisticsService) CreateOperation(op *models.Operation) error {
-	if err := s.DB.Create(op).Error; err != nil {
-		return err
-	}
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		// 1. Create the associated Event
+		event := models.Event{
+			Title:       op.Title,
+			Description: op.Description,
+			StartTime:   op.ScheduledAt,
+			Type:        "Operation",
+			CreatedByID: op.CreatedByID,
+		}
+		if err := tx.Create(&event).Error; err != nil {
+			return err
+		}
 
-	// Trigger Discord Relay
-	go func() {
-		s.discordService.RelayOperation(op)
-	}()
+		// 2. Link Event to Operation and Create Operation
+		op.EventID = &event.ID
+		if err := tx.Create(op).Error; err != nil {
+			return err
+		}
 
-	return nil
+		// Trigger Discord Relay (in background)
+		go func() {
+			s.discordService.RelayOperation(op)
+		}()
+
+		return nil
+	})
 }
 
 // Operations

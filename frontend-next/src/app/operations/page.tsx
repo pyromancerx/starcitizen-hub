@@ -39,13 +39,22 @@ export default function OperationsPage() {
 
   const authorizeMutation = useMutation({
     mutationFn: async () => {
-      return api.post('/operations/', newOp);
+      // Ensure date is in a format the backend expects if it's not already ISO
+      const payload = {
+        ...newOp,
+        scheduled_at: newOp.scheduled_at 
+      };
+      return api.post('/operations/', payload);
     },
     onSuccess: () => {
       setShowAuthModal(false);
       queryClient.invalidateQueries({ queryKey: ['operations'] });
       alert('Operation authorized. Signal broadcast to all tactical units.');
     },
+    onError: (error: any) => {
+      console.error('Authorization failure:', error);
+      alert(error.response?.data || 'Signal interference detected. Operation authorization failed.');
+    }
   });
 
   const formatDate = (dateString: string, part: 'month' | 'day' | 'time') => {
@@ -178,6 +187,19 @@ export default function OperationsPage() {
                                 onChange={(e) => setNewOp({...newOp, scheduled_at: e.target.value})}
                                 className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
                             />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Operation Type</label>
+                            <select 
+                                value={newOp.type}
+                                onChange={(e) => setNewOp({...newOp, type: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
+                            >
+                                <option value="Combat">Combat</option>
+                                <option value="Logistics">Logistics</option>
+                                <option value="Training">Training</option>
+                                <option value="Social">Social</option>
+                            </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Briefing Description</label>
