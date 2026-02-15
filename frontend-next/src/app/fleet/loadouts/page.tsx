@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -22,6 +22,8 @@ import { useRouter } from 'next/navigation';
 
 export default function LoadoutDashboardPage() {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+
   const { data: loadouts, isLoading } = useQuery({
     queryKey: ['ship-loadouts'],
     queryFn: async () => {
@@ -31,9 +33,11 @@ export default function LoadoutDashboardPage() {
   });
 
   const { data: shipModels } = useQuery({
-    queryKey: ['ship-models'],
+    queryKey: ['ship-models-registry', searchQuery],
     queryFn: async () => {
-      const res = await api.get('/game-data/ships');
+      const params = new URLSearchParams();
+      if (searchQuery) params.append('q', searchQuery);
+      const res = await api.get(`/game-data/ships?${params.toString()}`);
       return res.data;
     },
   });
@@ -94,6 +98,8 @@ export default function LoadoutDashboardPage() {
                 <div className="relative mb-4">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sc-grey/40" />
                     <input 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search models..."
                         className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded pl-9 pr-4 py-2 text-[10px] text-white focus:outline-none focus:border-sc-blue/50 uppercase tracking-widest font-bold"
                     />
