@@ -18,9 +18,12 @@ import {
   Search,
   Box,
   LayoutGrid,
+  LayoutList,
   Zap,
   Weight,
-  Anchor
+  Anchor,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +33,8 @@ function FleetContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [activeTab, setActiveTab] = useState<'my-ships' | 'database'>('my-ships');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedShips, setSelectedShips] = useState<number[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newShip, setNewShip] = useState({
     name: '',
@@ -79,6 +84,30 @@ function FleetContent() {
     },
     enabled: activeTab === 'database',
   });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: number[], status: string }) => {
+      return api.patch('/ships/bulk', { ids, update: { status } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-ships'] });
+      setSelectedShips([]);
+    },
+  });
+
+  const toggleShipSelection = (id: number) => {
+    setSelectedShips(prev => 
+      prev.includes(id) ? prev.filter(sid => sid !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedShips.length === ships?.length) {
+      setSelectedShips([]);
+    } else {
+      setSelectedShips(ships?.map((s: any) => s.id) || []);
+    }
+  };
 
   const createShipMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -152,27 +181,52 @@ function FleetContent() {
           </p>
         </div>
 
-        <div className="flex bg-black/40 border border-sc-grey/10 p-1 rounded backdrop-blur-md self-start">
-          <button 
-            onClick={() => setActiveTab('my-ships')}
-            className={cn(
-              "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center space-x-2",
-              activeTab === 'my-ships' ? "bg-sc-blue text-white" : "text-sc-grey/40 hover:text-sc-grey"
-            )}
-          >
-            <Rocket className="w-3 h-3" />
-            <span>Active Fleet</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('database')}
-            className={cn(
-              "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center space-x-2",
-              activeTab === 'database' ? "bg-sc-blue text-white" : "text-sc-grey/40 hover:text-sc-grey"
-            )}
-          >
-            <Database className="w-3 h-3" />
-            <span>Ship Database</span>
-          </button>
+        <div className="flex items-center space-x-4">
+          <div className="flex bg-black/40 border border-sc-grey/10 p-1 rounded backdrop-blur-md self-start">
+            <button 
+              onClick={() => setActiveTab('my-ships')}
+              className={cn(
+                "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center space-x-2",
+                activeTab === 'my-ships' ? "bg-sc-blue text-white" : "text-sc-grey/40 hover:text-sc-grey"
+              )}
+            >
+              <Rocket className="w-3 h-3" />
+              <span>Active Fleet</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('database')}
+              className={cn(
+                "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center space-x-2",
+                activeTab === 'database' ? "bg-sc-blue text-white" : "text-sc-grey/40 hover:text-sc-grey"
+              )}
+            >
+              <Database className="w-3 h-3" />
+              <span>Ship Database</span>
+            </button>
+          </div>
+
+          {activeTab === 'my-ships' && (
+            <div className="flex bg-black/40 border border-sc-grey/10 p-1 rounded backdrop-blur-md self-start">
+              <button 
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  "p-1.5 rounded transition-all",
+                  viewMode === 'grid' ? "bg-sc-blue text-sc-dark" : "text-sc-grey/40 hover:text-sc-grey"
+                )}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  "p-1.5 rounded transition-all",
+                  viewMode === 'list' ? "bg-sc-blue text-sc-dark" : "text-sc-grey/40 hover:text-sc-grey"
+                )}
+              >
+                <LayoutList className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -180,9 +234,42 @@ function FleetContent() {
         <>
           <div className="flex justify-between items-center bg-sc-panel/50 p-4 border border-sc-grey/10 rounded">
             <div className="flex items-center space-x-4">
+                <button 
+                  onClick={toggleAllSelection}
+                  className="text-sc-blue hover:text-white transition-colors"
+                >
+                  {selectedShips.length > 0 && selectedShips.length === ships?.length ? (
+                    <CheckSquare className="w-5 h-5" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                </button>
                 <div className="text-[10px] font-black text-sc-blue uppercase tracking-widest">Fleet Operations</div>
                 <div className="h-4 w-px bg-sc-grey/10"></div>
-                <div className="text-[10px] font-mono text-sc-grey/40 uppercase">{ships?.length || 0} Vessels commissioned</div>
+                <div className="text-[10px] font-mono text-sc-grey/40 uppercase">
+                  {selectedShips.length > 0 ? `${selectedShips.length} Selected` : `${ships?.length || 0} Vessels commissioned`}
+                </div>
+
+                {selectedShips.length > 0 && (
+                  <div className="flex items-center space-x-2 ml-4 animate-in fade-in slide-in-from-left-2">
+                    <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Set Status:</span>
+                    {['ready', 'damaged', 'destroyed', 'stored'].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => bulkUpdateMutation.mutate({ ids: selectedShips, status })}
+                        className={cn(
+                          "px-2 py-1 rounded text-[8px] font-black uppercase tracking-tighter border transition-all",
+                          status === 'ready' && "border-green-500/30 text-green-500 hover:bg-green-500/10",
+                          status === 'damaged' && "border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10",
+                          status === 'destroyed' && "border-red-500/30 text-red-500 hover:bg-red-500/10",
+                          status === 'stored' && "border-sc-grey/30 text-sc-grey hover:bg-sc-grey/10"
+                        )}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
             <div className="flex items-center space-x-3">
               <button 
@@ -218,13 +305,27 @@ function FleetContent() {
               <Rocket className="w-16 h-16 text-sc-grey/10 mx-auto mb-4" />
               <p className="text-sc-grey/40 uppercase tracking-[0.3em] text-sm">No vessels currently assigned to your command.</p>
             </div>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {ships.map((ship: any) => (
                 <div 
                   key={ship.id} 
-                  className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden group hover:border-sc-blue/30 transition-all duration-300 shadow-xl flex flex-col"
+                  className={cn(
+                    "bg-sc-panel border rounded overflow-hidden group hover:border-sc-blue/30 transition-all duration-300 shadow-xl flex flex-col relative",
+                    selectedShips.includes(ship.id) ? "border-sc-blue shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]" : "border-sc-grey/10"
+                  )}
                 >
+                  {/* Selection Overlay */}
+                  <button 
+                    onClick={() => toggleShipSelection(ship.id)}
+                    className={cn(
+                      "absolute top-2 left-2 z-10 p-1 rounded backdrop-blur-md border transition-all",
+                      selectedShips.includes(ship.id) ? "bg-sc-blue border-sc-blue text-sc-dark" : "bg-black/40 border-white/10 text-white/20 opacity-0 group-hover:opacity-100"
+                    )}
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                  </button>
+
                   <div className="h-24 bg-sc-dark p-4 flex flex-col justify-end relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-2 text-[8px] font-mono text-sc-grey/20">
                       REF_{ship.id.toString().padStart(4, '0')}
@@ -261,6 +362,7 @@ function FleetContent() {
                       <span className="text-[8px] font-black text-sc-grey/30 uppercase tracking-widest block">Current Status</span>
                       <select 
                         value={ship.status}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateStatusMutation.mutate({ id: ship.id, status: e.target.value })}
                         className={cn(
                           "w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-sc-blue/50 transition-all",
@@ -284,6 +386,87 @@ function FleetContent() {
                   </div>
                 </div>
               ))}
+            </div>
+          ) : (
+            <div className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden shadow-2xl">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-black/40 border-b border-sc-grey/10">
+                      <th className="p-4 w-10"></th>
+                      <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Designation</th>
+                      <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Model / Class</th>
+                      <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Insurance</th>
+                      <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Readiness</th>
+                      <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest text-right">Link</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-sc-grey/5">
+                    {ships.map((ship: any) => (
+                      <tr 
+                        key={ship.id} 
+                        onClick={() => toggleShipSelection(ship.id)}
+                        className={cn(
+                          "hover:bg-sc-blue/[0.02] transition-colors cursor-pointer group",
+                          selectedShips.includes(ship.id) && "bg-sc-blue/[0.05]"
+                        )}
+                      >
+                        <td className="p-4">
+                          <div className={cn(
+                            "w-4 h-4 rounded border transition-all flex items-center justify-center",
+                            selectedShips.includes(ship.id) ? "bg-sc-blue border-sc-blue text-sc-dark" : "border-sc-grey/20 group-hover:border-sc-blue/50"
+                          )}>
+                            {selectedShips.includes(ship.id) && <CheckSquare className="w-3 h-3" />}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-white tracking-tight uppercase italic">{ship.name || 'Unnamed Vessel'}</span>
+                            <span className="text-[8px] text-sc-grey/30 font-mono">SN: {ship.serial_number || 'NOT_REGISTERED'}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-bold text-sc-blue uppercase tracking-widest">{ship.ship_type}</span>
+                            <span className="text-[8px] text-sc-grey/40 uppercase font-mono">UEE Registry Record Active</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border",
+                            ship.insurance_status?.toLowerCase().includes('lti') 
+                              ? "bg-sc-blue/10 border-sc-blue/20 text-sc-blue" 
+                              : "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
+                          )}>
+                            {ship.insurance_status || 'Standard'}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <select 
+                            value={ship.status}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => updateStatusMutation.mutate({ id: ship.id, status: e.target.value })}
+                            className={cn(
+                              "bg-sc-dark/50 border border-sc-grey/20 rounded px-2 py-1 text-[9px] font-bold uppercase tracking-widest outline-none focus:border-sc-blue/50 transition-all",
+                              statusColors[ship.status]
+                            )}
+                          >
+                            <option value="ready">Ready</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="destroyed">Lost</option>
+                            <option value="stored">Stored</option>
+                          </select>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all">
+                            <Info className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </>

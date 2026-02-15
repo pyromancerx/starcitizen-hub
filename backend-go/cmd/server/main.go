@@ -295,6 +295,7 @@ func main() {
 			// Ships
 			r.Get("/ships/", assetHandler.ListMyShips)
 			r.Post("/ships/", assetHandler.CreateShip)
+			r.Patch("/ships/bulk", assetHandler.BulkUpdateShips)
 			r.Patch("/ships/{id}", assetHandler.UpdateShip)
 			r.Delete("/ships/{id}", assetHandler.DeleteShip)
 			r.Post("/ships/import-hangarxplorer", assetHandler.ImportHangarXPLORER)

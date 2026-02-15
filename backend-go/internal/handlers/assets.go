@@ -83,6 +83,38 @@ func (h *AssetHandler) UpdateShip(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ship)
 }
 
+func (h *AssetHandler) BulkUpdateShips(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var req struct {
+		IDs    []uint                 `json:"ids"`
+		Update map[string]interface{} `json:"update"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.IDs) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Security: Only update ships belonging to the user
+	result := h.assetService.DB.Model(&models.Ship{}).
+		Where("id IN ? AND user_id = ?", req.IDs, userID).
+		Updates(req.Update)
+
+	if result.Error != nil {
+		http.Error(w, "Bulk update failed: "+result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"updated_count": result.RowsAffected,
+	})
+}
+
 func (h *AssetHandler) DeleteShip(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
 	shipIDStr := chi.URLParam(r, "id")
