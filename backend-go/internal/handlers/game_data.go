@@ -22,6 +22,21 @@ func NewGameDataHandler() *GameDataHandler {
 }
 
 func (h *GameDataHandler) ListShipModels(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("q")
+	manufacturer := r.URL.Query().Get("manufacturer")
+	shipClass := r.URL.Query().Get("class")
+
+	if query != "" || manufacturer != "" || shipClass != "" {
+		ships, err := h.gameDataService.SearchShipModels(query, manufacturer, shipClass)
+		if err != nil {
+			http.Error(w, "Failed to search ship models", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ships)
+		return
+	}
+
 	models, err := h.gameDataService.ListShipModels()
 	if err != nil {
 		http.Error(w, "Failed to list ship models", http.StatusInternalServerError)

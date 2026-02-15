@@ -174,7 +174,7 @@ func (s *SocialService) UnifiedSearch(query string) ([]SearchResult, error) {
 	s.DB.Where("name LIKE ? OR manufacturer LIKE ?", searchTerm, searchTerm).Limit(5).Find(&shipModels)
 	for _, sm := range shipModels {
 		results = append(results, SearchResult{
-			Type: "Ship Model", ID: sm.ID, Title: sm.Name, Sub: sm.Manufacturer, Link: "/fleet",
+			Type: "Ship Model", ID: sm.ID, Title: sm.Name, Sub: sm.Manufacturer, Link: "/fleet", Tab: "database",
 		})
 	}
 
