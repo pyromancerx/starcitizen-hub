@@ -172,6 +172,116 @@ const ShipSystemsModal = ({ ship, onClose, onUpdate }: { ship: any, onClose: () 
   );
 };
 
+const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => void }) => {
+  const stats = (() => {
+    try {
+      return typeof model.base_stats === 'string' ? JSON.parse(model.base_stats) : (model.base_stats || {});
+    } catch (e) {
+      return {};
+    }
+  })();
+
+  const hardpoints = (() => {
+    try {
+      return typeof model.hardpoints === 'string' ? JSON.parse(model.hardpoints) : (model.hardpoints || []);
+    } catch (e) {
+      return [];
+    }
+  })();
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+        <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-4xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                    <Database className="w-5 h-5 text-sc-blue" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">UEE Technical Blueprint: {model.name}</h3>
+                </div>
+                <button onClick={onClose} className="text-sc-grey/40 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+                {/* Left Col: Info & Stats */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="space-y-1">
+                        <div className="text-[10px] font-black text-sc-blue uppercase tracking-[0.2em]">{model.manufacturer}</div>
+                        <h2 className="text-3xl font-bold text-white italic tracking-tight uppercase">{model.name}</h2>
+                        <div className="inline-block px-2 py-0.5 bg-sc-blue/10 border border-sc-blue/20 rounded text-[10px] font-mono text-sc-blue uppercase">
+                            {model.ship_class || 'Classification Pending'}
+                        </div>
+                    </div>
+
+                    <p className="text-xs text-sc-grey/60 leading-relaxed italic border-l-2 border-sc-grey/10 pl-4">
+                        {model.description || "Official UEE technical documentation for this vessel class is currently restricted or pending synchronization."}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <StatBox label="Mass" value={`${model.mass?.toLocaleString() || '--'} kg`} />
+                        <StatBox label="Cargo" value={`${model.cargo_capacity || '0'} SCU`} />
+                        <StatBox label="SCM Speed" value={`${stats.ScmSpeed || '--'} m/s`} />
+                        <StatBox label="Afterburner" value={`${stats.AfterburnerSpeed || '--'} m/s`} />
+                    </div>
+                </div>
+
+                {/* Right Col: Components & Weapons */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="space-y-4">
+                        <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
+                            <Zap className="w-4 h-4 text-sc-blue" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest">Standard Issue Components</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {hardpoints.length > 0 ? (
+                                hardpoints.map((hp: any, i: number) => (
+                                    <div key={i} className="flex items-center space-x-3 p-3 bg-black/20 border border-white/5 rounded">
+                                        <div className="w-8 h-8 bg-sc-dark rounded flex items-center justify-center border border-white/5">
+                                            {hp.type?.includes('Weapon') ? <Rocket className="w-4 h-4 text-sc-blue/40" /> : <Box className="w-4 h-4 text-sc-grey/40" />}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest truncate">{hp.name || hp.category || 'Hardpoint'}</span>
+                                            <span className="text-[10px] text-white font-bold truncate">
+                                                {hp.installedItem ? (
+                                                    hp.installedItem.replace(/_/g, ' ')
+                                                ) : (
+                                                    `Size ${hp.size} Slot`
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="col-span-full py-8 text-center text-[10px] text-sc-grey/30 uppercase italic font-bold">
+                                    No component data available for this model.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 bg-black/40 border-t border-sc-blue/10 flex justify-end space-x-4">
+                <button 
+                    onClick={onClose}
+                    className="px-8 py-2 bg-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all"
+                >
+                    Close Blueprint
+                </button>
+            </div>
+        </div>
+    </div>
+  );
+};
+
+const StatBox = ({ label, value }: { label: string, value: string }) => (
+    <div className="bg-black/20 border border-white/5 p-3 rounded text-center">
+        <div className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest mb-1">{label}</div>
+        <div className="text-xs font-mono text-white">{value}</div>
+    </div>
+);
+
 function FleetContent() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -181,6 +291,7 @@ function FleetContent() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedShips, setSelectedShips] = useState<number[]>([]);
   const [selectedShipSystems, setSelectedShipSystems] = useState<any>(null);
+  const [selectedShipModel, setSelectedShipModel] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newShip, setNewShip] = useState({
     name: '',
@@ -757,7 +868,10 @@ function FleetContent() {
                                         <span className="text-[10px] font-mono text-sc-grey/40">{ship.cargo_capacity || '0'} SCU</span>
                                     </div>
                                 </div>
-                                <button className="text-[9px] font-black uppercase tracking-widest text-sc-blue/60 hover:text-sc-blue transition-colors flex items-center space-x-1">
+                                <button 
+                                    onClick={() => setSelectedShipModel(ship)}
+                                    className="text-[9px] font-black uppercase tracking-widest text-sc-blue/60 hover:text-sc-blue transition-colors flex items-center space-x-1"
+                                >
                                     <span>Blueprint</span>
                                     <ChevronRight className="w-3 h-3" />
                                 </button>
@@ -876,6 +990,14 @@ function FleetContent() {
           ship={selectedShipSystems} 
           onClose={() => setSelectedShipSystems(null)}
           onUpdate={updateShipMutation}
+        />
+      )}
+
+      {/* Ship Blueprint Modal */}
+      {selectedShipModel && (
+        <ShipBlueprintModal 
+          model={selectedShipModel} 
+          onClose={() => setSelectedShipModel(null)} 
         />
       )}
     </div>
