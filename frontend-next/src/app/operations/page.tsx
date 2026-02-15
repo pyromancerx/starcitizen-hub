@@ -27,21 +27,12 @@ export default function OperationsPage() {
     type: 'Combat',
     scheduled_at: '',
     max_participants: 10,
-    required_manifest_id: undefined as number | undefined,
   });
 
   const { data: operations, isLoading } = useQuery({
     queryKey: ['operations'],
     queryFn: async () => {
       const res = await api.get('/operations/');
-      return res.data;
-    },
-  });
-
-  const { data: manifests } = useQuery({
-    queryKey: ['manifest-templates'],
-    queryFn: async () => {
-      const res = await api.get('/game-data/manifests');
       return res.data;
     },
   });
@@ -202,23 +193,10 @@ export default function OperationsPage() {
 
                     {/* Requirements */}
                     <div className="space-y-6">
-                        <div className="space-y-1">
-                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mandatory Gear Manifest</label>
-                            <select 
-                                value={newOp.required_manifest_id}
-                                onChange={(e) => setNewOp({...newOp, required_manifest_id: Number(e.target.value)})}
-                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none"
-                            >
-                                <option value="">No Requirement</option>
-                                {manifests?.map((mf: any) => (
-                                    <option key={mf.id} value={mf.id}>{mf.name}</option>
-                                ))}
-                            </select>
-                        </div>
                         <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3">
                             <Package className="w-4 h-4 text-sc-blue mt-0.5" />
                             <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
-                                Setting mandatory requirements will trigger the Readiness Engine for all enlisting citizens.
+                                Operations can be configured with more options via the CLI.
                             </p>
                         </div>
                     </div>

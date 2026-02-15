@@ -237,20 +237,6 @@ func (h *LogisticsHandler) CreateCargoContract(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(contract)
 }
 
-func (h *LogisticsHandler) GetOperationProcurement(w http.ResponseWriter, r *http.Request) {
-	idStr := chi.URLParam(r, "id")
-	id, _ := strconv.ParseUint(idStr, 10, 32)
-
-	analysis, err := h.logisticsService.AnalyzeOperationProcurement(uint(id))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(analysis)
-}
-
 func (h *LogisticsHandler) GetTreasuryAnalytics(w http.ResponseWriter, r *http.Request) {
 	analytics, err := h.logisticsService.GetTreasuryAnalytics()
 	if err != nil {

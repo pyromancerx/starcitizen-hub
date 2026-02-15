@@ -331,7 +331,6 @@ func main() {
 			r.Post("/operations/", logisticsHandler.CreateOperation)
 			r.Get("/operations/{id}", logisticsHandler.GetOperation)
 			r.Post("/operations/{id}/signup", logisticsHandler.SignupOperation)
-			r.Get("/operations/{id}/procurement", logisticsHandler.GetOperationProcurement)
 			r.Get("/projects/", logisticsHandler.ListProjects)
 			r.Get("/projects/{id}", logisticsHandler.GetProject)
 			r.Post("/projects/contributions", logisticsHandler.CreateContribution)

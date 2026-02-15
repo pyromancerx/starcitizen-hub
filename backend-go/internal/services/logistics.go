@@ -1,7 +1,6 @@
 package services
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/database"
@@ -137,52 +136,6 @@ func (s *LogisticsService) ListCargoContracts(status string) ([]models.CargoCont
 
 func (s *LogisticsService) CreateCargoContract(contract *models.CargoContract) error {
 	return s.DB.Create(contract).Error
-}
-
-type ProcurementRequirement struct {
-	ItemName      string  `json:"item_name"`
-	RequiredQty   float64 `json:"required_qty"`
-	StockpileQty  float64 `json:"stockpile_qty"`
-	Shortfall     float64 `json:"shortfall"`
-	IsMet         bool    `json:"is_met"`
-}
-
-func (s *LogisticsService) AnalyzeOperationProcurement(opID uint) ([]ProcurementRequirement, error) {
-	var op models.Operation
-	if err := s.DB.Preload("RequiredManifest").First(&op, opID).Error; err != nil {
-		return nil, err
-	}
-
-	if op.RequiredManifest == nil {
-		return []ProcurementRequirement{}, nil
-	}
-
-	var reqItems []map[string]interface{}
-	json.Unmarshal([]byte(op.RequiredManifest.Items), &reqItems)
-
-	var analysis []ProcurementRequirement
-	for _, req := range reqItems {
-		name, _ := req["name"].(string)
-		qty, _ := req["quantity"].(float64)
-
-		var stockpile models.OrgStockpile
-		s.DB.Where("name = ?", name).First(&stockpile)
-
-		shortfall := qty - stockpile.Quantity
-		if shortfall < 0 {
-			shortfall = 0
-		}
-
-		analysis = append(analysis, ProcurementRequirement{
-			ItemName:     name,
-			RequiredQty:  qty,
-			StockpileQty: stockpile.Quantity,
-			Shortfall:    shortfall,
-			IsMet:        stockpile.Quantity >= qty,
-		})
-	}
-
-	return analysis, nil
 }
 
 type TreasuryAnalytics struct {
