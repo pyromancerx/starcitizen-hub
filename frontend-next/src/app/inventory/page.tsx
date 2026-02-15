@@ -283,7 +283,7 @@ function InventoryContent() {
                         {/* Sub-categories if main category is selected */}
                         {(dbCategory === cat.id || (cat.apiCategory && dbCategory === cat.apiCategory)) && cat.sub && (
                           <div className="pl-4 pr-1 py-1 grid grid-cols-1 gap-1">
-                            {cat.sub.split(',').map((sub) => (
+                            {cat.sub.split(',').map((sub: string) => (
                               <button
                                 key={sub}
                                 onClick={() => setDbSubCategory(dbSubCategory === sub ? '' : sub)}
