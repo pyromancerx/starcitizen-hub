@@ -21,9 +21,35 @@ func NewGameDataService(db *gorm.DB) *GameDataService {
 }
 
 const (
-	ItemsDataURL = "https://raw.githubusercontent.com/scunpacked/scunpacked-data/master/v2/items.json"
-	ShipsDataURL = "https://raw.githubusercontent.com/scunpacked/scunpacked-data/master/v2/ships.json"
+	ItemsDataURL = "https://media.githubusercontent.com/media/StarCitizenWiki/scunpacked-data/master/items.json"
+	ShipsDataURL = "https://raw.githubusercontent.com/StarCitizenWiki/scunpacked-data/master/ships.json"
 )
+
+// Helper to extract nested string values
+func getNestedString(m map[string]interface{}, keys ...string) string {
+	var current interface{} = m
+	for _, key := range keys {
+		if nextMap, ok := current.(map[string]interface{}); ok {
+			current = nextMap[key]
+		} else {
+			return ""
+		}
+	}
+	if s, ok := current.(string); ok {
+		return s
+	}
+	return ""
+}
+
+// Helper to extract string with multiple possible keys
+func getFirstString(m map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := m[key].(string); ok && val != "" {
+			return val
+		}
+	}
+	return ""
+}
 
 // SyncFromCommunityData fetches and updates game data from public community repositories
 func (s *GameDataService) SyncFromCommunityData() error {
@@ -50,24 +76,33 @@ func (s *GameDataService) SyncItems() error {
 	}
 	defer resp.Body.Close()
 
-	var rawItems map[string]interface{}
+	var rawItems []interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&rawItems); err != nil {
 		return err
 	}
 
 	count := 0
-	for uuid, data := range rawItems {
-		itemData := data.(map[string]interface{})
+	for _, data := range rawItems {
+		itemData, ok := data.(map[string]interface{})
+		if !ok { continue }
 		
-		// Map scunpacked fields to our model
-		name, _ := itemData["name"].(string)
-		if name == "" { continue }
+		uuid := getFirstString(itemData, "reference", "UUID", "uuid")
+		name := getFirstString(itemData, "name", "Name", "itemName")
+		if name == "" || uuid == "" { continue }
 
-		category, _ := itemData["type"].(string)
-		subCategory, _ := itemData["subType"].(string)
-		manufacturer, _ := itemData["manufacturer"].(string)
+		category := getFirstString(itemData, "type", "Category")
+		subCategory := getFirstString(itemData, "subType", "SubCategory")
+		
+		manufacturer := getNestedString(itemData, "stdItem", "Manufacturer", "Name")
+		if manufacturer == "" {
+			manufacturer = getFirstString(itemData, "manufacturer", "Manufacturer")
+		}
+
 		size, _ := itemData["size"].(float64)
-		description, _ := itemData["description"].(string)
+		description := getNestedString(itemData, "stdItem", "Description")
+		if description == "" {
+			description = getFirstString(itemData, "description", "Description")
+		}
 
 		// Shop mapping (simplistic mapping for prototype)
 		var locations []string
@@ -119,21 +154,27 @@ func (s *GameDataService) SyncShips() error {
 	}
 	defer resp.Body.Close()
 
-	var rawShips map[string]interface{}
+	var rawShips []interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&rawShips); err != nil {
 		return err
 	}
 
 	count := 0
-	for uuid, data := range rawShips {
-		shipData := data.(map[string]interface{})
+	for _, data := range rawShips {
+		shipData, ok := data.(map[string]interface{})
+		if !ok { continue }
 		
-		name, _ := shipData["name"].(string)
-		if name == "" { continue }
+		uuid := getFirstString(shipData, "UUID", "uuid", "reference")
+		name := getFirstString(shipData, "Name", "name")
+		if name == "" || uuid == "" { continue }
 
-		manufacturer, _ := shipData["manufacturer"].(string)
-		shipClass, _ := shipData["type"].(string)
-		description, _ := shipData["description"].(string)
+		manufacturer := getNestedString(shipData, "Manufacturer", "Name")
+		if manufacturer == "" {
+			manufacturer = getFirstString(shipData, "manufacturer", "Manufacturer")
+		}
+
+		shipClass := getFirstString(shipData, "Role", "Career", "type", "ShipClass")
+		description := getFirstString(shipData, "Description", "description")
 
 		// Map hardpoints
 		hardpointsBytes, _ := json.Marshal(shipData["hardpoints"])
