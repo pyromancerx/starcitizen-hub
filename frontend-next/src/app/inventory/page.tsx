@@ -73,34 +73,39 @@ function InventoryContent() {
     {
       name: 'Ship Components',
       items: [
-        { id: 'Weapon', label: 'Ship Weapons', sub: 'Laser Repeater,Laser Cannon,Ballistic Repeater,Ballistic Cannon,Distortion Repeater,Distortion Cannon' },
+        { id: 'WeaponGun', label: 'Ship Weapons', sub: 'Gun,Rocket' },
+        { id: 'Turret', label: 'Turrets', sub: 'GunTurret,MannedTurret,BallTurret,MissileTurret' },
         { id: 'Shield', label: 'Shield Generators' },
-        { id: 'PowerPlant', label: 'Power Plants' },
+        { id: 'PowerPlant', label: 'Power Plants', sub: 'Power' },
         { id: 'Cooler', label: 'Coolers' },
         { id: 'QuantumDrive', label: 'Quantum Drives' },
-        { id: 'Missile', label: 'Missiles' },
-        { id: 'Paint', label: 'Liveries & Paints' },
+        { id: 'Missile', label: 'Missiles', sub: 'Missile,Torpedo,GroundVehicleMissile' },
+        { id: 'Paints', label: 'Vessel Paints' },
+        { id: 'Armor', label: 'Vessel Armor', sub: 'Heavy,Medium,Light' },
       ]
     },
     {
       name: 'Player Gear',
       items: [
-        { id: 'Armor', label: 'Armor Sets', sub: 'Helmet,Core,Arms,Legs' },
-        { id: 'Undersuit', label: 'Undersuits' },
-        { id: 'WeaponPersonal', label: 'Personal Weapons', apiCategory: 'Weapon', sub: 'Pistol,Rifle,Sniper,Shotgun,SMG' },
-        { id: 'Gadget', label: 'Tools & Gadgets' },
-        { id: 'Medical', label: 'Medical Supplies', sub: 'MedPen,Multi-Tool,Drug' },
-        { id: 'Clothing', label: 'Civilian Clothing' },
+        { id: 'Char_Armor_Helmet', label: 'Helmets', sub: 'Heavy,Medium,Light' },
+        { id: 'Char_Armor_Torso', label: 'Torso Armor', sub: 'Heavy,Medium,Light' },
+        { id: 'Char_Armor_Arms', label: 'Arms Armor', sub: 'Heavy,Medium,Light' },
+        { id: 'Char_Armor_Legs', label: 'Legs Armor', sub: 'Heavy,Medium,Light' },
+        { id: 'Char_Armor_Undersuit', label: 'Undersuits' },
+        { id: 'Char_Armor_Backpack', label: 'Backpacks', sub: 'Personal,LightArmor' },
+        { id: 'WeaponPersonal', label: 'Personal Weapons', sub: 'Small,Medium,Large,Knife,Grenade' },
+        { id: 'FPS_Consumable', label: 'Medical & Utility', sub: 'Medical,Hacking,MedPack' },
+        { id: 'Char_Clothing_Torso_1', label: 'Clothing', sub: 'Male,Female,Heavy' },
       ]
     }
   ];
 
-  const handleCategorySelect = (catId: string, apiCat?: string) => {
+  const handleCategorySelect = (catId: string) => {
     setDbSubCategory(''); // Reset sub on main category change
-    if (catId === dbCategory && !apiCat) {
+    if (catId === dbCategory) {
       setDbCategory('');
     } else {
-      setDbCategory(apiCat || catId);
+      setDbCategory(catId);
     }
   };
 
@@ -263,20 +268,20 @@ function InventoryContent() {
                     {group.items.map((cat) => (
                       <div key={cat.id} className="space-y-0.5">
                         <button
-                          onClick={() => handleCategorySelect(cat.id, cat.apiCategory)}
+                          onClick={() => handleCategorySelect(cat.id)}
                           className={cn(
                             "w-full text-left px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold transition-all border-l-2 flex justify-between items-center",
-                            dbCategory === (cat.apiCategory || cat.id)
+                            dbCategory === cat.id
                               ? "bg-sc-blue/5 border-sc-blue text-sc-blue" 
                               : "border-transparent text-sc-grey/40 hover:text-sc-grey hover:bg-white/5"
                           )}
                         >
                           <span>{cat.label}</span>
-                          {dbCategory === (cat.apiCategory || cat.id) && <ChevronRight className="w-2.5 h-2.5" />}
+                          {dbCategory === cat.id && <ChevronRight className="w-2.5 h-2.5" />}
                         </button>
 
                         {/* Sub-categories if main category is selected */}
-                        {dbCategory === (cat.apiCategory || cat.id) && cat.sub && (
+                        {dbCategory === cat.id && cat.sub && (
                           <div className="pl-4 pr-1 py-1 grid grid-cols-1 gap-1">
                             {cat.sub.split(',').map((sub) => (
                               <button
