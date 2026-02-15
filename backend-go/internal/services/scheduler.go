@@ -12,18 +12,20 @@ import (
 )
 
 type SchedulerService struct {
-	db              *gorm.DB
-	cron            *cron.Cron
-	gameDataService *GameDataService
-	rsiSyncService  *RSISyncService
+	db                  *gorm.DB
+	cron                *cron.Cron
+	gameDataService     *GameDataService
+	rsiSyncService      *RSISyncService
+	notificationService *NotificationService
 }
 
 func NewSchedulerService(db *gorm.DB) *SchedulerService {
 	return &SchedulerService{
-		db:              db,
-		cron:            cron.New(),
-		gameDataService: NewGameDataService(db),
-		rsiSyncService:  NewRSISyncService(db),
+		db:                  db,
+		cron:                cron.New(),
+		gameDataService:     NewGameDataService(db),
+		rsiSyncService:      NewRSISyncService(db),
+		notificationService: NewNotificationService(db),
 	}
 }
 
@@ -80,6 +82,31 @@ func (s *SchedulerService) AutoUpdate() {
 	if err := cmdPull.Run(); err != nil {
 		log.Printf("Auto-update pull failed: %v", err)
 		return
+	}
+
+	// Check for dependency changes
+	cmdDiff := exec.Command("git", "diff", "HEAD@{1}", "HEAD", "--", "backend-go/go.mod")
+	cmdDiff.Dir = ".."
+	diffOut, _ := cmdDiff.Output()
+	if len(diffOut) > 0 && strings.Contains(string(diffOut), "+") {
+		log.Println("New dependencies detected in go.mod")
+		// Extract new dependencies for the alert
+		lines := strings.Split(string(diffOut), "\n")
+		var newLibs []string
+		for _, line := range lines {
+			if strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "+++") && strings.Contains(line, "/") {
+				newLibs = append(newLibs, strings.TrimSpace(line[1:]))
+			}
+		}
+		
+		if len(newLibs) > 0 {
+			msg := "The hub was automatically updated and requires new Go libraries: \n" + strings.Join(newLibs, "\n")
+			s.notificationService.AlertAdmins("Dependency Update Required", msg)
+			
+			// Try to tidy/download automatically
+			log.Println("Running go mod tidy...")
+			exec.Command("go", "mod", "tidy").Run()
+		}
 	}
 
 	// Rebuild backend

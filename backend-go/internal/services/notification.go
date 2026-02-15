@@ -92,3 +92,29 @@ func (s *NotificationService) DispatchAnnouncement(announcement *models.Announce
 		}
 	}
 }
+
+func (s *NotificationService) AlertAdmins(title string, message string) {
+	var adminUsers []models.User
+	// Join with roles to find anyone with RoleTierAdmin
+	s.db.Joins("JOIN user_roles ON user_roles.user_id = users.id").
+		Joins("JOIN roles ON roles.id = user_roles.role_id").
+		Where("roles.tier = ?", models.RoleTierAdmin).
+		Find(&adminUsers)
+
+	for _, admin := range adminUsers {
+		notif := models.Notification{
+			UserID:    admin.ID,
+			Type:      "system_alert",
+			Title:     title,
+			Message:   message,
+			Link:      "/admin/settings",
+			Priority:  "critical",
+		}
+		s.db.Create(&notif)
+
+		// Also try email for critical system alerts
+		if admin.Email != "" {
+			go s.mailService.SendEmail(admin.Email, "CRITICAL: "+title, "<p>"+message+"</p>")
+		}
+	}
+}
