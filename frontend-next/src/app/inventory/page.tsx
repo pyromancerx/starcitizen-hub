@@ -52,7 +52,7 @@ function InventoryContent() {
       const params = new URLSearchParams();
       if (dbSearchQuery) params.append('q', dbSearchQuery);
       if (dbCategory) params.append('category', dbCategory);
-      const res = await api.get(`/game-data/items/search?${params.toString()}`);
+      const res = await api.get(`/game-data/items?${params.toString()}`);
       return res.data;
     },
     enabled: activeTab === 'database',
