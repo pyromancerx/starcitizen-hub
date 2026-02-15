@@ -24,6 +24,8 @@ function MissionContent() {
   const id = searchParams.get('id');
   const queryClient = useQueryClient();
   const [showShipSelect, setShowShipSelect] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<any>(null);
 
   const { data: operation, isLoading } = useQuery({
     queryKey: ['operation', id],
@@ -32,6 +34,36 @@ function MissionContent() {
       return res.data;
     },
     enabled: !!id,
+  });
+
+  // Pre-fill edit form when data is loaded
+  React.useEffect(() => {
+    if (operation && !editForm) {
+        setEditForm({
+            title: operation.title,
+            description: operation.description,
+            type: operation.type,
+            scheduled_at: operation.scheduled_at ? new Date(operation.scheduled_at).toISOString().slice(0, 16) : '',
+            required_roles: operation.required_roles || '',
+            required_ship_types: operation.required_ship_types || '',
+            security_level: operation.security_level || 'public',
+            comms_frequency: operation.comms_frequency || '',
+            intel_url: operation.intel_url || '',
+            hazards: operation.hazards || '',
+            status: operation.status || 'planning'
+        });
+    }
+  }, [operation, editForm]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.patch(`/operations/${id}`, data);
+    },
+    onSuccess: () => {
+      setShowEditModal(false);
+      queryClient.invalidateQueries({ queryKey: ['operation', id] });
+      alert('Mission parameters updated and synchronized.');
+    },
   });
 
   const { data: myShips } = useQuery({
@@ -104,21 +136,35 @@ function MissionContent() {
   });
 
   const isLeader = operation?.created_by_id === user?.id;
+  const isAdminOrOfficer = user?.roles?.some((r: any) => r.tier === 'admin' || r.tier === 'officer');
+  const canEdit = isLeader || isAdminOrOfficer;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div className="flex items-center space-x-4">
-        <Link href="/operations" className="p-2 hover:bg-white/5 rounded text-sc-blue transition-colors">
-          <ArrowLeft className="w-6 h-6" />
-        </Link>
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
-            {isLoading ? 'Decrypting Intel...' : operation?.title}
-          </h2>
-          <p className="text-[10px] text-sc-grey/40 uppercase tracking-[0.2em] font-mono ml-4">
-            Mission Reference: OP-{id?.toString().padStart(4, '0')}
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+            <Link href="/operations" className="p-2 hover:bg-white/5 rounded text-sc-blue transition-colors">
+            <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <div className="space-y-1">
+            <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
+                {isLoading ? 'Decrypting Intel...' : operation?.title}
+            </h2>
+            <p className="text-[10px] text-sc-grey/40 uppercase tracking-[0.2em] font-mono ml-4">
+                Mission Reference: OP-{id?.toString().padStart(4, '0')}
+            </p>
+            </div>
         </div>
+        
+        {canEdit && (
+            <button 
+                onClick={() => setShowEditModal(true)}
+                className="px-4 py-2 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center"
+            >
+                <Target className="w-3.5 h-3.5 mr-2" />
+                Modify Parameters
+            </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -497,6 +543,115 @@ function MissionContent() {
                             <span>Enlist as Infantry / Crew (No Ship)</span>
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Edit Operation Modal */}
+      {showEditModal && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-xl">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-4xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Target className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Update Mission Parameters</h3>
+                    </div>
+                    <button onClick={() => setShowEditModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                    <div className="space-y-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Operation Status</label>
+                            <select 
+                                value={editForm.status}
+                                onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none font-bold uppercase"
+                            >
+                                <option value="planning">Planning</option>
+                                <option value="active">Active / In Progress</option>
+                                <option value="completed">Mission Accomplished</option>
+                                <option value="cancelled">Aborted</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Mission Title</label>
+                            <input 
+                                value={editForm.title}
+                                onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-bold uppercase tracking-widest"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Security Classification</label>
+                            <select 
+                                value={editForm.security_level}
+                                onChange={(e) => setEditForm({...editForm, security_level: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none appearance-none font-bold uppercase"
+                            >
+                                <option value="public">Public</option>
+                                <option value="internal">Internal</option>
+                                <option value="restricted">Restricted</option>
+                                <option value="classified">Classified</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Deployment Time</label>
+                            <input 
+                                type="datetime-local"
+                                value={editForm.scheduled_at}
+                                onChange={(e) => setEditForm({...editForm, scheduled_at: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Requested Roles</label>
+                            <input 
+                                value={editForm.required_roles}
+                                onChange={(e) => setEditForm({...editForm, required_roles: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Requested Vessels</label>
+                            <input 
+                                value={editForm.required_ship_types}
+                                onChange={(e) => setEditForm({...editForm, required_ship_types: e.target.value})}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Briefing Intel</label>
+                            <textarea 
+                                value={editForm.description}
+                                onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                                rows={5}
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none resize-none italic"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="p-6 bg-black/40 border-t border-white/5 flex justify-end space-x-4">
+                    <button 
+                        onClick={() => setShowEditModal(false)}
+                        className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        onClick={() => updateMutation.mutate(editForm)}
+                        disabled={updateMutation.isPending}
+                        className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                    >
+                        {updateMutation.isPending ? 'Synchronizing...' : 'Save Parameters'}
+                    </button>
                 </div>
             </div>
         </div>

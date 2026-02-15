@@ -330,6 +330,7 @@ func main() {
 			r.Get("/operations/", logisticsHandler.ListOperations)
 			r.Post("/operations/", logisticsHandler.CreateOperation)
 			r.Get("/operations/{id}", logisticsHandler.GetOperation)
+			r.Patch("/operations/{id}", logisticsHandler.UpdateOperation)
 			r.Post("/operations/{id}/signup", logisticsHandler.SignupOperation)
 			r.Post("/operations/{id}/volunteer-sub", logisticsHandler.VolunteerSubLeader)
 			r.Post("/operations/sub-leaders/{subId}/process", logisticsHandler.ProcessSubLeader)

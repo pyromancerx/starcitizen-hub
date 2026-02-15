@@ -122,6 +122,17 @@ func (h *LogisticsHandler) ListOperations(w http.ResponseWriter, r *http.Request
 func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
 	
+	// 1. Check if user is RSI verified
+	var user models.User
+	if err := h.logisticsService.DB.First(&user, userID).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+	if !user.IsRSIVerified {
+		http.Error(w, "Unauthorized: Only RSI verified members can authorize operations", http.StatusForbidden)
+		return
+	}
+
 	var req struct {
 		Title             string `json:"title"`
 		Description       string `json:"description"`
@@ -143,7 +154,6 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 
 	scheduledTime, err := time.Parse("2006-01-02T15:04", req.ScheduledAt)
 	if err != nil {
-		// Try alternative format if common
 		scheduledTime, err = time.Parse(time.RFC3339, req.ScheduledAt)
 		if err != nil {
 			http.Error(w, "Invalid timestamp format. Use YYYY-MM-DDTHH:MM", http.StatusBadRequest)
@@ -179,6 +189,63 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 		Content: fmt.Sprintf("authorized a new operation: %s", op.Title),
 		CreatedAt: time.Now(),
 	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(op)
+}
+
+func (h *LogisticsHandler) UpdateOperation(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	// Fetch existing operation
+	var op models.Operation
+	if err := h.logisticsService.DB.First(&op, uint(id)).Error; err != nil {
+		http.Error(w, "Operation not found", http.StatusNotFound)
+		return
+	}
+
+	// Permission Check: Admin, Officer, or Creator
+	var user models.User
+	h.logisticsService.DB.Preload("Roles").First(&user, userID)
+	
+	isAuthorized := op.CreatedByID == userID
+	for _, role := range user.Roles {
+		if role.Tier == models.RoleTierAdmin || role.Tier == models.RoleTierOfficer {
+			isAuthorized = true
+			break
+		}
+	}
+
+	if !isAuthorized {
+		http.Error(w, "Unauthorized: Insufficient command clearance to modify operation", http.StatusForbidden)
+		return
+	}
+
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Handle Date parsing if present in updates
+	if sched, ok := updates["scheduled_at"].(string); ok && sched != "" {
+		scheduledTime, err := time.Parse("2006-01-02T15:04", sched)
+		if err == nil {
+			updates["scheduled_at"] = scheduledTime
+		} else {
+			scheduledTime, err = time.Parse(time.RFC3339, sched)
+			if err == nil {
+				updates["scheduled_at"] = scheduledTime
+			}
+		}
+	}
+
+	if err := h.logisticsService.DB.Model(&op).Updates(updates).Error; err != nil {
+		http.Error(w, "Failed to update operation", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(op)

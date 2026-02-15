@@ -42,6 +42,14 @@ export default function OperationsPage() {
     },
   });
 
+  const { data: profile } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: async () => {
+      const res = await api.get('/auth/me');
+      return res.data;
+    }
+  });
+
   const authorizeMutation = useMutation({
     mutationFn: async () => {
       // Ensure date is in a format the backend expects if it's not already ISO
@@ -81,13 +89,20 @@ export default function OperationsPage() {
             Active Combat & Logistics Deployment
           </p>
         </div>
-        <button 
-            onClick={() => setShowAuthModal(true)}
-            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Authorize Operation
-        </button>
+        {profile?.is_rsi_verified ? (
+            <button 
+                onClick={() => setShowAuthModal(true)}
+                className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+            >
+                <Plus className="w-4 h-4 mr-2" />
+                Authorize Operation
+            </button>
+        ) : (
+            <div className="px-4 py-2 bg-sc-grey/5 border border-sc-grey/20 text-sc-grey/40 text-[10px] font-bold uppercase tracking-widest flex items-center italic">
+                <Shield className="w-3.5 h-3.5 mr-2 opacity-20" />
+                Clearance Required
+            </div>
+        )}
       </div>
 
       <div className="space-y-4">
