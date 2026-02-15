@@ -29,56 +29,96 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 
 	log.Printf("Initiating RSI Roster Sync for Org: %s", orgSID.Value)
 
-	url := fmt.Sprintf("https://robertsspaceindustries.com/api/orgs/getOrgMembers?symbol=%s&pagesize=100", orgSID.Value)
-	
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	var result struct {
-		Success int `json:"success"`
-		Data struct {
-			HTML string `json:"html"`
-		} `json:"data"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return err
-	}
-
-	// RSI often returns HTML blobs. We use Regex to extract handles.
-	// Pattern for RSI Handle: href="/citizens/HANDLE"
+	page := 1
+	totalCount := 0
 	re := regexp.MustCompile(`href="/citizens/([^"]+)"`)
-	matches := re.FindAllStringSubmatch(result.Data.HTML, -1)
+	foundHandles := make(map[string]bool)
 
-	count := 0
-	for _, match := range matches {
-		handle := match[1]
-		if handle == "" { continue }
-
-		// Upsert logic:
-		// We create a user record if it doesn't exist.
-		// We set their email to a placeholder since we don't know it from RSI.
+	for {
+		url := fmt.Sprintf("https://robertsspaceindustries.com/api/orgs/getOrgMembers?symbol=%s&pagesize=100&page=%d", orgSID.Value, page)
 		
-		user := models.User{
-			RSIHandle:     handle,
-			DisplayName:   handle, // Default display name to handle
-			Email:         fmt.Sprintf("%s@sync-pending.hub", handle),
-			IsActive:      true,
-			IsRSIVerified: true, // Flag as RSI-verified since they're in the org roster
+		resp, err := http.Get(url)
+		if err != nil {
+			return err
+		}
+		
+		var result struct {
+			Success int         `json:"success"`
+			Data    interface{} `json:"data"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			resp.Body.Close()
+			return err
+		}
+		resp.Body.Close()
+
+		if result.Success != 1 {
+			return fmt.Errorf("RSI API reported failure at page %d (Success=%d)", page, result.Success)
 		}
 
-		// Use OnConflict to avoid duplicates and update status
-		err := s.db.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "rsi_handle"}},
-			DoUpdates: clause.AssignmentColumns([]string{"is_rsi_verified"}),
-		}).Create(&user).Error
+		var htmlContent string
+		switch d := result.Data.(type) {
+		case string:
+			htmlContent = d
+		case map[string]interface{}:
+			if h, ok := d["html"].(string); ok {
+				htmlContent = h
+			}
+		}
 
-		if err == nil { count++ }
+		if htmlContent == "" {
+			break // No more data
+		}
+
+		matches := re.FindAllStringSubmatch(htmlContent, -1)
+		if len(matches) == 0 {
+			break // End of roster
+		}
+
+		pageCount := 0
+		for _, match := range matches {
+			handle := match[1]
+			if handle == "" { continue }
+			foundHandles[handle] = true
+
+			user := models.User{
+				RSIHandle:     handle,
+				DisplayName:   handle,
+				Email:         fmt.Sprintf("%s@sync-pending.hub", handle),
+				IsActive:      true,
+				IsRSIVerified: true,
+			}
+
+			err := s.db.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "rsi_handle"}},
+				DoUpdates: clause.AssignmentColumns([]string{"is_rsi_verified"}),
+			}).Create(&user).Error
+
+			if err == nil { pageCount++ }
+		}
+
+		totalCount += pageCount
+		log.Printf("Synchronized page %d (%d members found)", page, pageCount)
+		
+		if len(matches) < 100 {
+			break // Last page
+		}
+		page++
 	}
 
-	log.Printf("Successfully synchronized %d RSI members for %s", count, orgSID.Value)
+	// De-verify members no longer in the RSI roster
+	var handlesInDB []string
+	s.db.Model(&models.User{}).Where("is_rsi_verified = ?", true).Pluck("rsi_handle", &handlesInDB)
+	
+	deverifiedCount := 0
+	for _, dbHandle := range handlesInDB {
+		if !foundHandles[dbHandle] {
+			s.db.Model(&models.User{}).Where("rsi_handle = ?", dbHandle).Update("is_rsi_verified", false)
+			deverifiedCount++
+		}
+	}
+
+	log.Printf("Successfully synchronized %d total RSI members for %s (%d de-verified)", totalCount, orgSID.Value, deverifiedCount)
 	return nil
 }
 
