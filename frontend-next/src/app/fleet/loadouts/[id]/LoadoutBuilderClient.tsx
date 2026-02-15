@@ -164,8 +164,35 @@ export default function LoadoutBuilderClient() {
 
   if (isLoading) return <div className="p-20 text-center uppercase font-black text-sc-blue animate-pulse tracking-[0.5em]">Synchronizing Blueprint...</div>;
 
-  // 3. Parse and Group Dynamic Hardpoints
-  const rawHardpoints = JSON.parse(loadout?.ship_model?.hardpoints || '{}');
+  // 3. Robust Hardpoint Normalization & Grouping
+  const normalizedHardpoints = (() => {
+    try {
+      const parsed = typeof loadout?.ship_model?.hardpoints === 'string' 
+        ? JSON.parse(loadout.ship_model.hardpoints) 
+        : loadout?.ship_model?.hardpoints;
+      
+      if (Array.isArray(parsed)) {
+        return parsed.map((hp: any, idx: number) => ({
+          id: hp.HardpointName || hp.name || `hp_${idx}`,
+          name: hp.name || hp.HardpointName || hp.category || 'Hardpoint',
+          type: hp.type || (hp.ItemTypes?.[0]?.Type) || 'Unknown',
+          size: hp.size || hp.MaxSize || 0
+        }));
+      }
+      
+      if (typeof parsed === 'object' && parsed !== null) {
+        return Object.entries(parsed).map(([key, val]: [string, any]) => ({
+          id: key,
+          name: val.name || val.HardpointName || key,
+          type: val.type || (val.ItemTypes?.[0]?.Type) || 'Unknown',
+          size: val.size || val.MaxSize || 0
+        }));
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  })();
   
   const groupedHardpoints = {
     weapons: [] as any[],
@@ -173,22 +200,23 @@ export default function LoadoutBuilderClient() {
     utility: [] as any[]
   };
 
-  // Logic to process scunpacked hardpoint structure
-  if (typeof rawHardpoints === 'object') {
-    Object.entries(rawHardpoints).forEach(([key, hp]: [string, any]) => {
-        // Filter for user-interactable slots
-        const type = hp.type || '';
-        const name = hp.name || hp.label || key;
-        
-        if (type.includes('Weapon') || type.includes('Missile') || type.includes('Turret')) {
-            groupedHardpoints.weapons.push({ id: key, name, type, size: hp.size });
-        } else if (type.includes('Shield') || type.includes('Power') || type.includes('Cooler') || type.includes('Quantum')) {
-            groupedHardpoints.systems.push({ id: key, name, type, size: hp.size });
-        } else if (hp.size > 0) {
-            groupedHardpoints.utility.push({ id: key, name, type, size: hp.size });
-        }
-    });
-  }
+  normalizedHardpoints.forEach((hp: any) => {
+    const type = hp.type?.toLowerCase() || '';
+    const name = hp.name?.toLowerCase() || '';
+    
+    // Filter out internal technical hardpoints
+    if (name.includes('light') || name.includes('helper') || type.includes('room') || type.includes('decal')) {
+        return;
+    }
+
+    if (type.includes('weapon') || type.includes('missile') || type.includes('turret')) {
+        groupedHardpoints.weapons.push(hp);
+    } else if (type.includes('shield') || type.includes('power') || type.includes('cooler') || type.includes('quantum')) {
+        groupedHardpoints.systems.push(hp);
+    } else if (hp.size > 0) {
+        groupedHardpoints.utility.push(hp);
+    }
+  });
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-6">
@@ -468,7 +496,9 @@ const HardpointGroup = ({ title, icon, items, selected, onSelect, configuration 
                                 <div className="w-1.5 h-1.5 bg-sc-blue rounded-full shadow-[0_0_5px_rgba(var(--color-sc-blue-rgb),0.8)]"></div>
                             </div>
                         )}
-                        <div className="text-[10px] font-bold text-white uppercase tracking-widest group-hover:text-sc-blue transition-colors truncate">{hp.name}</div>
+                        <div className="text-[10px] font-bold text-white uppercase tracking-widest group-hover:text-sc-blue transition-colors truncate">
+                            {hp.name.replace(/hardpoint_/g, '').replace(/_/g, ' ')}
+                        </div>
                         <div className="mt-1 flex items-center justify-between">
                             <span className={cn(
                                 "text-[8px] uppercase font-mono italic truncate max-w-[120px]",
