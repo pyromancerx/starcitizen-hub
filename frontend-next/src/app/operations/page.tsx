@@ -27,6 +27,8 @@ export default function OperationsPage() {
     type: 'Combat',
     scheduled_at: '',
     max_participants: 10,
+    required_roles: '',
+    required_ship_types: '',
   });
 
   const { data: operations, isLoading } = useQuery({
@@ -215,10 +217,28 @@ export default function OperationsPage() {
 
                     {/* Requirements */}
                     <div className="space-y-6">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Requested Roles</label>
+                            <input 
+                                value={newOp.required_roles}
+                                onChange={(e) => setNewOp({...newOp, required_roles: e.target.value})}
+                                placeholder="e.g. Pilot, Medical, Security..."
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-bold uppercase tracking-widest"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Requested Vessels</label>
+                            <input 
+                                value={newOp.required_ship_types}
+                                onChange={(e) => setNewOp({...newOp, required_ship_types: e.target.value})}
+                                placeholder="e.g. Carrack, Gladius, Cutlass Red..."
+                                className="w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-bold uppercase tracking-widest"
+                            />
+                        </div>
                         <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3">
                             <Package className="w-4 h-4 text-sc-blue mt-0.5" />
                             <p className="text-[9px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-widest">
-                                Operations can be configured with more options via the CLI.
+                                Requested assets and roles will be displayed to all tactical units viewing this intel.
                             </p>
                         </div>
                     </div>

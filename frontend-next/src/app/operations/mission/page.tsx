@@ -292,16 +292,31 @@ function MissionContent() {
           </div>
 
           <div className="bg-sc-panel border border-sc-grey/10 rounded-lg p-6">
-            <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4">Tactical Requirements</h4>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2 text-xs text-sc-grey/60">
-                <Rocket className="w-3.5 h-3.5 text-sc-blue/50" />
-                <span>Medium Fighter or larger</span>
-              </div>
-              <div className="flex items-center space-x-2 text-xs text-sc-grey/60">
-                <Shield className="w-3.5 h-3.5 text-sc-blue/50" />
-                <span>Class 2 Body Armor</span>
-              </div>
+            <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-4 border-b border-white/5 pb-2">Tactical Requirements</h4>
+            <div className="space-y-6">
+              {operation?.required_roles && (
+                <div className="space-y-2">
+                  <span className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Requested Personnel Roles</span>
+                  <div className="flex flex-wrap gap-2">
+                    {operation.required_roles.split(',').map((role: string, i: number) => (
+                      <span key={i} className="px-2 py-1 bg-sc-blue/5 border border-sc-blue/20 rounded text-[9px] font-bold text-white uppercase">{role.trim()}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {operation?.required_ship_types && (
+                <div className="space-y-2">
+                  <span className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Requested Vessel Classes</span>
+                  <div className="flex flex-wrap gap-2">
+                    {operation.required_ship_types.split(',').map((ship: string, i: number) => (
+                      <span key={i} className="px-2 py-1 bg-white/5 border border-white/10 rounded text-[9px] font-bold text-white uppercase">{ship.trim()}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {!operation?.required_roles && !operation?.required_ship_types && (
+                <div className="text-[9px] text-sc-grey/40 uppercase italic">No specific asset or role requirements recorded.</div>
+              )}
             </div>
           </div>
         </div>

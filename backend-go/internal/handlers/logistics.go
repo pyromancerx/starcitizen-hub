@@ -123,10 +123,12 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 	userID := r.Context().Value("user_id").(uint)
 	
 	var req struct {
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		Type        string `json:"type"`
-		ScheduledAt string `json:"scheduled_at"`
+		Title             string `json:"title"`
+		Description       string `json:"description"`
+		Type              string `json:"type"`
+		ScheduledAt       string `json:"scheduled_at"`
+		RequiredRoles     string `json:"required_roles"`
+		RequiredShipTypes string `json:"required_ship_types"`
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -145,12 +147,14 @@ func (h *LogisticsHandler) CreateOperation(w http.ResponseWriter, r *http.Reques
 	}
 
 	op := models.Operation{
-		Title:       req.Title,
-		Description: req.Description,
-		Type:        req.Type,
-		ScheduledAt: scheduledTime,
-		CreatedByID: userID,
-		Status:      "planning",
+		Title:             req.Title,
+		Description:       req.Description,
+		Type:              req.Type,
+		ScheduledAt:       scheduledTime,
+		CreatedByID:       userID,
+		Status:            "planning",
+		RequiredRoles:     req.RequiredRoles,
+		RequiredShipTypes: req.RequiredShipTypes,
 	}
 
 	if err := h.logisticsService.CreateOperation(&op); err != nil {
