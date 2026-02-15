@@ -208,7 +208,12 @@ func (s *GameDataService) SyncShips() error {
 					var detail map[string]interface{}
 					if err := json.NewDecoder(dResp.Body).Decode(&detail); err == nil {
 						// Map detailed hardpoints
-						if hpSource, ok := detail["hardpoints"]; ok {
+						hpSource := detail["hardpoints"]
+						if hpSource == nil {
+							hpSource = detail["Loadout"]
+						}
+
+						if hpSource != nil {
 							hpData, _ := json.Marshal(hpSource)
 							hardpoints = string(hpData)
 
@@ -273,17 +278,21 @@ func processHPs(hpSource interface{}, defMap map[string]string) {
 	case []interface{}:
 		for _, hpRaw := range hps {
 			if hp, ok := hpRaw.(map[string]interface{}); ok {
-				hpName := getFirstString(hp, "name", "Name")
-				installed := getFirstString(hp, "installedItem", "InstalledItem")
+				hpName := getFirstString(hp, "name", "Name", "HardpointName", "hardpointName")
+				installed := getFirstString(hp, "installedItem", "InstalledItem", "ClassName", "className")
 				if hpName != "" && installed != "" {
 					defMap[hpName] = installed
+				}
+				// Handle recursive loadouts (common in ship files)
+				if subLoadout, ok := hp["Loadout"].([]interface{}); ok {
+					processHPs(subLoadout, defMap)
 				}
 			}
 		}
 	case map[string]interface{}:
 		for hpName, hpRaw := range hps {
 			if hp, ok := hpRaw.(map[string]interface{}); ok {
-				installed := getFirstString(hp, "installedItem", "InstalledItem")
+				installed := getFirstString(hp, "installedItem", "InstalledItem", "ClassName", "className")
 				if installed != "" {
 					defMap[hpName] = installed
 				}

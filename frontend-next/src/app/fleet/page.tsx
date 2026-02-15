@@ -182,14 +182,39 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
     }
   })();
 
+  const getDeepStat = (obj: any, path: string): any => {
+    return path.split('.').reduce((prev, curr) => prev?.[curr], obj);
+  };
+
+  const scmSpeed = stats.ScmSpeed || stats.scm_speed || stats.Speed || 
+                   getDeepStat(stats, 'Speeds.Scm') || 
+                   getDeepStat(stats, 'FlightCharacteristics.Speeds.Scm') || 
+                   getDeepStat(stats, 'FlightCharacteristics.IFCS.ScmSpeed') || '--';
+
+  const maxSpeed = stats.AfterburnerSpeed || stats.afterburner_speed || stats.MaxSpeed || 
+                   getDeepStat(stats, 'Speeds.Max') || 
+                   getDeepStat(stats, 'FlightCharacteristics.Speeds.Max') || 
+                   getDeepStat(stats, 'FlightCharacteristics.IFCS.MaxSpeed') || '--';
+
   const hardpoints = (() => {
     try {
       const parsed = typeof model.hardpoints === 'string' ? JSON.parse(model.hardpoints) : model.hardpoints;
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.map((hp: any) => ({
+          name: hp.name || hp.HardpointName || hp.category || 'Hardpoint',
+          installedItem: hp.installedItem || hp.ClassName || hp.InstalledItem || null,
+          size: hp.size || hp.MaxSize || 0,
+          type: hp.type || (hp.ItemTypes?.[0]?.Type) || 'Unknown'
+        }));
+      }
       if (typeof parsed === 'object' && parsed !== null) {
         return Object.entries(parsed).map(([key, val]: [string, any]) => ({
           name: key,
-          ...(typeof val === 'object' ? val : { installedItem: val })
+          ...(typeof val === 'object' ? {
+            installedItem: val.installedItem || val.ClassName || val.InstalledItem,
+            size: val.size || val.MaxSize,
+            type: val.type || (val.ItemTypes?.[0]?.Type)
+          } : { installedItem: val })
         }));
       }
       return [];
@@ -197,6 +222,13 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
       return [];
     }
   })();
+
+  // Filter out non-interactable or trivial hardpoints
+  const filteredHardpoints = hardpoints.filter((hp: any) => {
+    const n = hp.name?.toLowerCase() || '';
+    const t = hp.type?.toLowerCase() || '';
+    return !n.includes('light') && !n.includes('helper') && !t.includes('room') && !t.includes('decal');
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
@@ -229,8 +261,8 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
                     <div className="grid grid-cols-2 gap-4">
                         <StatBox label="Mass" value={`${(model.mass || stats.Mass || stats.MassTotal || 0).toLocaleString()} kg`} />
                         <StatBox label="Cargo" value={`${model.cargo_capacity || stats.Cargo || stats.CargoCapacity || 0} SCU`} />
-                        <StatBox label="SCM Speed" value={`${stats.ScmSpeed || stats.scm_speed || stats.Speed || '--'} m/s`} />
-                        <StatBox label="Afterburner" value={`${stats.AfterburnerSpeed || stats.afterburner_speed || stats.MaxSpeed || '--'} m/s`} />
+                        <StatBox label="SCM Speed" value={`${scmSpeed} m/s`} />
+                        <StatBox label="Afterburner" value={`${maxSpeed} m/s`} />
                     </div>
                 </div>
 
@@ -243,19 +275,19 @@ const ShipBlueprintModal = ({ model, onClose }: { model: any, onClose: () => voi
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {hardpoints.length > 0 ? (
-                                hardpoints.map((hp: any, i: number) => (
+                            {filteredHardpoints.length > 0 ? (
+                                filteredHardpoints.map((hp: any, i: number) => (
                                     <div key={i} className="flex items-center space-x-3 p-3 bg-black/20 border border-white/5 rounded">
                                         <div className="w-8 h-8 bg-sc-dark rounded flex items-center justify-center border border-white/5">
                                             {hp.type?.includes('Weapon') ? <Rocket className="w-4 h-4 text-sc-blue/40" /> : <Box className="w-4 h-4 text-sc-grey/40" />}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest truncate">{hp.name || hp.category || 'Hardpoint'}</span>
+                                            <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest truncate">{hp.name.replace(/hardpoint_/g, '').replace(/_/g, ' ')}</span>
                                             <span className="text-[10px] text-white font-bold truncate">
                                                 {hp.installedItem ? (
                                                     hp.installedItem.replace(/_/g, ' ')
                                                 ) : (
-                                                    `Size ${hp.size} Slot`
+                                                    hp.size > 0 ? `Size ${hp.size} Slot` : 'Integrated System'
                                                 )}
                                             </span>
                                         </div>
