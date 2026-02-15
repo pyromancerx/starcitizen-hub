@@ -23,9 +23,154 @@ import {
   Weight,
   Anchor,
   CheckSquare,
-  Square
+  Square,
+  MapPin,
+  Save,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+const ShipSystemsModal = ({ ship, onClose, onUpdate }: { ship: any, onClose: () => void, onUpdate: any }) => {
+  const [location, setLocation] = useState(ship.location || '');
+  const [loadout, setLoadout] = useState<any>(() => {
+    try {
+      const parsed = typeof ship.loadout === 'string' ? JSON.parse(ship.loadout || '{}') : (ship.loadout || {});
+      return parsed;
+    } catch (e) {
+      return {};
+    }
+  });
+  const [newKey, setNewKey] = useState('');
+  const [newVal, setNewVal] = useState('');
+
+  const handleSave = () => {
+    onUpdate.mutate({
+      id: ship.id,
+      updates: {
+        location,
+        loadout: JSON.stringify(loadout)
+      }
+    });
+  };
+
+  const addComponent = () => {
+    if (!newKey) return;
+    setLoadout({ ...loadout, [newKey]: newVal });
+    setNewKey('');
+    setNewVal('');
+  };
+
+  const removeComponent = (key: string) => {
+    const next = { ...loadout };
+    delete next[key];
+    setLoadout(next);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+        <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-2xl shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                    <Zap className="w-5 h-5 text-sc-blue" />
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest">{ship.ship_type} Systems Management</h3>
+                </div>
+                <button onClick={onClose} className="text-sc-grey/40 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                </button>
+            </div>
+
+            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                {/* Location Section */}
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
+                        <MapPin className="w-4 h-4 text-sc-blue" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Stationary Coordinates</span>
+                    </div>
+                    <div className="flex space-x-4">
+                        <input 
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            placeholder="e.g. Port Olisar, Stanton II"
+                            className="flex-1 bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                </div>
+
+                {/* Loadout Section */}
+                <div className="space-y-4">
+                    <div className="flex items-center space-x-2 border-b border-white/5 pb-2">
+                        <Shield className="w-4 h-4 text-sc-blue" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">Component Manifest</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        {Object.entries(loadout).map(([key, val]: [string, any]) => (
+                            <div key={key} className="flex items-center justify-between p-3 bg-black/20 border border-white/5 rounded group">
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black text-sc-blue uppercase tracking-widest">{key}</span>
+                                    <span className="text-xs text-white font-bold">{val}</span>
+                                </div>
+                                <button 
+                                    onClick={() => removeComponent(key)}
+                                    className="p-1 text-sc-grey/20 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/5">
+                            <div className="space-y-1">
+                                <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Hardpoint Name</label>
+                                <input 
+                                    value={newKey}
+                                    onChange={(e) => setNewKey(e.target.value)}
+                                    placeholder="e.g. Weapon 1"
+                                    className="w-full bg-sc-dark border border-white/10 rounded px-3 py-1.5 text-[10px] text-white focus:border-sc-blue/50 outline-none"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Component Designation</label>
+                                <div className="flex space-x-2">
+                                    <input 
+                                        value={newVal}
+                                        onChange={(e) => setNewVal(e.target.value)}
+                                        placeholder="e.g. CF-337 Panther"
+                                        className="flex-1 bg-sc-dark border border-white/10 rounded px-3 py-1.5 text-[10px] text-white focus:border-sc-blue/50 outline-none"
+                                    />
+                                    <button 
+                                        onClick={addComponent}
+                                        className="px-3 bg-sc-blue/10 border border-sc-blue text-sc-blue rounded hover:bg-sc-blue hover:text-sc-dark transition-all"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="p-4 bg-black/40 border-t border-sc-blue/10 flex justify-end space-x-4">
+                <button 
+                    onClick={onClose}
+                    className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                >
+                    Discard Changes
+                </button>
+                <button 
+                    onClick={handleSave}
+                    disabled={onUpdate.isPending}
+                    className="px-8 py-2 bg-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all flex items-center space-x-2"
+                >
+                    <Save className="w-4 h-4" />
+                    <span>{onUpdate.isPending ? 'Synchronizing...' : 'Save Configuration'}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+  );
+};
 
 function FleetContent() {
   const queryClient = useQueryClient();
@@ -35,6 +180,7 @@ function FleetContent() {
   const [activeTab, setActiveTab] = useState<'my-ships' | 'database'>('my-ships');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedShips, setSelectedShips] = useState<number[]>([]);
+  const [selectedShipSystems, setSelectedShipSystems] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newShip, setNewShip] = useState({
     name: '',
@@ -86,8 +232,8 @@ function FleetContent() {
   });
 
   const bulkUpdateMutation = useMutation({
-    mutationFn: async ({ ids, status }: { ids: number[], status: string }) => {
-      return api.patch('/ships/bulk', { ids, update: { status } });
+    mutationFn: async ({ ids, update }: { ids: number[], update: any }) => {
+      return api.patch('/ships/bulk', { ids, update });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-ships'] });
@@ -120,12 +266,16 @@ function FleetContent() {
     },
   });
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number, status: string }) => {
-      return api.patch(`/ships/${id}`, { status });
+  const updateShipMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number, updates: any }) => {
+      return api.patch(`/ships/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-ships'] });
+      if (selectedShipSystems) {
+        // Find the updated ship in the local state or just close and let it refetch
+        setSelectedShipSystems(null);
+      }
     },
   });
 
@@ -256,7 +406,7 @@ function FleetContent() {
                     {['ready', 'damaged', 'destroyed', 'stored'].map((status) => (
                       <button
                         key={status}
-                        onClick={() => bulkUpdateMutation.mutate({ ids: selectedShips, status })}
+                        onClick={() => bulkUpdateMutation.mutate({ ids: selectedShips, update: { status } })}
                         className={cn(
                           "px-2 py-1 rounded text-[8px] font-black uppercase tracking-tighter border transition-all",
                           status === 'ready' && "border-green-500/30 text-green-500 hover:bg-green-500/10",
@@ -363,7 +513,7 @@ function FleetContent() {
                       <select 
                         value={ship.status}
                         onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => updateStatusMutation.mutate({ id: ship.id, status: e.target.value })}
+                        onChange={(e) => updateShipMutation.mutate({ id: ship.id, updates: { status: e.target.value } })}
                         className={cn(
                           "w-full bg-sc-dark/50 border border-sc-grey/20 rounded px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-sc-blue/50 transition-all",
                           statusColors[ship.status]
@@ -375,10 +525,20 @@ function FleetContent() {
                         <option value="stored">In Hangar</option>
                       </select>
                     </div>
+
+                    {ship.location && (
+                      <div className="pt-2 border-t border-white/5 flex items-center space-x-2">
+                        <MapPin className="w-3 h-3 text-sc-blue/40" />
+                        <span className="text-[9px] text-sc-grey/60 uppercase font-bold truncate">{ship.location}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="px-4 py-2 bg-black/20 border-t border-sc-grey/5 flex justify-between items-center">
-                    <button className="text-[9px] text-sc-blue/50 hover:text-sc-blue uppercase font-black tracking-widest transition-colors flex items-center">
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setSelectedShipSystems(ship); }}
+                      className="text-[9px] text-sc-blue/50 hover:text-sc-blue uppercase font-black tracking-widest transition-colors flex items-center"
+                    >
                       <Info className="w-3 h-3 mr-1" />
                       View Systems
                     </button>
@@ -425,12 +585,16 @@ function FleetContent() {
                             <span className="text-[8px] text-sc-grey/30 font-mono">SN: {ship.serial_number || 'NOT_REGISTERED'}</span>
                           </div>
                         </td>
-                        <td className="p-4">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold text-sc-blue uppercase tracking-widest">{ship.ship_type}</span>
-                            <span className="text-[8px] text-sc-grey/40 uppercase font-mono">UEE Registry Record Active</span>
-                          </div>
-                        </td>
+                                                  <td className="p-4">
+                                                    <div className="flex flex-col">
+                                                      <span className="text-[10px] font-bold text-sc-blue uppercase tracking-widest">{ship.ship_type}</span>
+                                                      <div className="flex items-center space-x-1">
+                                                        <MapPin className="w-2.5 h-2.5 text-sc-grey/30" />
+                                                        <span className="text-[8px] text-sc-grey/40 uppercase font-mono">{ship.location || 'Unknown Coordinates'}</span>
+                                                      </div>
+                                                    </div>
+                                                  </td>
+                        
                         <td className="p-4">
                           <span className={cn(
                             "px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border",
@@ -445,7 +609,7 @@ function FleetContent() {
                           <select 
                             value={ship.status}
                             onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => updateStatusMutation.mutate({ id: ship.id, status: e.target.value })}
+                            onChange={(e) => updateShipMutation.mutate({ id: ship.id, updates: { status: e.target.value } })}
                             className={cn(
                               "bg-sc-dark/50 border border-sc-grey/20 rounded px-2 py-1 text-[9px] font-bold uppercase tracking-widest outline-none focus:border-sc-blue/50 transition-all",
                               statusColors[ship.status]
@@ -457,11 +621,15 @@ function FleetContent() {
                             <option value="stored">Stored</option>
                           </select>
                         </td>
-                        <td className="p-4 text-right">
-                          <button className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all">
-                            <Info className="w-4 h-4" />
-                          </button>
-                        </td>
+                                                  <td className="p-4 text-right">
+                                                    <button 
+                                                      onClick={(e) => { e.stopPropagation(); setSelectedShipSystems(ship); }}
+                                                      className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all"
+                                                    >
+                                                      <Info className="w-4 h-4" />
+                                                    </button>
+                                                  </td>
+                        
                       </tr>
                     ))}
                   </tbody>
@@ -700,6 +868,15 @@ function FleetContent() {
                 </form>
             </div>
         </div>
+      )}
+
+      {/* Ship Systems Management Modal */}
+      {selectedShipSystems && (
+        <ShipSystemsModal 
+          ship={selectedShipSystems} 
+          onClose={() => setSelectedShipSystems(null)}
+          onUpdate={updateShipMutation}
+        />
       )}
     </div>
   );

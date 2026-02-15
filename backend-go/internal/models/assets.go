@@ -18,6 +18,7 @@ type Ship struct {
 	Loadout            string         `gorm:"type:json" json:"loadout"` // JSON string
 	Notes              string         `gorm:"type:text" json:"notes"`
 	Status             string         `gorm:"size:50;default:'ready'" json:"status"`
+	Location           string         `gorm:"size:255" json:"location"`
 	CustomAttributes   string         `gorm:"type:json" json:"custom_attributes"` // JSON string
 	LastSyncedAt       *time.Time     `json:"last_synced_at"`
 	CreatedAt          time.Time      `json:"created_at"`
