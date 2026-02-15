@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -35,9 +36,25 @@ func (s *RSISyncService) SyncOrganizationMembers() error {
 	foundHandles := make(map[string]bool)
 
 	for {
-		url := fmt.Sprintf("https://robertsspaceindustries.com/api/orgs/getOrgMembers?symbol=%s&pagesize=100&page=%d", orgSID.Value, page)
+		apiUrl := "https://robertsspaceindustries.com/api/orgs/getOrgMembers"
 		
-		resp, err := http.Get(url)
+		payload := map[string]interface{}{
+			"symbol":   orgSID.Value,
+			"pagesize": 100,
+			"page":     page,
+		}
+		jsonPayload, _ := json.Marshal(payload)
+
+		req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(jsonPayload))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Origin", "https://robertsspaceindustries.com")
+		req.Header.Set("Referer", fmt.Sprintf("https://robertsspaceindustries.com/orgs/%s", orgSID.Value))
+		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}

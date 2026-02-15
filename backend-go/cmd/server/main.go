@@ -17,6 +17,7 @@ import (
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/handlers"
 	customMiddleware "github.com/pyromancerx/starcitizen-hub/backend-go/internal/middleware"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
 )
 
@@ -210,6 +211,36 @@ func main() {
 			log.Fatal("User not found")
 		}
 		log.Printf("User %s approved successfully\n", *email)
+		os.Exit(0)
+	}
+
+	if *action == "sync-rsi" {
+		syncService := services.NewRSISyncService(database.DB)
+		if err := syncService.SyncOrganizationMembers(); err != nil {
+			log.Fatalf("Manual RSI sync failed: %v", err)
+		}
+		log.Println("Manual RSI sync completed successfully")
+		os.Exit(0)
+	}
+
+	if *action == "sync-game-data" {
+		gameDataService := services.NewGameDataService(database.DB)
+		if err := gameDataService.SyncFromCommunityData(); err != nil {
+			log.Fatalf("Manual game data sync failed: %v", err)
+		}
+		log.Println("Manual game data sync completed successfully")
+		os.Exit(0)
+	}
+
+	if *action == "set-setting" {
+		if *handle == "" {
+			log.Fatal("Key (via -handle) is required")
+		}
+		adminService := services.NewAdminService()
+		if err := adminService.UpdateSetting(*handle, *name); err != nil {
+			log.Fatalf("Failed to update setting: %v", err)
+		}
+		log.Printf("Setting %s updated to %s\n", *handle, *name)
 		os.Exit(0)
 	}
 
