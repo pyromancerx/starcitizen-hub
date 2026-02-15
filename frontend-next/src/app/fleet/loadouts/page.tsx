@@ -42,6 +42,9 @@ export default function LoadoutDashboardPage() {
     },
   });
 
+  const standardLoadouts = loadouts?.filter((l: any) => l.is_standard_issue) || [];
+  const personalLoadouts = loadouts?.filter((l: any) => !l.is_standard_issue) || [];
+
   return (
     <div className="space-y-8">
       {/* Header Section */}
@@ -74,18 +77,28 @@ export default function LoadoutDashboardPage() {
                     </p>
                     
                     <div className="space-y-2">
-                        {[1, 2].map((i) => (
-                            <div key={i} className="p-4 bg-black/40 border border-white/5 rounded hover:border-sc-blue/30 transition-all cursor-pointer group">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">F7C MkII - Combat Ace</span>
-                                    <Dna className="w-3 h-3 text-sc-blue opacity-40" />
+                        {standardLoadouts.length > 0 ? (
+                            standardLoadouts.map((loadout: any) => (
+                                <div 
+                                    key={loadout.id} 
+                                    onClick={() => router.push(`/fleet/loadouts/${loadout.id}`)}
+                                    className="p-4 bg-black/40 border border-white/5 rounded hover:border-sc-blue/30 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{loadout.ship_model?.name} - {loadout.template_name}</span>
+                                        <Dna className="w-3 h-3 text-sc-blue opacity-40" />
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <div className="px-2 py-0.5 bg-sc-blue/10 rounded text-[8px] font-bold text-sc-blue uppercase">Standard Issue</div>
+                                        <div className="text-[8px] text-sc-grey/40 uppercase font-mono italic">Sync: Active</div>
+                                    </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                    <div className="px-2 py-0.5 bg-sc-blue/10 rounded text-[8px] font-bold text-sc-blue uppercase">Tier 1</div>
-                                    <div className="text-[8px] text-sc-grey/40 uppercase font-mono italic">Revised: 2954.02.14</div>
-                                </div>
+                            ))
+                        ) : (
+                            <div className="p-8 text-center text-[10px] text-sc-grey/20 uppercase font-black italic border border-dashed border-white/5 rounded">
+                                No standard templates synchronized.
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
             </div>
@@ -124,7 +137,7 @@ export default function LoadoutDashboardPage() {
         {/* Right Col: Personal & Active Loadouts */}
         <div className="lg:col-span-2 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {!loadouts || loadouts.length === 0 ? (
+                {!personalLoadouts || personalLoadouts.length === 0 ? (
                     <div className="md:col-span-2 p-20 bg-sc-panel border border-dashed border-sc-grey/20 rounded-lg flex flex-col items-center justify-center space-y-4 opacity-40 text-center">
                         <div className="h-16 w-16 rounded-full bg-sc-dark border border-sc-grey/10 flex items-center justify-center text-sc-blue/40 animate-pulse">
                             <Rocket className="w-8 h-8" />
@@ -135,7 +148,7 @@ export default function LoadoutDashboardPage() {
                         </div>
                     </div>
                 ) : (
-                    loadouts.map((loadout: any) => (
+                    personalLoadouts.map((loadout: any) => (
                         <LoadoutCard key={loadout.id} loadout={loadout} />
                     ))
                 )}
