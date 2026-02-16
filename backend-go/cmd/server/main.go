@@ -386,6 +386,7 @@ func main() {
 							
 							r.Get("/admin/users", adminHandler.ListUsers)
 							r.Patch("/admin/users/bulk", adminHandler.BulkUpdateUsers)
+							r.Delete("/admin/users/bulk", adminHandler.BulkDeleteUsers)
 							r.Get("/admin/rsi-members", adminHandler.ListRSIMembers)
 							r.Patch("/admin/users/me/notifications", adminHandler.UpdateMyNotificationSettings)
 							r.Post("/admin/users", adminHandler.CreateUser)

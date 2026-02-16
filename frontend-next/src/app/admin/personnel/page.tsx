@@ -127,6 +127,17 @@ export default function AdminPersonnelPage() {
     },
   });
 
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      return api.delete('/admin/users/bulk', { data: { ids } });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setSelectedUsers([]);
+      alert('Personnel records purged from system.');
+    },
+  });
+
   const { data: rsiMembers } = useQuery({
     queryKey: ['rsi-members'],
     queryFn: async () => {
@@ -249,6 +260,16 @@ export default function AdminPersonnelPage() {
                         className="px-3 py-1 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[8px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all"
                     >
                         Restore Signal
+                    </button>
+                    <button 
+                        onClick={() => {
+                            if(confirm(`Are you sure you want to permanently delete ${selectedUsers.length} users?`)) {
+                                bulkDeleteMutation.mutate(selectedUsers);
+                            }
+                        }}
+                        className="px-3 py-1 bg-red-500/20 border border-red-500/50 text-red-500 text-[8px] font-black rounded uppercase hover:bg-red-500 hover:text-white transition-all ml-4"
+                    >
+                        Delete Records
                     </button>
                 </div>
             </div>
