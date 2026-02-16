@@ -60,28 +60,28 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+        <h2 className="text-xl md:text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
           Command Dashboard
         </h2>
-        <div className="text-xs text-sc-grey font-mono">
+        <div className="text-[10px] md:text-xs text-sc-grey font-mono pl-4 md:pl-0">
           System Status: <span className="text-green-500 font-bold">OPERATIONAL</span>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {statCards.map((stat) => (
-          <div key={stat.label} className="bg-sc-panel border border-sc-grey/10 p-6 rounded relative overflow-hidden group">
+          <div key={stat.label} className="bg-sc-panel border border-sc-grey/10 p-4 md:p-6 rounded relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
-              <stat.icon className="w-16 h-16" />
+              <stat.icon className="w-12 h-12 md:w-16 md:h-16" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-sc-grey/40 uppercase tracking-[0.2em] mb-1">
+              <span className="text-[8px] md:text-[10px] font-black text-sc-grey/40 uppercase tracking-[0.2em] mb-1">
                 {stat.label}
               </span>
-              <span className={`text-2xl font-bold ${stat.color}`}>
+              <span className={`text-lg md:text-2xl font-bold ${stat.color}`}>
                 {statsLoading ? '---' : stat.value}
               </span>
             </div>

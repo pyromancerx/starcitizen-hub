@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User as UserIcon, ChevronDown, LogOut, Book, User as UserCircle, Rocket, Shield, MessageSquare, Database, Box } from 'lucide-react';
+import { Search, Bell, User as UserIcon, ChevronDown, LogOut, Book, User as UserCircle, Rocket, Shield, MessageSquare, Database, Box, Menu } from 'lucide-react';
 import { useThemeStore } from '@/store/themeStore';
 import { useAuthStore } from '@/store/authStore';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -9,7 +9,7 @@ import api from '@/lib/api';
 import Link from 'next/link';
 import { cn, useIsMounted, formatDate } from '@/lib/utils';
 
-const Header = () => {
+const Header = ({ onMenuClick }: { onMenuClick?: () => void }) => {
   const isMounted = useIsMounted();
   const { settings } = useThemeStore();
   const { user, logout } = useAuthStore();
@@ -72,12 +72,20 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="bg-sc-panel border-b border-sc-grey/10 h-16 flex items-center justify-between px-8 shadow-2xl z-20 sticky top-0">
-      <div className="md:hidden flex items-center space-x-2">
-        {settings.logo_url && (
-          <img src={settings.logo_url} className="h-6 w-6 object-contain" alt="Logo" />
-        )}
-        <span className="text-xl font-bold text-sc-blue uppercase">{settings.org_name}</span>
+    <header className="bg-sc-panel border-b border-sc-grey/10 h-16 flex items-center justify-between px-4 md:px-8 shadow-2xl z-20 sticky top-0">
+      <div className="flex items-center space-x-2">
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden p-2 -ml-2 text-sc-grey/40 hover:text-sc-blue transition-colors"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <div className="md:hidden flex items-center space-x-2">
+          {settings.logo_url && (
+            <img src={settings.logo_url} className="h-6 w-6 object-contain" alt="Logo" />
+          )}
+          <span className="text-xl font-bold text-sc-blue uppercase truncate max-w-[120px]">{settings.org_name}</span>
+        </div>
       </div>
 
       <div className="hidden md:flex items-center flex-1 max-w-md mx-8 relative" ref={searchRef}>

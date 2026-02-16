@@ -152,10 +152,10 @@ function InventoryContent() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 md:space-y-8">
       <div className="flex flex-col md:flex-row md:justify-between md:items-end space-y-4 md:space-y-0">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
             Logistics Hub
           </h2>
           <p className="text-[10px] text-sc-grey/40 uppercase tracking-[0.2em] ml-4 font-mono">
@@ -163,11 +163,11 @@ function InventoryContent() {
           </p>
         </div>
 
-        <div className="flex bg-black/40 border border-sc-grey/10 p-1 rounded backdrop-blur-md self-start">
+        <div className="flex bg-black/40 border border-sc-grey/10 p-1 rounded backdrop-blur-md self-start w-full md:w-auto overflow-x-auto">
           <button 
             onClick={() => setActiveTab('personal')}
             className={cn(
-              "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center space-x-2",
+              "flex-1 md:flex-none px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center space-x-2 whitespace-nowrap",
               activeTab === 'personal' ? "bg-sc-blue text-white" : "text-sc-grey/40 hover:text-sc-grey"
             )}
           >
@@ -177,7 +177,7 @@ function InventoryContent() {
           <button 
             onClick={() => setActiveTab('database')}
             className={cn(
-              "px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center space-x-2",
+              "flex-1 md:flex-none px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center space-x-2 whitespace-nowrap",
               activeTab === 'database' ? "bg-sc-blue text-white" : "text-sc-grey/40 hover:text-sc-grey"
             )}
           >
@@ -189,20 +189,20 @@ function InventoryContent() {
 
       {activeTab === 'personal' ? (
         <>
-          <div className="flex justify-between items-center bg-sc-panel/50 p-4 border border-sc-grey/10 rounded">
-            <div className="relative">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-sc-panel/50 p-4 border border-sc-grey/10 rounded">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sc-grey/40" />
               <input 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 type="text" 
                 placeholder="Scan personal assets..." 
-                className="bg-black/30 border border-sc-grey/20 rounded pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all placeholder-sc-grey/20 min-w-[280px]"
+                className="w-full bg-black/30 border border-sc-grey/20 rounded pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all placeholder-sc-grey/20"
               />
             </div>
             <button 
                 onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+                className="w-full md:w-auto px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center justify-center"
             >
               <Plus className="w-4 h-4 mr-2" />
               Manifest Asset

@@ -65,22 +65,22 @@ export default function WalletPage() {
   });
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
             Financial Terminal
           </h2>
           <p className="text-[10px] text-sc-grey/40 uppercase tracking-[0.2em] ml-4 font-mono">
             Secure Credits Management & Ledger
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <button onClick={() => setShowDepositModal(true)} className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+        <div className="flex items-center space-x-3 w-full md:w-auto">
+          <button onClick={() => setShowDepositModal(true)} className="flex-1 md:flex-none px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center justify-center">
             <Plus className="w-4 h-4 mr-2" />
             Deposit
           </button>
-          <button onClick={() => setShowWithdrawModal(true)} className="px-4 py-2 bg-red-500/10 border border-red-500 text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center">
+          <button onClick={() => setShowWithdrawModal(true)} className="flex-1 md:flex-none px-4 py-2 bg-red-500/10 border border-red-500 text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center justify-center">
             <Minus className="w-4 h-4 mr-2" />
             Withdraw
           </button>
@@ -88,36 +88,36 @@ export default function WalletPage() {
       </div>
 
       {/* Balance Display */}
-      <div className="bg-gradient-to-r from-sc-panel to-sc-dark border border-sc-blue/30 rounded-lg p-10 flex flex-col md:flex-row justify-between items-center shadow-[0_0_30px_rgba(var(--color-sc-blue-rgb),0.1)] relative overflow-hidden group">
+      <div className="bg-gradient-to-r from-sc-panel to-sc-dark border border-sc-blue/30 rounded-lg p-6 md:p-10 flex flex-col md:flex-row justify-between items-center shadow-[0_0_30px_rgba(var(--color-sc-blue-rgb),0.1)] relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-          <Wallet className="w-32 h-32" />
+          <Wallet className="w-24 h-24 md:w-32 md:h-32" />
         </div>
         
         <div className="relative z-10 text-center md:text-left space-y-2">
-          <div className="text-[10px] text-sc-blue font-black uppercase tracking-[0.3em] flex items-center justify-center md:justify-start">
+          <div className="text-[8px] md:text-[10px] text-sc-blue font-black uppercase tracking-[0.3em] flex items-center justify-center md:justify-start">
             <Shield className="w-3 h-3 mr-2" />
             Available Credits (aUEC)
           </div>
-          <div className="text-6xl font-mono font-bold text-white tracking-tighter">
+          <div className="text-4xl md:text-6xl font-mono font-bold text-white tracking-tighter">
             {walletLoading ? (
               <span className="opacity-20">XXXXXXXX</span>
             ) : (
               (wallet?.balance_auec || 0).toLocaleString()
             )}
           </div>
-          <div className="text-[10px] text-sc-grey/40 font-mono italic">
+          <div className="text-[8px] md:text-[10px] text-sc-grey/40 font-mono italic">
             Last Synced: {wallet?.last_updated_at ? new Date(wallet.last_updated_at).toLocaleString() : 'Just now'}
           </div>
         </div>
 
-        <div className="mt-8 md:mt-0 flex space-x-4">
-          <div className="bg-black/40 border border-sc-grey/10 rounded p-4 text-center min-w-[120px]">
-            <div className="text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-1">Weekly Profit</div>
-            <div className="text-sm font-bold text-green-400 font-mono">+124,500</div>
+        <div className="mt-6 md:mt-0 flex space-x-4 w-full md:w-auto justify-center">
+          <div className="bg-black/40 border border-sc-grey/10 rounded p-3 md:p-4 text-center flex-1 md:min-w-[120px]">
+            <div className="text-[7px] md:text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-1">Weekly Profit</div>
+            <div className="text-xs md:text-sm font-bold text-green-400 font-mono">+124,500</div>
           </div>
-          <div className="bg-black/40 border border-sc-grey/10 rounded p-4 text-center min-w-[120px]">
-            <div className="text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-1">Assets Value</div>
-            <div className="text-sm font-bold text-sc-blue font-mono">14.2M</div>
+          <div className="bg-black/40 border border-sc-grey/10 rounded p-3 md:p-4 text-center flex-1 md:min-w-[120px]">
+            <div className="text-[7px] md:text-[8px] text-sc-grey/40 font-black uppercase tracking-widest mb-1">Assets Value</div>
+            <div className="text-xs md:text-sm font-bold text-sc-blue font-mono">14.2M</div>
           </div>
         </div>
       </div>
