@@ -34,6 +34,40 @@ func (h *LogisticsHandler) ListStockpiles(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(stockpiles)
 }
 
+func (h *LogisticsHandler) CreateStockpile(w http.ResponseWriter, r *http.Request) {
+	var stockpile models.OrgStockpile
+	if err := json.NewDecoder(r.Body).Decode(&stockpile); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.logisticsService.DB.Create(&stockpile).Error; err != nil {
+		http.Error(w, "Failed to create stockpile", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stockpile)
+}
+
+func (h *LogisticsHandler) CreateStockpileTransaction(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var tx models.StockpileTransaction
+	if err := json.NewDecoder(r.Body).Decode(&tx); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	tx.UserID = userID
+	if err := h.logisticsService.CreateStockpileTransaction(&tx); err != nil {
+		http.Error(w, "Failed to create transaction: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tx)
+}
+
 func (h *LogisticsHandler) GetStockpile(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)

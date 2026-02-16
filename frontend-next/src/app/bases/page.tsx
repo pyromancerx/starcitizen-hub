@@ -29,12 +29,30 @@ export default function BasesPage() {
   const queryClient = useQueryClient();
   const [view, setView] = useState<'my' | 'org'>('my');
   const [editingBase, setEditingBase] = useState<any>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newBase, setNewBase] = useState({
+    name: '',
+    planet: '',
+    coordinates: '',
+    capabilities: '[]'
+  });
 
   const { data: myBases, isLoading: myLoading } = useQuery({
     queryKey: ['my-bases'],
     queryFn: async () => {
       const res = await api.get('/bases/');
       return res.data;
+    },
+  });
+
+  const createBaseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.post('/bases/', data);
+    },
+    onSuccess: () => {
+      setShowAddModal(false);
+      queryClient.invalidateQueries({ queryKey: ['my-bases'] });
+      setNewBase({ name: '', planet: '', coordinates: '', capabilities: '[]' });
     },
   });
 
@@ -70,22 +88,22 @@ export default function BasesPage() {
   const isLoading = view === 'my' ? myLoading : orgLoading;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-sc-panel border border-sc-blue/20 p-8 rounded-lg relative overflow-hidden shadow-2xl">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-sc-panel border border-sc-blue/20 p-6 md:p-8 rounded-lg relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 p-4 opacity-5">
             <Warehouse className="w-48 h-48 text-sc-blue" />
         </div>
         <div className="relative z-10 space-y-1">
-          <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Planetary Outpost Registry</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">Planetary Outpost Registry</h2>
           <p className="text-[10px] text-sc-blue font-mono uppercase tracking-[0.2em]">Base Building & Territorial Asset Management</p>
         </div>
-        <div className="flex items-center space-x-3 relative z-10">
-            <div className="flex bg-sc-dark border border-white/5 rounded p-1">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto relative z-10">
+            <div className="flex bg-sc-dark border border-white/5 rounded p-1 w-full sm:w-auto">
                 <button 
                     onClick={() => setView('my')}
                     className={cn(
-                        "px-4 py-1.5 text-[9px] font-black uppercase rounded transition-all",
+                        "flex-1 sm:flex-none px-4 py-1.5 text-[9px] font-black uppercase rounded transition-all",
                         view === 'my' ? "bg-sc-blue text-sc-dark" : "text-sc-grey/40 hover:text-white"
                     )}
                 >
@@ -94,14 +112,17 @@ export default function BasesPage() {
                 <button 
                     onClick={() => setView('org')}
                     className={cn(
-                        "px-4 py-1.5 text-[9px] font-black uppercase rounded transition-all",
+                        "flex-1 sm:flex-none px-4 py-1.5 text-[9px] font-black uppercase rounded transition-all",
                         view === 'org' ? "bg-sc-blue text-sc-dark" : "text-sc-grey/40 hover:text-white"
                     )}
                 >
                     Org Network
                 </button>
             </div>
-            <button className="px-6 py-2.5 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]">
+            <button 
+                onClick={() => setShowAddModal(true)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center justify-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]"
+            >
                 <Plus className="w-4 h-4" />
                 <span>Establish Outpost</span>
             </button>
@@ -109,7 +130,7 @@ export default function BasesPage() {
       </div>
 
       {/* Bases Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
         {isLoading ? (
           <div className="col-span-full p-24 text-center">
             <div className="flex flex-col items-center space-y-4">
@@ -133,6 +154,78 @@ export default function BasesPage() {
             </div>
         )}
       </div>
+
+      {/* Establish Outpost Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-md shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Warehouse className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Establish Planetary Anchor</h3>
+                    </div>
+                    <button onClick={() => setShowAddModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        createBaseMutation.mutate(newBase);
+                    }}
+                    className="p-8 space-y-6"
+                >
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Outpost Designation</label>
+                        <input 
+                            required
+                            value={newBase.name}
+                            onChange={(e) => setNewBase({...newBase, name: e.target.value})}
+                            placeholder="e.g. Serenity Base, Mining Outpost 7..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Planetary Anchor</label>
+                        <input 
+                            required
+                            value={newBase.planet}
+                            onChange={(e) => setNewBase({...newBase, planet: e.target.value})}
+                            placeholder="e.g. MicroTech, Daymar..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Neural Coordinates</label>
+                        <input 
+                            value={newBase.coordinates}
+                            onChange={(e) => setNewBase({...newBase, coordinates: e.target.value})}
+                            placeholder="X, Y, Z or OMT Marker"
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex justify-end space-x-4">
+                        <button 
+                            type="button"
+                            onClick={() => setShowAddModal(false)}
+                            className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                        >
+                            Abort
+                        </button>
+                        <button 
+                            type="submit"
+                            disabled={createBaseMutation.isPending || !newBase.name || !newBase.planet}
+                            className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                        >
+                            {createBaseMutation.isPending ? 'Syncing...' : 'Establish Outpost'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
 
       {/* Manage Outpost Modal */}
       {editingBase && (

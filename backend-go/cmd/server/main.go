@@ -323,7 +323,9 @@ func main() {
 
 			// Logistics
 			r.Get("/stockpiles/", logisticsHandler.ListStockpiles)
+			r.Post("/stockpiles/", logisticsHandler.CreateStockpile)
 			r.Get("/stockpiles/{id}", logisticsHandler.GetStockpile)
+			r.Post("/stockpiles/transactions", logisticsHandler.CreateStockpileTransaction)
 			r.Get("/stockpiles/loans", logisticsHandler.ListActiveLoans)
 			r.Get("/trade/contracts", logisticsHandler.ListCargoContracts)
 			r.Post("/trade/contracts", logisticsHandler.CreateCargoContract)

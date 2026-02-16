@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   Database, 
@@ -11,12 +11,28 @@ import {
   ArrowDownLeft,
   Box,
   Clock,
-  User as UserIcon
+  User as UserIcon,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 export default function StockpilesPage() {
+  const queryClient = useQueryClient();
+  const [showProvisionModal, setShowProvisionModal] = useState(false);
+  const [showTransactionModal, setShowTransactionModal] = useState<any>(null);
+  const [transactionType, setTransactionType] = useState<'deposit' | 'requisition'>('deposit');
+  const [amount, setAmount] = useState('');
+  const [reason, setReason] = useState('');
+
+  const [newStockpile, setNewStockpile] = useState({
+    name: '',
+    description: '',
+    resource_type: 'Supplies',
+    unit: 'Units',
+    min_threshold: 0
+  });
+
   const { data: stockpiles, isLoading } = useQuery({
     queryKey: ['stockpiles'],
     queryFn: async () => {
@@ -24,6 +40,42 @@ export default function StockpilesPage() {
       return res.data;
     },
   });
+
+  const provisionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.post('/stockpiles/', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stockpiles'] });
+      setShowProvisionModal(false);
+      setNewStockpile({ name: '', description: '', resource_type: 'Supplies', unit: 'Units', min_threshold: 0 });
+    }
+  });
+
+  const transactionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.post('/stockpiles/transactions', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stockpiles'] });
+      queryClient.invalidateQueries({ queryKey: ['asset-loans'] });
+      setShowTransactionModal(null);
+      setAmount('');
+      setReason('');
+    }
+  });
+
+  const handleTransaction = () => {
+    const val = parseFloat(amount);
+    if (isNaN(val) || val <= 0) return;
+
+    transactionMutation.mutate({
+      stockpile_id: showTransactionModal.id,
+      quantity_change: transactionType === 'deposit' ? val : -val,
+      transaction_type: transactionType,
+      reason: reason || `Manual ${transactionType}`
+    });
+  };
 
   const { data: loans } = useQuery({
     queryKey: ['asset-loans'],
@@ -34,17 +86,20 @@ export default function StockpilesPage() {
   });
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-widest uppercase italic border-l-4 border-sc-blue pl-4">
             Organization Stockpiles
           </h2>
           <p className="text-[10px] text-sc-grey/40 uppercase tracking-[0.2em] ml-4 font-mono">
             Shared Strategic Resource Reserves
           </p>
         </div>
-        <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+        <button 
+          onClick={() => setShowProvisionModal(true)}
+          className="w-full md:w-auto px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center justify-center"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Provision Stockpile
         </button>
@@ -101,10 +156,16 @@ export default function StockpilesPage() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <button className="flex-1 py-2 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-[9px] font-black uppercase text-sc-blue tracking-widest transition-all flex items-center justify-center">
+                  <button 
+                    onClick={() => { setShowTransactionModal(stock); setTransactionType('deposit'); }}
+                    className="flex-1 py-2 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-[9px] font-black uppercase text-sc-blue tracking-widest transition-all flex items-center justify-center"
+                  >
                     <ArrowUpRight className="w-3 h-3 mr-1" /> Deposit
                   </button>
-                  <button className="flex-1 py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded text-[9px] font-black uppercase text-red-400 tracking-widest transition-all flex items-center justify-center">
+                  <button 
+                    onClick={() => { setShowTransactionModal(stock); setTransactionType('requisition'); }}
+                    className="flex-1 py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/20 rounded text-[9px] font-black uppercase text-red-400 tracking-widest transition-all flex items-center justify-center"
+                  >
                     <ArrowDownLeft className="w-3 h-3 mr-1" /> Requisition
                   </button>
                 </div>
@@ -127,7 +188,7 @@ export default function StockpilesPage() {
             </div>
             
             <div className="bg-sc-panel border border-sc-grey/10 rounded overflow-hidden">
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left">
                         <thead className="bg-black/40 border-b border-sc-grey/10">
                             <tr>
@@ -135,7 +196,7 @@ export default function StockpilesPage() {
                                 <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Citizen</th>
                                 <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Quantity</th>
                                 <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Deployment Date</th>
-                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Due Return</th>
+                                <th className="px-6 py-3 text-[8px] font-black text-sc-grey/40 uppercase tracking-widest whitespace-nowrap">Due Return</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -146,18 +207,18 @@ export default function StockpilesPage() {
                                             <div className="h-8 w-8 bg-sc-dark border border-sc-blue/20 rounded flex items-center justify-center text-sc-blue">
                                                 <Box className="w-4 h-4" />
                                             </div>
-                                            <span className="text-[10px] font-bold text-white uppercase tracking-widest">{loan.stockpile?.name}</span>
+                                            <span className="text-[10px] font-bold text-white uppercase tracking-widest whitespace-nowrap">{loan.stockpile?.name}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-2">
                                             <UserIcon className="w-3 h-3 text-sc-grey/40" />
-                                            <span className="text-[10px] text-sc-grey/60 font-bold uppercase">{loan.user?.display_name}</span>
+                                            <span className="text-[10px] text-sc-grey/60 font-bold uppercase whitespace-nowrap">{loan.user?.display_name}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-[10px] font-mono text-sc-blue font-bold">{loan.quantity} {loan.stockpile?.unit}</td>
-                                    <td className="px-6 py-4 text-[10px] text-sc-grey/40 font-mono">{new Date(loan.loaned_at).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-[10px] font-mono text-sc-blue font-bold whitespace-nowrap">{loan.quantity} {loan.stockpile?.unit}</td>
+                                    <td className="px-6 py-4 text-[10px] text-sc-grey/40 font-mono whitespace-nowrap">{new Date(loan.loaned_at).toLocaleDateString()}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
                                         <span className="text-[10px] text-yellow-500 font-black uppercase tracking-tighter">
                                             {loan.due_at ? new Date(loan.due_at).toLocaleDateString() : 'MISSION END'}
                                         </span>
@@ -173,6 +234,153 @@ export default function StockpilesPage() {
                             )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Provision Stockpile Modal */}
+      {showProvisionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-md shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Plus className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Provision Strategic Reserve</h3>
+                    </div>
+                    <button onClick={() => setShowProvisionModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        provisionMutation.mutate(newStockpile);
+                    }}
+                    className="p-8 space-y-6"
+                >
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Reserve Name</label>
+                        <input 
+                            required
+                            value={newStockpile.name}
+                            onChange={(e) => setNewStockpile({...newStockpile, name: e.target.value})}
+                            placeholder="e.g. Alpha-1 Fuel Cell..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Resource Type</label>
+                            <input 
+                                value={newStockpile.resource_type}
+                                onChange={(e) => setNewStockpile({...newStockpile, resource_type: e.target.value})}
+                                placeholder="e.g. Fuel, Munitions..."
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Unit of Measure</label>
+                            <input 
+                                value={newStockpile.unit}
+                                onChange={(e) => setNewStockpile({...newStockpile, unit: e.target.value})}
+                                placeholder="e.g. Units, Liters, KG..."
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Minimum Alert Threshold</label>
+                        <input 
+                            type="number"
+                            value={newStockpile.min_threshold}
+                            onChange={(e) => setNewStockpile({...newStockpile, min_threshold: parseFloat(e.target.value)})}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                        />
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex justify-end space-x-4">
+                        <button 
+                            type="button"
+                            onClick={() => setShowProvisionModal(false)}
+                            className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                        >
+                            Abort
+                        </button>
+                        <button 
+                            type="submit"
+                            disabled={provisionMutation.isPending || !newStockpile.name}
+                            className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                        >
+                            {provisionMutation.isPending ? 'Syncing...' : 'Provision Reserve'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
+      {/* Transaction Modal (Deposit/Requisition) */}
+      {showTransactionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-sm shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        {transactionType === 'deposit' ? <ArrowUpRight className="w-5 h-5 text-sc-blue" /> : <ArrowDownLeft className="w-5 h-5 text-red-400" />}
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">{transactionType === 'deposit' ? 'Resource Induction' : 'Resource Requisition'}</h3>
+                    </div>
+                    <button onClick={() => setShowTransactionModal(null)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Strategic Asset</label>
+                        <div className="text-lg font-bold text-white italic tracking-tight uppercase">{showTransactionModal.name}</div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Quantity ({showTransactionModal.unit})</label>
+                        <input 
+                            type="number"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                            placeholder="0.00"
+                            autoFocus
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Manifest Note / Reason</label>
+                        <input 
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            placeholder="e.g. Refuel after Op X, Logistics run..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+
+                    <div className="flex space-x-3 pt-2">
+                        <button 
+                            onClick={() => setShowTransactionModal(null)}
+                            className="flex-1 py-2 border border-white/10 text-sc-grey text-[10px] font-black uppercase rounded hover:bg-white/5 transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button 
+                            onClick={handleTransaction}
+                            disabled={transactionMutation.isPending || !amount}
+                            className={cn(
+                                "flex-1 py-2 text-[10px] font-black uppercase rounded transition-all",
+                                transactionType === 'deposit' ? "bg-sc-blue text-sc-dark" : "bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                            )}
+                        >
+                            {transactionMutation.isPending ? 'Syncing...' : 'Authorize'}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
