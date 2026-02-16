@@ -30,6 +30,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
   onToggleScreenShare
 }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -37,8 +38,18 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
     }
   }, [localStream]);
 
+  const handleMaximize = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-sc-dark/95 flex flex-col backdrop-blur-md">
+    <div ref={containerRef} className="fixed inset-0 z-50 bg-sc-dark/95 flex flex-col backdrop-blur-md">
       {/* Header */}
       <div className="p-4 bg-black/40 border-b border-sc-blue/20 flex justify-between items-center">
         <div className="flex items-center space-x-4">
@@ -52,7 +63,7 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
         </div>
         <div className="flex items-center space-x-2">
             <button 
-                onClick={() => alert('Neural link maximization protocol initialized... [UI Scaling Placeholder]')}
+                onClick={handleMaximize}
                 className="p-2 text-sc-grey/40 hover:text-white transition-colors"
             >
                 <Maximize2 className="w-5 h-5" />
