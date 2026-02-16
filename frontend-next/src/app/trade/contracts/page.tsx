@@ -46,6 +46,19 @@ export default function ContractsPage() {
     },
   });
 
+  const acceptMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return api.post(`/trade/contracts/${id}/accept`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cargo-contracts'] });
+      alert('Contract authorized and transferred to your mission log.');
+    },
+    onError: (err: any) => {
+      alert('Failed to accept contract: ' + (err.response?.data || err.message));
+    }
+  });
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -121,8 +134,12 @@ export default function ContractsPage() {
                   <Clock className="w-3 h-3 mr-1.5 opacity-50" />
                   Deadline: {contract.deadline ? new Date(contract.deadline).toLocaleDateString() : 'N/A'}
                 </div>
-                <button className="px-6 py-2 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-[9px] font-black uppercase text-sc-blue tracking-widest transition-all">
-                  Accept Contract
+                <button 
+                  onClick={() => acceptMutation.mutate(contract.id)}
+                  disabled={contract.status !== 'open' || acceptMutation.isPending}
+                  className="px-6 py-2 bg-sc-blue/5 hover:bg-sc-blue/10 border border-sc-blue/20 rounded text-[9px] font-black uppercase text-sc-blue tracking-widest transition-all disabled:opacity-20"
+                >
+                  {contract.status === 'open' ? 'Accept Contract' : 'Assigned'}
                 </button>
               </div>
             </div>

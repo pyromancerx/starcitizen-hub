@@ -306,6 +306,7 @@ func main() {
 			// Wallet
 			r.Get("/wallet/", assetHandler.GetMyWallet)
 			r.Get("/wallet/transactions", assetHandler.GetWalletTransactions)
+			r.Post("/wallet/transactions", assetHandler.CreateWalletTransaction)
 
 			// Inventory
 			r.Get("/inventory/", assetHandler.ListMyInventory)
@@ -326,6 +327,7 @@ func main() {
 			r.Get("/stockpiles/loans", logisticsHandler.ListActiveLoans)
 			r.Get("/trade/contracts", logisticsHandler.ListCargoContracts)
 			r.Post("/trade/contracts", logisticsHandler.CreateCargoContract)
+			r.Post("/trade/contracts/{id}/accept", logisticsHandler.AcceptCargoContract)
 			r.Get("/trade/runs", logisticsHandler.ListMyTradeRuns)
 			r.Post("/trade/runs", logisticsHandler.CreateTradeRun)
 			r.Get("/crew/posts", logisticsHandler.ListCrewPosts)
@@ -357,6 +359,7 @@ func main() {
 			r.Get("/social/federation", socialHandler.ListFederation)
 			r.Post("/social/federation", socialHandler.CreateFederationEntity)
 			r.Get("/notifications/", socialHandler.GetNotifications)
+			r.Patch("/notifications/read-all", socialHandler.MarkAllNotificationsRead)
 			r.Patch("/notifications/{id}/read", socialHandler.MarkNotificationRead)
 			r.Get("/activity/feed", socialHandler.GetActivityFeed)
 			r.Get("/search", socialHandler.GlobalSearch)

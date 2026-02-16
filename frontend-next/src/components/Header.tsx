@@ -46,6 +46,13 @@ const Header = () => {
     onSuccess: () => refetchNotifs(),
   });
 
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => {
+      return api.patch('/notifications/read-all');
+    },
+    onSuccess: () => refetchNotifs(),
+  });
+
   const unreadCount = Array.isArray(notifications) ? notifications.filter((n: any) => !n.is_read).length : 0;
 
   useEffect(() => {
@@ -149,7 +156,7 @@ const Header = () => {
             <div className="absolute right-0 mt-2 w-80 bg-sc-panel border border-sc-blue/20 rounded shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="p-4 bg-black/40 border-b border-white/5 flex justify-between items-center">
                     <span className="text-[10px] font-black text-white uppercase tracking-widest">Neural Alerts</span>
-                    <button className="text-[8px] font-black text-sc-blue/40 hover:text-sc-blue uppercase tracking-tighter transition-colors">Clear Stream</button>
+                    <button onClick={() => markAllReadMutation.mutate()} className="text-[8px] font-black text-sc-blue/40 hover:text-sc-blue uppercase tracking-tighter transition-colors">Clear Stream</button>
                 </div>
                 
                 <div className="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-white/5">

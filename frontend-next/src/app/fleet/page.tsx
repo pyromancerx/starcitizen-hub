@@ -26,7 +26,8 @@ import {
   Square,
   MapPin,
   Save,
-  Trash2
+  Trash2,
+  Filter
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -256,6 +257,7 @@ function FleetContent() {
   const [selectedShipSystems, setSelectedShipSystems] = useState<any>(null);
   const [selectedShipModel, setSelectedShipModel] = useState<any>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [shipSearchQuery, setShipSearchQuery] = useState('');
   const [newShip, setNewShip] = useState({
     name: '',
     ship_type: '',
@@ -322,7 +324,7 @@ function FleetContent() {
   };
 
   const toggleAllSelection = () => {
-    if (selectedShips.length === ships?.length) {
+    if (selectedShips.length === ships?.length && (ships?.length || 0) > 0) {
       setSelectedShips([]);
     } else {
       setSelectedShips(ships?.map((s: any) => s.id) || []);
@@ -347,10 +349,18 @@ function FleetContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-ships'] });
       if (selectedShipSystems) {
-        // Find the updated ship in the local state or just close and let it refetch
         setSelectedShipSystems(null);
       }
     },
+  });
+
+  const deleteShipMutation = useMutation({
+    mutationFn: async (id: number) => {
+        return api.delete(`/ships/${id}`);
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['my-ships'] });
+    }
   });
 
   const importHangarMutation = useMutation({
@@ -382,6 +392,18 @@ function FleetContent() {
     };
     reader.readAsText(file);
   };
+
+  const filteredShips = React.useMemo(() => {
+    if (!ships) return [];
+    if (!shipSearchQuery) return ships;
+    const q = shipSearchQuery.toLowerCase();
+    return ships.filter((s: any) => 
+        s.name?.toLowerCase().includes(q) || 
+        s.ship_type?.toLowerCase().includes(q) ||
+        s.serial_number?.toLowerCase().includes(q) ||
+        s.location?.toLowerCase().includes(q)
+    );
+  }, [ships, shipSearchQuery]);
 
   const statusColors: Record<string, string> = {
     ready: 'text-green-400',
@@ -470,13 +492,19 @@ function FleetContent() {
                 </button>
                 <div className="text-[10px] font-black text-sc-blue uppercase tracking-widest">Fleet Operations</div>
                 <div className="h-4 w-px bg-sc-grey/10"></div>
-                <div className="text-[10px] font-mono text-sc-grey/40 uppercase">
-                  {selectedShips.length > 0 ? `${selectedShips.length} Selected` : `${ships?.length || 0} Vessels commissioned`}
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sc-grey/40" />
+                    <input 
+                        value={shipSearchQuery}
+                        onChange={(e) => setShipSearchQuery(e.target.value)}
+                        placeholder="Scan fleet designation..."
+                        className="bg-sc-dark/50 border border-sc-grey/10 rounded pl-9 pr-4 py-1.5 text-[10px] text-white focus:outline-none focus:border-sc-blue/50 uppercase tracking-widest font-bold w-48 transition-all focus:w-64"
+                    />
                 </div>
 
                 {selectedShips.length > 0 && (
-                  <div className="flex items-center space-x-2 ml-4 animate-in fade-in slide-in-from-left-2">
-                    <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Set Status:</span>
+                  <div className="flex items-center space-x-2 ml-4 animate-in fade-in slide-in-from-left-2 border-l border-white/5 pl-4">
+                    <span className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Batch Status:</span>
                     {['ready', 'damaged', 'destroyed', 'stored'].map((status) => (
                       <button
                         key={status}
@@ -492,6 +520,17 @@ function FleetContent() {
                         {status}
                       </button>
                     ))}
+                    <button 
+                        onClick={() => {
+                            if(confirm(`Purge ${selectedShips.length} vessels from organizational registry?`)) {
+                                selectedShips.forEach(id => deleteShipMutation.mutate(id));
+                            }
+                        }}
+                        className="ml-4 p-1.5 bg-red-500/10 border border-red-500/30 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all"
+                        title="Decommission Selected"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
             </div>
@@ -531,7 +570,7 @@ function FleetContent() {
             </div>
           ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {ships.map((ship: any) => (
+              {filteredShips.map((ship: any) => (
                 <div 
                   key={ship.id} 
                   className={cn(
@@ -616,7 +655,27 @@ function FleetContent() {
                       <Info className="w-3 h-3 mr-1" />
                       View Systems
                     </button>
-                    <MoreVertical className="w-3 h-3 text-sc-grey/20 cursor-pointer hover:text-white transition-colors" />
+                    <div className="relative group/menu">
+                        <MoreVertical className="w-3 h-3 text-sc-grey/20 cursor-pointer hover:text-white transition-colors" />
+                        <div className="absolute bottom-full right-0 mb-2 bg-sc-panel border border-sc-blue/20 rounded shadow-2xl hidden group-hover/menu:block min-w-[140px] z-20">
+                            <button 
+                                onClick={() => setSelectedShipSystems(ship)}
+                                className="w-full text-left px-4 py-2 text-[8px] font-black text-sc-grey uppercase hover:bg-sc-blue/5 hover:text-sc-blue border-b border-white/5 transition-all"
+                            >
+                                Edit Coordinates
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    if(confirm('Permanently decommission this vessel?')) {
+                                        deleteShipMutation.mutate(ship.id);
+                                    }
+                                }}
+                                className="w-full text-left px-4 py-2 text-[8px] font-black text-red-500 uppercase hover:bg-red-500/10 transition-all"
+                            >
+                                Decommission
+                            </button>
+                        </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -636,16 +695,15 @@ function FleetContent() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-sc-grey/5">
-                    {ships.map((ship: any) => (
+                    {filteredShips.map((ship: any) => (
                       <tr 
                         key={ship.id} 
-                        onClick={() => toggleShipSelection(ship.id)}
                         className={cn(
                           "hover:bg-sc-blue/[0.02] transition-colors cursor-pointer group",
                           selectedShips.includes(ship.id) && "bg-sc-blue/[0.05]"
                         )}
                       >
-                        <td className="p-4">
+                        <td className="p-4" onClick={(e) => { e.stopPropagation(); toggleShipSelection(ship.id); }}>
                           <div className={cn(
                             "w-4 h-4 rounded border transition-all flex items-center justify-center",
                             selectedShips.includes(ship.id) ? "bg-sc-blue border-sc-blue text-sc-dark" : "border-sc-grey/20 group-hover:border-sc-blue/50"
@@ -653,13 +711,13 @@ function FleetContent() {
                             {selectedShips.includes(ship.id) && <CheckSquare className="w-3 h-3" />}
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td className="p-4" onClick={() => setSelectedShipSystems(ship)}>
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-white tracking-tight uppercase italic">{ship.name || 'Unnamed Vessel'}</span>
                             <span className="text-[8px] text-sc-grey/30 font-mono">SN: {ship.serial_number || 'NOT_REGISTERED'}</span>
                           </div>
                         </td>
-                                                  <td className="p-4">
+                                                  <td className="p-4" onClick={() => setSelectedShipSystems(ship)}>
                                                     <div className="flex flex-col">
                                                       <span className="text-[10px] font-bold text-sc-blue uppercase tracking-widest">{ship.ship_type}</span>
                                                       <div className="flex items-center space-x-1">
@@ -696,12 +754,27 @@ function FleetContent() {
                           </select>
                         </td>
                                                   <td className="p-4 text-right">
-                                                    <button 
-                                                      onClick={(e) => { e.stopPropagation(); setSelectedShipSystems(ship); }}
-                                                      className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all"
-                                                    >
-                                                      <Info className="w-4 h-4" />
-                                                    </button>
+                                                    <div className="flex items-center justify-end space-x-2">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setSelectedShipSystems(ship); }}
+                                                            className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all"
+                                                            title="Edit Details"
+                                                        >
+                                                            <Info className="w-4 h-4" />
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if(confirm('Permanently decommission this vessel?')) {
+                                                                    deleteShipMutation.mutate(ship.id);
+                                                                }
+                                                            }}
+                                                            className="p-1.5 hover:bg-red-500/10 rounded text-sc-grey/40 hover:text-red-500 transition-all"
+                                                            title="Decommission"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                   </td>
                         
                       </tr>

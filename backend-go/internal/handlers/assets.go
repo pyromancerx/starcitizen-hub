@@ -284,6 +284,33 @@ func (h *AssetHandler) GetWalletTransactions(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(transactions)
 }
 
+func (h *AssetHandler) CreateWalletTransaction(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	var req struct {
+		Amount      int    `json:"amount"`
+		Description string `json:"description"`
+		Type        string `json:"type"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Amount == 0 {
+		http.Error(w, "Amount cannot be zero", http.StatusBadRequest)
+		return
+	}
+
+	tx, err := h.assetService.ProcessWalletTransaction(userID, req.Amount, req.Description, req.Type)
+	if err != nil {
+		http.Error(w, "Transaction failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tx)
+}
+
 // Inventory
 func (h *AssetHandler) ListMyInventory(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)

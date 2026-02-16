@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { 
@@ -18,12 +18,15 @@ import {
   ShoppingCart,
   Box,
   X,
-  ChevronRight
+  ChevronRight,
+  Save,
+  AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Suspense } from 'react';
 
 function InventoryContent() {
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'personal' | 'database'>('personal');
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,6 +34,15 @@ function InventoryContent() {
   const [dbCategory, setDbCategory] = useState('');
   const [dbSubCategory, setDbSubCategory] = useState('');
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [newItem, setNewItem] = useState({
+    item_name: '',
+    item_type: 'General',
+    quantity: 1,
+    location: ''
+  });
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -61,6 +73,36 @@ function InventoryContent() {
       return res.data;
     },
     enabled: activeTab === 'database',
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: async (data: any) => {
+        return api.post('/inventory/', data);
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        setShowAddModal(false);
+        setNewItem({ item_name: '', item_type: 'General', quantity: 1, location: '' });
+    }
+  });
+
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+        return api.patch(`/inventory/${id}`, data);
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+        setEditingItem(null);
+    }
+  });
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: number) => {
+        return api.delete(`/inventory/${id}`);
+    },
+    onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    }
   });
 
   const filteredItems = items?.filter((item: any) => 
@@ -158,7 +200,10 @@ function InventoryContent() {
                 className="bg-black/30 border border-sc-grey/20 rounded pl-10 pr-4 py-2 text-xs text-white focus:outline-none focus:border-sc-blue/50 transition-all placeholder-sc-grey/20 min-w-[280px]"
               />
             </div>
-            <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+            <button 
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Manifest Asset
             </button>
@@ -212,10 +257,20 @@ function InventoryContent() {
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all">
+                            <button 
+                                onClick={() => setEditingItem(item)}
+                                className="p-1.5 hover:bg-sc-blue/10 rounded text-sc-grey/40 hover:text-sc-blue transition-all"
+                            >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                            <button className="p-1.5 hover:bg-red-500/10 rounded text-sc-grey/40 hover:text-red-400 transition-all">
+                            <button 
+                                onClick={() => {
+                                    if(confirm('Are you sure you want to de-manifest this asset from your personal registry?')) {
+                                        deleteItemMutation.mutate(item.id);
+                                    }
+                                }}
+                                className="p-1.5 hover:bg-red-500/10 rounded text-sc-grey/40 hover:text-red-400 transition-all"
+                            >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -363,37 +418,21 @@ function InventoryContent() {
                       {item.description || "No official technical documentation available for this asset."}
                     </p>
 
-                                          <div className="flex justify-between items-center mt-auto pt-4 border-t border-sc-grey/5">
-
-                                            <div className="flex items-center space-x-1">
-
-                                              <ShoppingCart className="w-3 h-3 text-sc-grey/40" />
-
-                                              <span className="text-[10px] font-mono text-sc-grey/60">
-
-                                                {item.base_price > 0 ? `${item.base_price.toLocaleString()} UEC` : 'Unavailable'}
-
-                                              </span>
-
-                                            </div>
-
-                                            <button 
-
-                                              onClick={() => setSelectedItem(item)}
-
-                                              className="text-[9px] font-black uppercase tracking-widest text-sc-blue hover:text-white transition-colors flex items-center space-x-1"
-
-                                            >
-
-                                              <span>Details</span>
-
-                                              <Info className="w-2.5 h-2.5" />
-
-                                            </button>
-
-                                          </div>
-
-                    
+                    <div className="flex justify-between items-center mt-auto pt-4 border-t border-sc-grey/5">
+                      <div className="flex items-center space-x-1">
+                        <ShoppingCart className="w-3 h-3 text-sc-grey/40" />
+                        <span className="text-[10px] font-mono text-sc-grey/60">
+                          {item.base_price > 0 ? `${item.base_price.toLocaleString()} UEC` : 'Unavailable'}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedItem(item)}
+                        className="text-[9px] font-black uppercase tracking-widest text-sc-blue hover:text-white transition-colors flex items-center space-x-1"
+                      >
+                        <span>Details</span>
+                        <Info className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
                   </div>
                 ))
               ) : (
@@ -406,6 +445,157 @@ function InventoryContent() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Manifest Asset Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-md shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Plus className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Asset Manifest Authorization</h3>
+                    </div>
+                    <button onClick={() => setShowAddModal(false)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form 
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        addItemMutation.mutate(newItem);
+                    }}
+                    className="p-8 space-y-6"
+                >
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Item Designation</label>
+                        <input 
+                            required
+                            value={newItem.item_name}
+                            onChange={(e) => setNewItem({...newItem, item_name: e.target.value})}
+                            placeholder="e.g. FS-9 LMG, MedPen..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Classification</label>
+                            <input 
+                                value={newItem.item_type}
+                                onChange={(e) => setNewItem({...newItem, item_type: e.target.value})}
+                                placeholder="e.g. Weapon, Utility..."
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Quantity</label>
+                            <input 
+                                type="number" required min="1"
+                                value={newItem.quantity}
+                                onChange={(e) => setNewItem({...newItem, quantity: parseInt(e.target.value)})}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Storage Coordinates</label>
+                        <input 
+                            value={newItem.location}
+                            onChange={(e) => setNewItem({...newItem, location: e.target.value})}
+                            placeholder="e.g. New Babbage, MicroTech..."
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+
+                    <div className="pt-4 border-t border-white/5 flex justify-end space-x-4">
+                        <button 
+                            type="button"
+                            onClick={() => setShowAddModal(false)}
+                            className="px-6 py-2 text-[10px] font-black text-sc-grey/40 hover:text-white uppercase tracking-widest"
+                        >
+                            Abort
+                        </button>
+                        <button 
+                            type="submit"
+                            disabled={addItemMutation.isPending || !newItem.item_name}
+                            className="px-8 py-2 bg-sc-blue border border-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:shadow-[0_0_20px_rgba(var(--color-sc-blue-rgb),0.4)] transition-all disabled:opacity-20"
+                        >
+                            {addItemMutation.isPending ? 'Syncing...' : 'Authorize Manifest'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      )}
+
+      {/* Edit Asset Modal */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-sc-dark/95 backdrop-blur-md">
+            <div className="bg-sc-panel border border-sc-blue/30 rounded-lg w-full max-w-md shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="p-6 bg-black/40 border-b border-sc-blue/10 flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                        <Edit2 className="w-5 h-5 text-sc-blue" />
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Update Asset Parameters</h3>
+                    </div>
+                    <button onClick={() => setEditingItem(null)} className="text-sc-grey/40 hover:text-white transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-8 space-y-6">
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Designation</label>
+                        <div className="text-lg font-bold text-white italic tracking-tight">{editingItem.item_name}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Quantity</label>
+                            <input 
+                                type="number" required min="1"
+                                defaultValue={editingItem.quantity}
+                                onBlur={(e) => updateItemMutation.mutate({ id: editingItem.id, data: { quantity: parseInt(e.target.value) } })}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none font-mono"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Classification</label>
+                            <input 
+                                defaultValue={editingItem.item_type}
+                                onBlur={(e) => updateItemMutation.mutate({ id: editingItem.id, data: { item_type: e.target.value } })}
+                                className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Storage Coordinates</label>
+                        <input 
+                            defaultValue={editingItem.location}
+                            onBlur={(e) => updateItemMutation.mutate({ id: editingItem.id, data: { location: e.target.value } })}
+                            className="w-full bg-sc-dark border border-white/10 rounded px-4 py-2 text-xs text-white focus:border-sc-blue/50 outline-none"
+                        />
+                    </div>
+
+                    <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded flex items-start space-x-3 opacity-60">
+                        <Info className="w-4 h-4 text-sc-blue mt-0.5" />
+                        <p className="text-[9px] text-sc-grey/60 uppercase font-bold tracking-widest">
+                            Changes are synchronized immediately upon field focus loss.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="p-4 bg-black/40 border-t border-sc-blue/10 flex justify-end">
+                    <button 
+                        onClick={() => setEditingItem(null)}
+                        className="px-8 py-2 bg-sc-blue text-sc-dark text-[10px] font-black rounded uppercase hover:bg-white transition-all"
+                    >
+                        Synchronized
+                    </button>
+                </div>
+            </div>
         </div>
       )}
 

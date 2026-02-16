@@ -385,6 +385,19 @@ func (h *LogisticsHandler) CreateCargoContract(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(contract)
 }
 
+func (h *LogisticsHandler) AcceptCargoContract(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	if err := h.logisticsService.AcceptCargoContract(uint(id), userID); err != nil {
+		http.Error(w, "Failed to accept contract: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *LogisticsHandler) GetTreasuryAnalytics(w http.ResponseWriter, r *http.Request) {
 	analytics, err := h.logisticsService.GetTreasuryAnalytics()
 	if err != nil {

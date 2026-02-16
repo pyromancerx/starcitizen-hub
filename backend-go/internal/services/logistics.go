@@ -185,6 +185,23 @@ func (s *LogisticsService) CreateCargoContract(contract *models.CargoContract) e
 	return s.DB.Create(contract).Error
 }
 
+func (s *LogisticsService) AcceptCargoContract(contractID uint, haulerID uint) error {
+	result := s.DB.Model(&models.CargoContract{}).
+		Where("id = ? AND status = 'open'", contractID).
+		Updates(map[string]interface{}{
+			"status": "assigned",
+			"hauler_id": haulerID,
+		})
+	
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("contract not found or already assigned")
+	}
+	return nil
+}
+
 type TreasuryAnalytics struct {
 	TotalCredits      int     `json:"total_credits"`
 	TotalTradeProfit  float64 `json:"total_trade_profit"`

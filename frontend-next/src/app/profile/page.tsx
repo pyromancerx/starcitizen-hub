@@ -29,7 +29,8 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditEditForm] = useState({
     display_name: '',
-    biography: ''
+    biography: '',
+    avatar_url: ''
   });
 
   const { data: profile, isLoading } = useQuery({
@@ -44,7 +45,8 @@ export default function ProfilePage() {
     if (profile) {
         setEditEditForm({
             display_name: profile.display_name,
-            biography: profile.biography || ''
+            biography: profile.biography || '',
+            avatar_url: profile.avatar_url || ''
         });
     }
   }, [profile]);
@@ -107,20 +109,34 @@ export default function ProfilePage() {
         <div className="px-8 pb-8 flex flex-col md:flex-row items-end -mt-12 relative z-10 space-y-4 md:space-y-0 md:space-x-6">
           <div className="h-32 w-32 rounded bg-sc-dark border-4 border-sc-panel shadow-2xl flex items-center justify-center text-sc-blue relative group">
             {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" /> : <UserIcon className="w-16 h-16" />}
-            <button className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <button 
+              onClick={() => setIsEditing(true)}
+              className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
               <Edit3 className="w-6 h-6 text-white" />
             </button>
           </div>
           
           <div className="flex-1 space-y-1 text-center md:text-left">
             {isEditing ? (
-                <div className="space-y-1">
-                    <label className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Citizen Designation</label>
-                    <input 
-                        value={editForm.display_name}
-                        onChange={e => setEditEditForm({...editForm, display_name: e.target.value})}
-                        className="text-2xl font-bold bg-black/40 border border-sc-blue/30 text-white uppercase italic tracking-tight rounded px-3 py-1 w-full max-w-md focus:outline-none focus:border-sc-blue transition-all"
-                    />
+                <div className="space-y-2">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Citizen Designation</label>
+                      <input 
+                          value={editForm.display_name}
+                          onChange={e => setEditEditForm({...editForm, display_name: e.target.value})}
+                          className="text-2xl font-bold bg-black/40 border border-sc-blue/30 text-white uppercase italic tracking-tight rounded px-3 py-1 w-full max-w-md focus:outline-none focus:border-sc-blue transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Avatar Image Link</label>
+                      <input 
+                          value={editForm.avatar_url}
+                          onChange={e => setEditEditForm({...editForm, avatar_url: e.target.value})}
+                          placeholder="https://example.com/image.png"
+                          className="text-xs bg-black/40 border border-sc-blue/30 text-white font-mono rounded px-3 py-1.5 w-full max-w-md focus:outline-none focus:border-sc-blue transition-all"
+                      />
+                    </div>
                 </div>
             ) : (
                 <h2 className="text-3xl font-bold text-white uppercase italic tracking-tight">{profile?.display_name || user?.display_name || 'Citizen Pilot'}</h2>

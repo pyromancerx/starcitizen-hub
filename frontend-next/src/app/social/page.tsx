@@ -225,12 +225,12 @@ export default function SocialHubPage() {
                          <ControlBtn 
                             icon={<ShieldAlert className="w-5 h-5" />} 
                             label="Security" 
-                            onClick={() => {}} 
+                            onClick={() => alert('Link encryption: AES-256-HUB. No surveillance detected.')} 
                          />
                          <ControlBtn 
                             icon={<Wifi className="w-5 h-5" />} 
                             label="Bandwidth" 
-                            onClick={() => {}} 
+                            onClick={() => alert('Optimizing sub-space data throughput... Signal priority: HIGH')} 
                          />
                          <ControlBtn 
                             icon={isVideoEnabled ? <Video className="w-5 h-5" /> : <Video className="w-5 h-5 opacity-50" />} 
@@ -247,7 +247,7 @@ export default function SocialHubPage() {
                          <ControlBtn 
                             icon={<Settings className="w-5 h-5" />} 
                             label="Config" 
-                            onClick={() => {}} 
+                            onClick={() => alert('Opening biometric and neural link settings... [RESTRICTED]')} 
                          />
                     </div>
                 </div>

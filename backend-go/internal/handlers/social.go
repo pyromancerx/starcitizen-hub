@@ -271,6 +271,17 @@ func (h *SocialHandler) MarkNotificationRead(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *SocialHandler) MarkAllNotificationsRead(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+
+	if err := h.socialService.MarkAllNotificationsRead(userID); err != nil {
+		http.Error(w, "Failed to mark all as read", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // Activity
 func (h *SocialHandler) GetActivityFeed(w http.ResponseWriter, r *http.Request) {
 	activities, err := h.socialService.GetActivityFeed(50)

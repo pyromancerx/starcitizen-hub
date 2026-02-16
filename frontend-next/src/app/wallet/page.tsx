@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
   Wallet, 
@@ -17,6 +17,37 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function WalletPage() {
+  const queryClient = useQueryClient();
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+
+  const transactionMutation = useMutation({
+    mutationFn: async (data: { amount: number, description: string, type: string }) => {
+      return api.post('/wallet/transactions', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
+      setShowDepositModal(false);
+      setShowWithdrawModal(false);
+      setAmount('');
+      setDescription('');
+    },
+  });
+
+  const handleTransaction = (type: 'deposit' | 'withdraw') => {
+    const val = parseInt(amount);
+    if (isNaN(val) || val <= 0) return;
+    
+    transactionMutation.mutate({
+      amount: type === 'deposit' ? val : -val,
+      description: description || (type === 'deposit' ? 'Manual Deposit' : 'Manual Withdrawal'),
+      type: type
+    });
+  };
+
   const { data: wallet, isLoading: walletLoading } = useQuery({
     queryKey: ['wallet'],
     queryFn: async () => {
@@ -45,11 +76,11 @@ export default function WalletPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+          <button onClick={() => setShowDepositModal(true)} className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
             <Plus className="w-4 h-4 mr-2" />
             Deposit
           </button>
-          <button className="px-4 py-2 bg-red-500/10 border border-red-500 text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center">
+          <button onClick={() => setShowWithdrawModal(true)} className="px-4 py-2 bg-red-500/10 border border-red-500 text-red-400 text-xs font-bold uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center">
             <Minus className="w-4 h-4 mr-2" />
             Withdraw
           </button>
@@ -158,6 +189,61 @@ export default function WalletPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      {(showDepositModal || showWithdrawModal) && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-sc-panel border border-sc-blue/20 rounded-lg p-6 max-w-sm w-full space-y-4 shadow-[0_0_50px_rgba(var(--color-sc-blue-rgb),0.2)]">
+            <h3 className="text-sm font-bold text-white uppercase tracking-widest border-b border-white/5 pb-2">
+              {showDepositModal ? 'Credit Injection' : 'Credit Disbursement'}
+            </h3>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Amount (aUEC)</label>
+              <input 
+                type="number" 
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full bg-black/40 border border-sc-grey/10 rounded px-3 py-2 text-white font-mono focus:border-sc-blue/50 focus:outline-none transition-colors"
+                placeholder="0"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Reference Note</label>
+              <input 
+                type="text" 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-black/40 border border-sc-grey/10 rounded px-3 py-2 text-white text-xs focus:border-sc-blue/50 focus:outline-none transition-colors"
+                placeholder="Optional description..."
+              />
+            </div>
+
+            <div className="flex space-x-2 pt-2">
+              <button 
+                onClick={() => {
+                  setShowDepositModal(false);
+                  setShowWithdrawModal(false);
+                  setAmount('');
+                  setDescription('');
+                }}
+                className="flex-1 py-2 border border-sc-grey/20 text-sc-grey text-[10px] font-black uppercase rounded hover:bg-white/5 transition-all"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleTransaction(showDepositModal ? 'deposit' : 'withdraw')}
+                disabled={transactionMutation.isPending || !amount}
+                className="flex-1 py-2 bg-sc-blue text-sc-dark text-[10px] font-black uppercase rounded hover:bg-white transition-all disabled:opacity-50"
+              >
+                {transactionMutation.isPending ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

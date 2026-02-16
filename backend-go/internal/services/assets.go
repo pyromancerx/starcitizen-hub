@@ -101,6 +101,49 @@ func (s *AssetService) GetWalletTransactions(walletID uint, limit int) ([]models
 	return transactions, err
 }
 
+func (s *AssetService) ProcessWalletTransaction(userID uint, amount int, description string, txType string) (*models.WalletTransaction, error) {
+	var transaction models.WalletTransaction
+	
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		var wallet models.Wallet
+		if err := tx.Where("user_id = ?", userID).First(&wallet).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				wallet = models.Wallet{UserID: userID, BalanceAUEC: 0}
+				if err := tx.Create(&wallet).Error; err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+
+		// Check sufficient funds for withdrawal
+		if amount < 0 && wallet.BalanceAUEC + amount < 0 {
+			return errors.New("insufficient funds")
+		}
+
+		wallet.BalanceAUEC += amount
+		if err := tx.Save(&wallet).Error; err != nil {
+			return err
+		}
+
+		transaction = models.WalletTransaction{
+			WalletID:        wallet.ID,
+			Amount:          amount,
+			Description:     description,
+			TransactionType: txType,
+		}
+		
+		return tx.Create(&transaction).Error
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &transaction, nil
+}
+
 // Inventory
 func (s *AssetService) ListInventory(userID uint) ([]models.PersonalInventory, error) {
 	var items []models.PersonalInventory

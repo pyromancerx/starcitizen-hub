@@ -64,6 +64,12 @@ func (s *SocialService) MarkNotificationRead(userID uint, notificationID uint) e
 		Update("is_read", true).Error
 }
 
+func (s *SocialService) MarkAllNotificationsRead(userID uint) error {
+	return s.DB.Model(&models.Notification{}).
+		Where("user_id = ? AND is_read = ?", userID, false).
+		Update("is_read", true).Error
+}
+
 // Activity
 func (s *SocialService) GetActivityFeed(limit int) ([]models.Activity, error) {
 	var activities []models.Activity

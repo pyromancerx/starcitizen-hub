@@ -20,6 +20,8 @@ import { useCall } from '@/context/CallContext';
 
 export default function MembersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({ verifiedOnly: false, commandOnly: false });
   const { initiateCall } = useCall();
   
   const { data: members, isLoading } = useQuery({
@@ -30,10 +32,14 @@ export default function MembersPage() {
     },
   });
 
-  const filteredMembers = members?.filter((m: any) => 
-    m.display_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    m.rsi_handle.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMembers = members?.filter((m: any) => {
+    const matchesSearch = m.display_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          m.rsi_handle.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesVerified = !filters.verifiedOnly || m.is_rsi_verified;
+    const matchesCommand = !filters.commandOnly || m.roles?.some((r: any) => r.tier === 'admin' || r.tier === 'officer');
+    
+    return matchesSearch && matchesVerified && matchesCommand;
+  });
 
   return (
     <div className="space-y-8">
@@ -57,9 +63,34 @@ export default function MembersPage() {
                     className="bg-sc-dark/50 border border-sc-grey/10 rounded pl-9 pr-4 py-2 text-[10px] text-white focus:outline-none focus:border-sc-blue/50 uppercase tracking-widest font-bold w-64"
                 />
             </div>
-            <button className="p-2 bg-sc-panel border border-sc-grey/10 rounded text-sc-grey/40 hover:text-white transition-all">
-                <Filter className="w-4 h-4" />
-            </button>
+            <div className="relative">
+                <button 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(
+                    "p-2 border rounded transition-all",
+                    showFilters ? "bg-sc-blue text-black border-sc-blue" : "bg-sc-panel border-sc-grey/10 text-sc-grey/40 hover:text-white"
+                  )}
+                >
+                    <Filter className="w-4 h-4" />
+                </button>
+                
+                {showFilters && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-sc-panel border border-sc-blue/20 rounded shadow-xl z-50 p-4 space-y-3 animate-in fade-in slide-in-from-top-2">
+                    <div onClick={() => setFilters(f => ({...f, verifiedOnly: !f.verifiedOnly}))} className="flex items-center space-x-2 cursor-pointer group select-none">
+                      <div className={cn("w-3 h-3 border rounded-sm flex items-center justify-center transition-colors", filters.verifiedOnly ? "bg-sc-blue border-sc-blue" : "border-sc-grey/40 group-hover:border-white")}>
+                        {filters.verifiedOnly && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-white tracking-widest">Verified Only</span>
+                    </div>
+                    <div onClick={() => setFilters(f => ({...f, commandOnly: !f.commandOnly}))} className="flex items-center space-x-2 cursor-pointer group select-none">
+                      <div className={cn("w-3 h-3 border rounded-sm flex items-center justify-center transition-colors", filters.commandOnly ? "bg-sc-blue border-sc-blue" : "border-sc-grey/40 group-hover:border-white")}>
+                         {filters.commandOnly && <div className="w-1.5 h-1.5 bg-black rounded-full" />}
+                      </div>
+                      <span className="text-[10px] uppercase font-bold text-white tracking-widest">Command Staff</span>
+                    </div>
+                  </div>
+                )}
+            </div>
         </div>
       </div>
 
