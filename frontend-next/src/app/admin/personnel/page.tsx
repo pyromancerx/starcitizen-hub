@@ -472,7 +472,8 @@ const EditUserModal = ({ user, onClose, onSave, isPending }: any) => {
         rsi_handle: user.rsi_handle,
         email: user.email,
         is_active: user.is_active,
-        is_approved: user.is_approved
+        is_approved: user.is_approved,
+        password: ''
     });
 
     return (
@@ -496,10 +497,24 @@ const EditUserModal = ({ user, onClose, onSave, isPending }: any) => {
                         <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Email</label>
                         <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white" />
                     </div>
+                    <div className="space-y-1">
+                        <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Security Key (Password - Leave blank to keep current)</label>
+                        <input 
+                            type="password"
+                            value={form.password} 
+                            onChange={e => setForm({...form, password: e.target.value})} 
+                            className="w-full bg-sc-dark border border-sc-grey/20 rounded px-3 py-2 text-xs text-white focus:border-sc-blue/50 outline-none" 
+                            placeholder="New secure signal..."
+                        />
+                    </div>
                     <div className="flex justify-end space-x-3 pt-4">
                         <button onClick={onClose} className="px-4 py-2 text-xs font-black text-sc-grey/40 uppercase">Cancel</button>
                         <button 
-                            onClick={() => onSave(form)} 
+                            onClick={() => {
+                                const payload = { ...form };
+                                if (!payload.password) delete (payload as any).password;
+                                onSave(payload);
+                            }} 
                             disabled={isPending}
                             className="px-6 py-2 bg-sc-blue text-sc-dark text-xs font-black rounded uppercase hover:bg-white transition-all disabled:opacity-50"
                         >

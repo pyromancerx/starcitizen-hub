@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/models"
 	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/services"
+	"github.com/pyromancerx/starcitizen-hub/backend-go/internal/utils"
 )
 
 type AdminHandler struct {
@@ -263,6 +264,17 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	// If password is provided, hash it before updating
+	if password, ok := updates["password"].(string); ok && password != "" {
+		hashed, err := utils.HashPassword(password)
+		if err != nil {
+			http.Error(w, "Failed to hash security key", http.StatusInternalServerError)
+			return
+		}
+		updates["password_hash"] = hashed
+		delete(updates, "password")
 	}
 
 	if err := h.adminService.DB.Model(&models.User{}).Where("id = ?", uint(id)).Updates(updates).Error; err != nil {
