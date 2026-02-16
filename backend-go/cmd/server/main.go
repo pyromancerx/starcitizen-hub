@@ -350,6 +350,7 @@ func main() {
 			r.Post("/forum/posts", socialHandler.CreatePost)
 			r.Post("/social/rsi-verify", socialHandler.SubmitRSIVerification)
 			r.Get("/social/members", socialHandler.ListMembers)
+			r.Get("/social/members/{id}", socialHandler.GetMember)
 			r.Get("/social/achievements", socialHandler.ListAchievements)
 			r.Post("/social/achievements/award", socialHandler.AwardAchievement)
 			r.Get("/social/federation", socialHandler.ListFederation)
@@ -372,6 +373,7 @@ func main() {
 
 			// Messaging
 			r.Get("/messages/conversations", socialHandler.ListConversations)
+			r.Post("/messages/conversations", socialHandler.GetOrCreateConversation)
 			r.Get("/messages/conversations/{id}", socialHandler.GetConversation)
 			r.Post("/messages/", socialHandler.SendMessage)
 

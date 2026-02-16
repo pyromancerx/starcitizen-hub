@@ -88,6 +88,39 @@ func (s *SocialService) GetConversation(id uint, userID uint) (*models.Conversat
 	return &conversation, err
 }
 
+func (s *SocialService) GetOrCreateConversation(user1ID, user2ID uint) (*models.Conversation, error) {
+	var conversation models.Conversation
+	
+	// Check if conversation already exists (either user1,user2 or user2,user1)
+	err := s.DB.Where("(user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)", 
+		user1ID, user2ID, user2ID, user1ID).
+		Preload("User1").Preload("User2").
+		First(&conversation).Error
+
+	if err == nil {
+		return &conversation, nil
+	}
+
+	if err != gorm.ErrRecordNotFound {
+		return nil, err
+	}
+
+	// Create new conversation
+	conversation = models.Conversation{
+		User1ID: user1ID,
+		User2ID: user2ID,
+	}
+
+	if err := s.DB.Create(&conversation).Error; err != nil {
+		return nil, err
+	}
+
+	// Re-preload users
+	s.DB.Preload("User1").Preload("User2").First(&conversation, conversation.ID)
+
+	return &conversation, nil
+}
+
 func (s *SocialService) SendMessage(msg *models.Message) error {
 	return s.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(msg).Error; err != nil {

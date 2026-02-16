@@ -7,20 +7,20 @@ import {
   Users, 
   Search, 
   Filter, 
-  ShieldCheck, 
   User as UserIcon, 
   ExternalLink,
   MessageSquare,
   BadgeCheck,
   Zap,
-  Globe,
-  MapPin
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useCall } from '@/context/CallContext';
 
 export default function MembersPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const { initiateCall } = useCall();
   
   const { data: members, isLoading } = useQuery({
     queryKey: ['personnel-registry'],
@@ -73,7 +73,7 @@ export default function MembersPage() {
             </div>
           </div>
         ) : filteredMembers?.map((member: any) => (
-          <CitizenCard key={member.id} member={member} />
+          <CitizenCard key={member.id} member={member} onCall={() => initiateCall(member.id, member.display_name)} />
         ))}
 
         {filteredMembers?.length === 0 && !isLoading && (
@@ -86,7 +86,9 @@ export default function MembersPage() {
   );
 }
 
-const CitizenCard = ({ member }: { member: any }) => {
+const CitizenCard = ({ member, onCall }: { member: any, onCall: () => void }) => {
+    const router = useRouter();
+
     return (
         <div className="bg-sc-panel border border-sc-blue/10 rounded-lg overflow-hidden group hover:border-sc-blue/40 transition-all duration-500 shadow-xl relative">
             {/* Top Pattern */}
@@ -95,8 +97,12 @@ const CitizenCard = ({ member }: { member: any }) => {
             <div className="p-6 space-y-6">
                 <div className="flex items-start justify-between">
                     <div className="relative">
-                        <div className="h-16 w-16 rounded bg-sc-dark border border-white/5 flex items-center justify-center text-sc-blue/40 group-hover:text-sc-blue transition-colors">
-                            <UserIcon className="w-8 h-8" />
+                        <div className="h-16 w-16 rounded bg-sc-dark border border-white/5 flex items-center justify-center text-sc-blue/40 group-hover:text-sc-blue transition-colors overflow-hidden">
+                            {member.avatar_url ? (
+                                <img src={member.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+                            ) : (
+                                <UserIcon className="w-8 h-8" />
+                            )}
                         </div>
                         {member.is_rsi_verified && (
                             <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-sc-panel">
@@ -139,15 +145,26 @@ const CitizenCard = ({ member }: { member: any }) => {
 
                 <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                        <button className="p-2 bg-sc-dark border border-white/5 rounded text-sc-grey/40 hover:text-sc-blue transition-all">
+                        <button 
+                            onClick={() => router.push(`/messages?user=${member.id}`)}
+                            className="p-2 bg-sc-dark border border-white/5 rounded text-sc-grey/40 hover:text-sc-blue transition-all"
+                            title="Message"
+                        >
                             <MessageSquare className="w-3.5 h-3.5" />
                         </button>
-                        <button className="p-2 bg-sc-dark border border-white/5 rounded text-sc-grey/40 hover:text-white transition-all">
+                        <button 
+                            onClick={onCall}
+                            className="p-2 bg-sc-dark border border-white/5 rounded text-sc-grey/40 hover:text-white transition-all"
+                            title="Live Link"
+                        >
                             <Zap className="w-3.5 h-3.5" />
                         </button>
                     </div>
-                    <button className="text-[8px] font-black text-sc-grey/40 hover:text-white uppercase tracking-[0.2em] flex items-center">
-                        Dossier <ExternalLink className="w-2.5 h-2.5 ml-1.5" />
+                    <button 
+                        onClick={() => router.push(`/profile/${member.id}`)}
+                        className="text-[8px] font-black text-sc-grey/40 hover:text-white uppercase tracking-[0.2em] flex items-center group/dossier"
+                    >
+                        Dossier <ExternalLink className="w-2.5 h-2.5 ml-1.5 group-hover/dossier:translate-x-0.5 transition-transform" />
                     </button>
                 </div>
             </div>

@@ -15,7 +15,11 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useSignaling } from '@/context/SignalingContext';
 
+import { useSearchParams } from 'next/navigation';
+
 export default function MessagesPage() {
+  const searchParams = useSearchParams();
+  const targetUserID = searchParams.get('user');
   const [selectedConv, setSelectedConv] = useState<any>(null);
   const [messageText, setMessageText] = useState('');
   const { user: currentUser } = useAuthStore();
@@ -30,6 +34,23 @@ export default function MessagesPage() {
       return res.data;
     },
   });
+
+  // Handle target user from query param
+  useEffect(() => {
+    if (targetUserID && conversations) {
+        const id = parseInt(targetUserID);
+        const existing = conversations.find((c: any) => c.user1_id === id || c.user2_id === id);
+        if (existing) {
+            setSelectedConv(existing);
+        } else {
+            // Create new conversation
+            api.post('/messages/conversations', { target_id: id }).then(res => {
+                queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                setSelectedConv(res.data);
+            });
+        }
+    }
+  }, [targetUserID, conversations, queryClient]);
 
   const { data: messages, isLoading: msgsLoading } = useQuery({
     queryKey: ['messages', selectedConv?.id],

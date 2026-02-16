@@ -315,6 +315,32 @@ func (h *SocialHandler) GetConversation(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(conversation)
 }
 
+func (h *SocialHandler) GetOrCreateConversation(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	var req struct {
+		TargetID uint `json:"target_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if req.TargetID == userID {
+		http.Error(w, "Cannot message yourself", http.StatusBadRequest)
+		return
+	}
+
+	conversation, err := h.socialService.GetOrCreateConversation(userID, req.TargetID)
+	if err != nil {
+		http.Error(w, "Failed to establish link", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(conversation)
+}
+
 func (h *SocialHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value("user_id").(uint)
 	var msg models.Message
@@ -650,6 +676,24 @@ func (h *SocialHandler) ListMembers(w http.ResponseWriter, r *http.Request) {
 	// In a real product, we would map this to a "PublicProfile" DTO to hide sensitive fields
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
+}
+
+func (h *SocialHandler) GetMember(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	var user models.User
+	if err := h.socialService.DB.Preload("Roles").Where("id = ? AND is_active = ?", uint(id), true).First(&user).Error; err != nil {
+		http.Error(w, "Citizen record not found", http.StatusNotFound)
+		return
+	}
+
+	// Clear sensitive fields before sending
+	user.PasswordHash = ""
+	user.Email = "" // Hide email from public dossier
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
 }
 
 func (h *SocialHandler) ListAchievements(w http.ResponseWriter, r *http.Request) {

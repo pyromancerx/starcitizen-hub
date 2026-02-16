@@ -17,12 +17,15 @@ import {
   Trash2,
   Settings,
   CheckSquare,
-  Square
+  Square,
+  FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function AdminPersonnelPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'rsi'>('all');
@@ -467,6 +470,13 @@ export default function AdminPersonnelPage() {
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end space-x-2">
+                    <button 
+                        onClick={() => router.push(`/profile/${user.id}`)}
+                        className="p-2 hover:bg-white/5 text-sc-grey hover:text-sc-blue rounded transition-all"
+                        title="View Dossier"
+                    >
+                        <FileText className="w-4 h-4" />
+                    </button>
                     <button 
                         onClick={() => setEditingUser(user)}
                         className="p-2 hover:bg-white/5 text-sc-grey hover:text-white rounded transition-all"
