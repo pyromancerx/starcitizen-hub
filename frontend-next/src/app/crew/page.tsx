@@ -106,7 +106,10 @@ export default function CrewFinderPage() {
                 </div>
 
                 <div className="flex justify-end">
-                  <button className="px-6 py-2 border border-sc-blue/30 text-sc-blue text-[10px] font-black uppercase tracking-widest rounded hover:bg-sc-blue hover:text-sc-dark transition-all">
+                  <button 
+                    onClick={() => alert(`Establishing encrypted comms link with mission lead... [Signal Placeholder]`)}
+                    className="px-6 py-2 border border-sc-blue/30 text-sc-blue text-[10px] font-black uppercase tracking-widest rounded hover:bg-sc-blue hover:text-sc-dark transition-all"
+                  >
                     Establish Comms
                   </button>
                 </div>

@@ -34,7 +34,10 @@ export default function EventsPage() {
             Synchronized Mission Timeline
           </p>
         </div>
-        <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+        <button 
+            onClick={() => alert('Chronometer synchronization failed: Event scheduling is currently restricted to high-clearance personnel.')}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Schedule Event
         </button>
@@ -70,7 +73,10 @@ export default function EventsPage() {
                   </div>
                 </div>
                 <div className="mt-4 md:mt-0">
-                  <button className="px-6 py-2 border border-sc-blue/30 text-sc-blue text-[10px] font-black uppercase tracking-widest rounded hover:bg-sc-blue/10 transition-all">
+                  <button 
+                    onClick={() => alert(`Accessing mission parameters for: ${event.title}... [Intel Placeholder]`)}
+                    className="px-6 py-2 border border-sc-blue/30 text-sc-blue text-[10px] font-black uppercase tracking-widest rounded hover:bg-sc-blue/10 transition-all"
+                  >
                     View Details
                   </button>
                 </div>

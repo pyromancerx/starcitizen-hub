@@ -45,7 +45,10 @@ function ChannelContent() {
                 </p>
             </div>
         </div>
-        <button className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2">
+        <button 
+            onClick={() => alert('Spectrum relay busy: New topic broadcast is temporarily queued. [Form Placeholder]')}
+            className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2"
+        >
             <Plus className="w-4 h-4" />
             <span>Broadcast New Topic</span>
         </button>

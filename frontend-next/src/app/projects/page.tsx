@@ -39,7 +39,10 @@ export default function ProjectsPage() {
             Organization Progress & Objective Tracker
           </p>
         </div>
-        <button className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]">
+        <button 
+            onClick={() => alert('Strategic planning clearance required: Only logistics leads can authorize new initiatives.')}
+            className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase rounded hover:bg-sc-blue hover:text-sc-dark transition-all flex items-center space-x-2 shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.1)]"
+        >
             <Plus className="w-4 h-4" />
             <span>Authorize Initiative</span>
         </button>

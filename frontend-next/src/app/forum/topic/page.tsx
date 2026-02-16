@@ -162,8 +162,18 @@ const PostCard = ({ author, content, date, isOP }: { author: any, content: strin
             </p>
             {!isOP && (
                 <div className="flex space-x-4 pt-2">
-                    <button className="text-[8px] font-black text-sc-blue/40 uppercase hover:text-sc-blue transition-colors">Acknowledge</button>
-                    <button className="text-[8px] font-black text-sc-blue/40 uppercase hover:text-sc-blue transition-colors">Relay</button>
+                    <button 
+                        onClick={() => alert('Transmission acknowledged. Signal strength remains optimal.')}
+                        className="text-[8px] font-black text-sc-blue/40 uppercase hover:text-sc-blue transition-colors"
+                    >
+                        Acknowledge
+                    </button>
+                    <button 
+                        onClick={() => alert('Relaying transmission to secondary Spectrum nodes... [Relay Placeholder]')}
+                        className="text-[8px] font-black text-sc-blue/40 uppercase hover:text-sc-blue transition-colors"
+                    >
+                        Relay
+                    </button>
                 </div>
             )}
         </div>

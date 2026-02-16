@@ -44,7 +44,10 @@ export default function TreasuryPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+          <button 
+            onClick={() => alert('Fiscal authorization required: Treasury budget allocation is locked to Command Council members.')}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Budget Allocation
           </button>

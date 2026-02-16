@@ -69,7 +69,10 @@ function ProjectContent() {
             </p>
           </div>
         </div>
-        <button className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center">
+        <button 
+            onClick={() => alert('Phase management protocols are currently in read-only mode for the Stanton sector.')}
+            className="px-4 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-xs font-bold uppercase tracking-widest hover:bg-sc-blue/20 transition-all flex items-center"
+        >
           <Layers className="w-4 h-4 mr-2" />
           Manage Phases
         </button>
