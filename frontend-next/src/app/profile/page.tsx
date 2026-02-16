@@ -26,12 +26,36 @@ export default function ProfilePage() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [rsiHandle, setRsiHandle] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditEditForm] = useState({
+    display_name: '',
+    biography: ''
+  });
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile-me'],
     queryFn: async () => {
       const res = await api.get('/auth/me');
       return res.data;
+    }
+  });
+
+  React.useEffect(() => {
+    if (profile) {
+        setEditEditForm({
+            display_name: profile.display_name,
+            biography: profile.biography || ''
+        });
+    }
+  }, [profile]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return api.patch('/auth/me', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile-me'] });
+      setIsEditing(false);
     }
   });
 
@@ -67,7 +91,7 @@ export default function ProfilePage() {
 
   const profileStats = [
     { label: 'Fleet Assets', value: '12 Vessels', icon: Rocket },
-    { label: 'Rank Tier', value: 'Officer', icon: ShieldCheck },
+    { label: 'Rank Tier', value: profile?.roles?.[0]?.name || 'Citizen', icon: ShieldCheck },
     { label: 'Hub Longevity', value: '42 Cycles', icon: Calendar },
   ];
 
@@ -82,18 +106,29 @@ export default function ProfilePage() {
         
         <div className="px-8 pb-8 flex flex-col md:flex-row items-end -mt-12 relative z-10 space-y-4 md:space-y-0 md:space-x-6">
           <div className="h-32 w-32 rounded bg-sc-dark border-4 border-sc-panel shadow-2xl flex items-center justify-center text-sc-blue relative group">
-            <UserIcon className="w-16 h-16" />
+            {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" /> : <UserIcon className="w-16 h-16" />}
             <button className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <Edit3 className="w-6 h-6 text-white" />
             </button>
           </div>
           
           <div className="flex-1 space-y-1 text-center md:text-left">
-            <h2 className="text-3xl font-bold text-white uppercase italic tracking-tight">{user?.display_name || 'Citizen Pilot'}</h2>
+            {isEditing ? (
+                <div className="space-y-1">
+                    <label className="text-[8px] font-black text-sc-blue uppercase tracking-widest">Citizen Designation</label>
+                    <input 
+                        value={editForm.display_name}
+                        onChange={e => setEditEditForm({...editForm, display_name: e.target.value})}
+                        className="text-2xl font-bold bg-black/40 border border-sc-blue/30 text-white uppercase italic tracking-tight rounded px-3 py-1 w-full max-w-md focus:outline-none focus:border-sc-blue transition-all"
+                    />
+                </div>
+            ) : (
+                <h2 className="text-3xl font-bold text-white uppercase italic tracking-tight">{profile?.display_name || user?.display_name || 'Citizen Pilot'}</h2>
+            )}
             <div className="flex flex-wrap justify-center md:justify-start gap-4 text-[10px] font-black text-sc-grey/40 uppercase tracking-widest">
               <span className="flex items-center text-sc-blue">
                 <ShieldCheck className="w-3 h-3 mr-1.5" />
-                {user?.rsi_handle || 'ADMIN_CORE'}
+                {profile?.rsi_handle || user?.rsi_handle || 'ADMIN_CORE'}
               </span>
               <span className="flex items-center">
                 <MapPin className="w-3 h-3 mr-1.5" />
@@ -106,9 +141,30 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <button className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase tracking-widest hover:bg-sc-blue/20 transition-all rounded">
-            Edit Bio
-          </button>
+          {isEditing ? (
+            <div className="flex space-x-2">
+                <button 
+                    onClick={() => setIsEditing(false)}
+                    className="px-6 py-2 text-sc-grey/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all"
+                >
+                    Cancel
+                </button>
+                <button 
+                    onClick={() => updateProfileMutation.mutate(editForm)}
+                    disabled={updateProfileMutation.isPending}
+                    className="px-6 py-2 bg-sc-blue text-sc-dark text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all rounded shadow-[0_0_15px_rgba(var(--color-sc-blue-rgb),0.3)]"
+                >
+                    {updateProfileMutation.isPending ? 'Syncing...' : 'Save Record'}
+                </button>
+            </div>
+          ) : (
+            <button 
+                onClick={() => setIsEditing(true)}
+                className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black uppercase tracking-widest hover:bg-sc-blue/20 transition-all rounded"
+            >
+                Edit Dossier
+            </button>
+          )}
         </div>
       </div>
 
@@ -127,21 +183,34 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <h3 className="text-xs font-black text-sc-blue uppercase tracking-[0.3em] border-b border-sc-blue/20 pb-2">Service Record</h3>
           <div className="bg-sc-panel border border-sc-grey/10 rounded p-6 space-y-4">
-            <p className="text-xs text-sc-grey/60 italic leading-relaxed">
-              "No biography data available in the primary databank. Citizen has not yet provided personal history logs for public record."
-            </p>
+            {isEditing ? (
+                <div className="space-y-2">
+                    <label className="text-[8px] font-black text-sc-grey/40 uppercase tracking-widest">Public Biography</label>
+                    <textarea 
+                        value={editForm.biography}
+                        onChange={e => setEditEditForm({...editForm, biography: e.target.value})}
+                        rows={6}
+                        className="w-full bg-black/40 border border-sc-blue/30 rounded p-4 text-xs text-sc-grey font-medium focus:outline-none focus:border-sc-blue custom-scrollbar italic"
+                        placeholder="Enter your service record history..."
+                    />
+                </div>
+            ) : (
+                <p className="text-xs text-sc-grey/60 italic leading-relaxed font-medium">
+                "{profile?.biography || 'No biography data available in the primary databank. Citizen has not yet provided personal history logs for public record.'}"
+                </p>
+            )}
           </div>
         </div>
 
         <div className="space-y-4">
           <h3 className="text-xs font-black text-sc-blue uppercase tracking-[0.3em] border-b border-sc-blue/20 pb-2">Assigned Roles</h3>
           <div className="flex flex-wrap gap-2">
-            {user?.roles?.map((role: any) => (
+            {profile?.roles?.map((role: any) => (
               <div key={role.id} className="px-4 py-2 bg-sc-dark border border-sc-blue/30 rounded text-[10px] font-bold text-sc-blue uppercase tracking-widest shadow-[0_0_10px_rgba(var(--color-sc-blue-rgb),0.1)]">
                 {role.name}
               </div>
             ))}
-            {(!user?.roles || user.roles.length === 0) && (
+            {(!profile?.roles || profile.roles.length === 0) && (
               <div className="text-[10px] text-sc-grey/30 uppercase italic">No command roles assigned.</div>
             )}
           </div>

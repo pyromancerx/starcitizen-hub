@@ -42,6 +42,8 @@ type User struct {
 
 	AvatarURL        string         `gorm:"size:500" json:"avatar_url"`
 
+	Biography        string         `gorm:"size:2000" json:"biography"`
+
 	IsActive         bool           `gorm:"default:true" json:"is_active"`
 
 	IsApproved       bool           `gorm:"default:false" json:"is_approved"`

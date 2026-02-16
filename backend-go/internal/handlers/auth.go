@@ -114,6 +114,42 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+func (h *AuthHandler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value("user_id").(uint)
+	
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Restrict what fields a user can update themselves
+	allowedFields := map[string]bool{
+		"display_name": true,
+		"biography":    true,
+		"avatar_url":   true,
+	}
+
+	filteredUpdates := make(map[string]interface{})
+	for k, v := range updates {
+		if allowedFields[k] {
+			filteredUpdates[k] = v
+		}
+	}
+
+	if len(filteredUpdates) == 0 {
+		http.Error(w, "No valid fields provided for update", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.authService.DB.Model(&models.User{}).Where("id = ?", userID).Updates(filteredUpdates).Error; err != nil {
+		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *AuthHandler) GetSetupStatus(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	// If any user exists, we consider setup complete

@@ -293,6 +293,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(customMiddleware.AuthMiddleware)
 			r.Get("/auth/me", authHandler.Me)
+			r.Patch("/auth/me", authHandler.UpdateMe)
 
 			// Ships
 			r.Get("/ships/", assetHandler.ListMyShips)
