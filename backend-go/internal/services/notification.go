@@ -20,6 +20,11 @@ type NotificationSettings struct {
 		Discord bool `json:"discord"`
 		InApp  bool `json:"in_app"`
 	} `json:"messages"`
+	Contracts struct {
+		Email  bool `json:"email"`
+		Discord bool `json:"discord"`
+		InApp  bool `json:"in_app"`
+	} `json:"contracts"`
 }
 
 type NotificationService struct {
@@ -33,6 +38,84 @@ func NewNotificationService(db *gorm.DB) *NotificationService {
 		db:             db,
 		mailService:    NewMailService(db),
 		discordService: NewDiscordService(db),
+	}
+}
+
+func (s *NotificationService) DispatchDirectMessage(message *models.Message) {
+	var conversation models.Conversation
+	if err := s.db.Preload("User1").Preload("User2").First(&conversation, message.ConversationID).Error; err != nil {
+		return
+	}
+
+	recipientID := conversation.User1ID
+	if message.SenderID == conversation.User1ID {
+		recipientID = conversation.User2ID
+	}
+
+	var recipient models.User
+	if err := s.db.First(&recipient, recipientID).Error; err != nil {
+		return
+	}
+
+	var sender models.User
+	s.db.First(&sender, message.SenderID)
+
+	var prefs NotificationSettings
+	if recipient.NotificationSettings == "" {
+		prefs.Messages.InApp = true
+	} else {
+		json.Unmarshal([]byte(recipient.NotificationSettings), &prefs)
+	}
+
+	if prefs.Messages.InApp {
+		s.db.Create(&models.Notification{
+			UserID:    recipient.ID,
+			Type:      "message",
+			Title:     "New Direct Transmission",
+			Message:   fmt.Sprintf("%s: %s", sender.DisplayName, message.Content),
+			Link:      fmt.Sprintf("/messages?user=%d", sender.ID),
+			Priority:  "normal",
+			TriggeredByID: &sender.ID,
+		})
+	}
+
+	if prefs.Messages.Email && recipient.Email != "" {
+		subject := fmt.Sprintf("New Message from %s", sender.DisplayName)
+		body := fmt.Sprintf("<p><strong>%s</strong> sent you a direct transmission:</p><blockquote>%s</blockquote>", sender.DisplayName, message.Content)
+		go s.mailService.SendEmail(recipient.Email, subject, body)
+	}
+}
+
+func (s *NotificationService) DispatchContractAcceptance(contract *models.CargoContract, hauler *models.User) {
+	var poster models.User
+	if err := s.db.First(&poster, contract.PosterID).Error; err != nil {
+		return
+	}
+
+	var prefs NotificationSettings
+	if poster.NotificationSettings == "" {
+		prefs.Contracts.InApp = true
+		prefs.Contracts.Email = true
+	} else {
+		json.Unmarshal([]byte(poster.NotificationSettings), &prefs)
+	}
+
+	if prefs.Contracts.InApp {
+		s.db.Create(&models.Notification{
+			UserID:    poster.ID,
+			Type:      "contract_update",
+			Title:     "Cargo Contract Accepted",
+			Message:   fmt.Sprintf("%s has accepted your contract for %s.", hauler.DisplayName, contract.Commodity),
+			Link:      "/trade/contracts",
+			Priority:  "high",
+			TriggeredByID: &hauler.ID,
+		})
+	}
+
+	if prefs.Contracts.Email && poster.Email != "" {
+		subject := "Your Cargo Contract has been Accepted"
+		body := fmt.Sprintf("<p>Citizen <strong>%s</strong> has accepted your logistics contract for <strong>%s</strong>.</p>", hauler.DisplayName, contract.Commodity)
+		go s.mailService.SendEmail(poster.Email, subject, body)
 	}
 }
 

@@ -12,12 +12,14 @@ import (
 type LogisticsService struct {
 	DB             *gorm.DB
 	discordService *DiscordService
+	notificationService *NotificationService
 }
 
 func NewLogisticsService() *LogisticsService {
 	return &LogisticsService{
 		DB:             database.DB,
 		discordService: NewDiscordService(database.DB),
+		notificationService: NewNotificationService(database.DB),
 	}
 }
 
@@ -186,6 +188,11 @@ func (s *LogisticsService) CreateCargoContract(contract *models.CargoContract) e
 }
 
 func (s *LogisticsService) AcceptCargoContract(contractID uint, haulerID uint) error {
+	var contract models.CargoContract
+	if err := s.DB.First(&contract, contractID).Error; err != nil {
+		return err
+	}
+
 	result := s.DB.Model(&models.CargoContract{}).
 		Where("id = ? AND status = 'open'", contractID).
 		Updates(map[string]interface{}{
@@ -199,6 +206,13 @@ func (s *LogisticsService) AcceptCargoContract(contractID uint, haulerID uint) e
 	if result.RowsAffected == 0 {
 		return errors.New("contract not found or already assigned")
 	}
+
+	// Trigger Notification
+	var hauler models.User
+	if err := s.DB.First(&hauler, haulerID).Error; err == nil {
+		go s.notificationService.DispatchContractAcceptance(&contract, &hauler)
+	}
+
 	return nil
 }
 

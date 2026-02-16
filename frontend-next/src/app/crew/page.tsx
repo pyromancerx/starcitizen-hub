@@ -15,9 +15,11 @@ import {
   Rocket
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCall } from '@/context/CallContext';
 
 export default function CrewFinderPage() {
   const queryClient = useQueryClient();
+  const { initiateCall } = useCall();
   const [showPostModal, setShowPostModal] = useState(false);
   const [newPost, setNewPost] = useState({
     title: '',
@@ -107,7 +109,13 @@ export default function CrewFinderPage() {
 
                 <div className="flex justify-end">
                   <button 
-                    onClick={() => alert(`Establishing encrypted comms link with mission lead... [Signal Placeholder]`)}
+                    onClick={() => {
+                        if (post.user_id) {
+                            initiateCall(post.user_id, post.user?.display_name || 'Pilot');
+                        } else {
+                            alert('Signal Intercept: Unable to establish link with the mission lead.');
+                        }
+                    }}
                     className="px-6 py-2 border border-sc-blue/30 text-sc-blue text-[10px] font-black uppercase tracking-widest rounded hover:bg-sc-blue hover:text-sc-dark transition-all"
                   >
                     Establish Comms

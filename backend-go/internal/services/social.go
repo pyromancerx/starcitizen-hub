@@ -128,7 +128,7 @@ func (s *SocialService) GetOrCreateConversation(user1ID, user2ID uint) (*models.
 }
 
 func (s *SocialService) SendMessage(msg *models.Message) error {
-	return s.DB.Transaction(func(tx *gorm.DB) error {
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(msg).Error; err != nil {
 			return err
 		}
@@ -141,6 +141,11 @@ func (s *SocialService) SendMessage(msg *models.Message) error {
 				"last_message_sender_id": msg.SenderID,
 			}).Error
 	})
+
+	if err == nil {
+		go s.notificationService.DispatchDirectMessage(msg)
+	}
+	return err
 }
 
 // Announcements
