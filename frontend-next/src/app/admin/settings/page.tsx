@@ -93,6 +93,9 @@ export default function AdminSettingsPage() {
     onSuccess: () => {
         alert('System update initiated. The hub will restart shortly.');
     },
+    onError: (err: any) => {
+        alert('Failed to initiate update: ' + (err.response?.data || err.message));
+    }
   });
 
   const updateSettingMutation = useMutation({

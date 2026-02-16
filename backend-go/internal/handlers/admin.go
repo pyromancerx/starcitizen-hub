@@ -460,14 +460,20 @@ func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
 	// Execute the update script
 	go func() {
 		log.Println("Starting system update...")
-		// Use sudo -n to run without interaction if sudoers is configured
-		cmd := exec.Command("sudo", "-n", "/bin/bash", "../scripts/update.sh", "--yes")
+		// Use absolute path for safety
+		cwd, _ := os.Getwd()
+		absPath := filepath.Join(cwd, "../scripts/update.sh")
+		log.Printf("Executing: /bin/bash %s --yes", absPath)
+		
+		cmd := exec.Command("/bin/bash", absPath, "--yes")
+		cmd.Dir = filepath.Dir(cwd) // Run from project root
+		
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			log.Printf("Update failed: %v\nOutput: %s", err, string(output))
 			return
 		}
-		log.Println("Update completed successfully")
+		log.Printf("Update completed successfully\nOutput: %s", string(output))
 	}()
 
 	w.Header().Set("Content-Type", "application/json")

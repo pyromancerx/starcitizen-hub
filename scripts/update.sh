@@ -86,10 +86,13 @@ if [ "$SKIP_CONFIRM" = false ]; then
     fi
 fi
 
-# Stop the service (only if it exists and is managed by systemd)
+# Stop the service
 log_info "Stopping service..."
 if systemctl list-unit-files | grep -q starcitizen-hub.service; then
     sudo systemctl stop starcitizen-hub || true
+else
+    log_warn "systemd service not found, attempting local stop..."
+    bash "$APP_DIR/scripts/stop_backend_go.sh" || true
 fi
 
 # Pull updates
@@ -138,19 +141,40 @@ npm run build
 
 # Restart the service
 log_info "Starting service..."
-sudo systemctl start starcitizen-hub
-sudo systemctl restart caddy
+if systemctl list-unit-files | grep -q starcitizen-hub.service; then
+    sudo systemctl start starcitizen-hub
+    sudo systemctl restart caddy
+else
+    log_warn "systemd service not found, attempting local start..."
+    bash "$APP_DIR/scripts/start_backend_go.sh"
+fi
 
 # Wait for service to start
 sleep 2
 
 # Check service status
-if sudo systemctl is-active --quiet starcitizen-hub; then
-    log_info "Service is running"
+if systemctl list-unit-files | grep -q starcitizen-hub.service; then
+    if sudo systemctl is-active --quiet starcitizen-hub; then
+        log_info "Service is running (systemd)"
+    else
+        log_error "Service failed to start (systemd)"
+        log_error "Check logs with: journalctl -u starcitizen-hub"
+        exit 1
+    fi
 else
-    log_error "Service failed to start"
-    log_error "Check logs with: journalctl -u starcitizen-hub"
-    exit 1
+    # Check PID file for local start
+    if [ -f "$APP_DIR/backend-go/backend.pid" ]; then
+        PID=$(cat "$APP_DIR/backend-go/backend.pid")
+        if ps -p $PID > /dev/null; then
+            log_info "Service is running (local PID: $PID)"
+        else
+            log_error "Service failed to start (local)"
+            exit 1
+        fi
+    else
+        log_error "No PID file found after local start"
+        exit 1
+    fi
 fi
 
 echo ""
