@@ -400,11 +400,15 @@ func (h *AdminHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-var AppVersion = "v1.0.0-dev"
-
 func (h *AdminHandler) GetSystemVersion(w http.ResponseWriter, r *http.Request) {
+	version := "unknown"
+	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
+	if output, err := cmd.Output(); err == nil {
+		version = string(output)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"version": AppVersion})
+	json.NewEncoder(w).Encode(map[string]string{"version": version})
 }
 
 func (h *AdminHandler) PerformUpdate(w http.ResponseWriter, r *http.Request) {
