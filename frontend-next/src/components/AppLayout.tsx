@@ -19,6 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isMounting, setIsMounting] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { data: setupStatus } = useQuery({
     queryKey: ['system-setup-status'],
@@ -88,12 +89,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // If authenticated but on an auth page, we are redirecting (handled in useEffect), 
   // but show nothing or loading to prevent flicker
   if (isAuthPage) {
-    return null;
+    return (
+      <div className="min-h-screen bg-sc-dark flex flex-col items-center justify-center text-sc-blue">
+        <div className="text-sm font-black uppercase tracking-[0.5em] animate-pulse">
+          Establishing Secure Link...
+        </div>
+      </div>
+    );
   }
 
     // Standard Layout for Authenticated Users
-
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
       <SignalingProvider>
