@@ -161,7 +161,7 @@ const CitizenCard = ({ member, onCall }: { member: any, onCall: () => void }) =>
                         </button>
                     </div>
                     <button 
-                        onClick={() => router.push(`/profile/${member.id}`)}
+                        onClick={() => router.push(`/profile/dossier?id=${member.id}`)}
                         className="text-[8px] font-black text-sc-grey/40 hover:text-white uppercase tracking-[0.2em] flex items-center group/dossier"
                     >
                         Dossier <ExternalLink className="w-2.5 h-2.5 ml-1.5 group-hover/dossier:translate-x-0.5 transition-transform" />

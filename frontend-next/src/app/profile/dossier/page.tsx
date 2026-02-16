@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { 
@@ -23,17 +23,30 @@ import { cn } from '@/lib/utils';
 import { useCall } from '@/context/CallContext';
 
 export default function MemberDossierPage() {
-  const { id } = useParams();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
   const router = useRouter();
   const { initiateCall } = useCall();
 
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['member-dossier', id],
     queryFn: async () => {
+      if (!id) return null;
       const res = await api.get(`/social/members/${id}`);
       return res.data;
-    }
+    },
+    enabled: !!id
   });
+
+  if (!id) {
+    return (
+      <div className="text-center p-24 bg-sc-panel border border-sc-blue/10 rounded-lg">
+        <h2 className="text-xl font-black text-white uppercase tracking-widest mb-4 text-red-500">Access Denied</h2>
+        <p className="text-xs text-sc-grey/60 uppercase tracking-widest mb-8">No citizen identifier provided.</p>
+        <button onClick={() => router.back()} className="px-6 py-2 bg-sc-blue/10 border border-sc-blue text-sc-blue text-[10px] font-black rounded uppercase">Return to Registry</button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

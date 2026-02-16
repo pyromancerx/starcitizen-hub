@@ -471,7 +471,7 @@ export default function AdminPersonnelPage() {
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end space-x-2">
                     <button 
-                        onClick={() => router.push(`/profile/${user.id}`)}
+                        onClick={() => router.push(`/profile/dossier?id=${user.id}`)}
                         className="p-2 hover:bg-white/5 text-sc-grey hover:text-sc-blue rounded transition-all"
                         title="View Dossier"
                     >
