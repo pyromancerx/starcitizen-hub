@@ -285,6 +285,24 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *AdminHandler) BulkUpdateUsers(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		IDs    []uint                 `json:"ids"`
+		Update map[string]interface{} `json:"update"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.adminService.DB.Model(&models.User{}).Where("id IN ?", req.IDs).Updates(req.Update).Error; err != nil {
+		http.Error(w, "Failed to perform bulk update", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, _ := strconv.ParseUint(idStr, 10, 32)

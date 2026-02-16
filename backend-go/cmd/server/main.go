@@ -385,6 +385,7 @@ func main() {
 							r.Use(customMiddleware.AdminMiddleware)
 							
 							r.Get("/admin/users", adminHandler.ListUsers)
+							r.Patch("/admin/users/bulk", adminHandler.BulkUpdateUsers)
 							r.Get("/admin/rsi-members", adminHandler.ListRSIMembers)
 							r.Patch("/admin/users/me/notifications", adminHandler.UpdateMyNotificationSettings)
 							r.Post("/admin/users", adminHandler.CreateUser)

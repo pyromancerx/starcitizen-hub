@@ -15,7 +15,9 @@ import {
   Plus,
   RefreshCw,
   Trash2,
-  Settings
+  Settings,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +27,7 @@ export default function AdminPersonnelPage() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'rsi'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -113,6 +116,17 @@ export default function AdminPersonnelPage() {
     },
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ ids, update }: { ids: number[], update: any }) => {
+      return api.patch('/admin/users/bulk', { ids, update });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setSelectedUsers([]);
+      alert('Personnel records synchronized.');
+    },
+  });
+
   const { data: rsiMembers } = useQuery({
     queryKey: ['rsi-members'],
     queryFn: async () => {
@@ -137,6 +151,20 @@ export default function AdminPersonnelPage() {
     }
     return list;
   }, [users, filter, searchQuery]);
+
+  const toggleUserSelection = (id: number) => {
+    setSelectedUsers(prev => 
+      prev.includes(id) ? prev.filter(uid => uid !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllSelection = () => {
+    if (selectedUsers.length === filteredUsers?.length && filteredUsers?.length > 0) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(filteredUsers?.map((u: any) => u.id) || []);
+    }
+  };
 
   return (
     <section className="space-y-6">
@@ -197,6 +225,38 @@ export default function AdminPersonnelPage() {
             </button>
         </div>
       </div>
+
+      {selectedUsers.length > 0 && (
+        <div className="flex justify-between items-center bg-sc-blue/5 border border-sc-blue/20 p-4 rounded animate-in slide-in-from-top-2">
+            <div className="flex items-center space-x-4">
+                <span className="text-[10px] font-black text-sc-blue uppercase tracking-widest">{selectedUsers.length} Units Selected</span>
+                <div className="h-4 w-px bg-sc-blue/20"></div>
+                <div className="flex items-center space-x-2">
+                    <button 
+                        onClick={() => bulkUpdateMutation.mutate({ ids: selectedUsers, update: { is_approved: true, is_active: true } })}
+                        className="px-3 py-1 bg-green-500/10 border border-green-500/30 text-green-500 text-[8px] font-black rounded uppercase hover:bg-green-500 hover:text-white transition-all"
+                    >
+                        Authorize Access
+                    </button>
+                    <button 
+                        onClick={() => bulkUpdateMutation.mutate({ ids: selectedUsers, update: { is_active: false } })}
+                        className="px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-500 text-[8px] font-black rounded uppercase hover:bg-red-500 hover:text-white transition-all"
+                    >
+                        Suspend Links
+                    </button>
+                    <button 
+                        onClick={() => bulkUpdateMutation.mutate({ ids: selectedUsers, update: { is_active: true } })}
+                        className="px-3 py-1 bg-sc-blue/10 border border-sc-blue/30 text-sc-blue text-[8px] font-black rounded uppercase hover:bg-sc-blue hover:text-sc-dark transition-all"
+                    >
+                        Restore Signal
+                    </button>
+                </div>
+            </div>
+            <button onClick={() => setSelectedUsers([])} className="text-sc-grey/40 hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+            </button>
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -296,6 +356,11 @@ export default function AdminPersonnelPage() {
             <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-black/40 border-b border-sc-grey/10">
+              <th className="p-4 w-10">
+                <button onClick={toggleAllSelection} className="text-sc-blue hover:text-white transition-colors">
+                    {selectedUsers.length > 0 && selectedUsers.length === filteredUsers?.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                </button>
+              </th>
               <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest">Citizen</th>
               <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest text-center">Status</th>
               <th className="p-4 text-[10px] font-black text-sc-grey/50 uppercase tracking-widest text-center">Roles</th>
@@ -305,12 +370,20 @@ export default function AdminPersonnelPage() {
           <tbody className="divide-y divide-sc-grey/5">
             {isLoading ? (
               <tr>
-                <td colSpan={4} className="p-12 text-center text-sc-grey/40 uppercase tracking-widest text-[10px] font-mono animate-pulse">
+                <td colSpan={5} className="p-12 text-center text-sc-grey/40 uppercase tracking-widest text-[10px] font-mono animate-pulse">
                   Accessing restricted personnel records...
                 </td>
               </tr>
             ) : filteredUsers?.map((user: any) => (
-              <tr key={user.id} className="hover:bg-white/5 transition-colors group">
+              <tr key={user.id} className={cn(
+                  "hover:bg-white/5 transition-colors group",
+                  selectedUsers.includes(user.id) && "bg-sc-blue/[0.02]"
+              )}>
+                <td className="p-4">
+                    <button onClick={() => toggleUserSelection(user.id)} className="text-sc-blue hover:text-white transition-colors">
+                        {selectedUsers.includes(user.id) ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                    </button>
+                </td>
                 <td className="p-4">
                   <div className="flex items-center space-x-3">
                     <div className="h-10 w-10 rounded bg-sc-dark border border-sc-grey/10 flex items-center justify-center text-sc-blue">
