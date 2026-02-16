@@ -254,7 +254,10 @@ const OrgCard = ({ entity }: { entity: any }) => {
                             {entity.last_encounter ? `Last Encounter: ${new Date(entity.last_encounter).toLocaleDateString()}` : 'No Recent Encounters'}
                         </span>
                     </div>
-                    <button className="text-[8px] font-black text-sc-blue/40 hover:text-sc-blue uppercase tracking-[0.2em] flex items-center">
+                    <button 
+                        onClick={() => alert(`Accessing deep-space intelligence for ${entity.name}... [External Data Link Placeholder]`)}
+                        className="text-[8px] font-black text-sc-blue/40 hover:text-sc-blue uppercase tracking-[0.2em] flex items-center"
+                    >
                         INTEL <ExternalLink className="w-2.5 h-2.5 ml-1.5" />
                     </button>
                 </div>

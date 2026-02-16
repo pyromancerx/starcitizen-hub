@@ -43,7 +43,10 @@ export default function AuditLogPage() {
                     className="bg-sc-dark/50 border border-sc-grey/10 rounded pl-9 pr-4 py-2 text-[10px] text-white focus:outline-none focus:border-sc-blue/50 uppercase tracking-widest font-bold w-64"
                 />
             </div>
-            <button className="p-2 bg-sc-panel border border-sc-grey/10 rounded text-sc-grey/40 hover:text-white transition-all">
+            <button 
+                onClick={() => alert('Log filtering protocols are currently restricted to command-line access.')}
+                className="p-2 bg-sc-panel border border-sc-grey/10 rounded text-sc-grey/40 hover:text-white transition-all"
+            >
                 <Filter className="w-4 h-4" />
             </button>
         </div>

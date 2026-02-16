@@ -276,23 +276,50 @@ export default function BasesPage() {
                         <div className="space-y-3">
                             <label className="text-[10px] font-black text-sc-blue uppercase tracking-widest block">Tactical Capabilities</label>
                             <div className="grid grid-cols-2 gap-2">
-                                {['Refining', 'Mining', 'Defense', 'Medical'].map(cap => (
-                                    <button 
-                                        key={cap}
-                                        className="p-2 bg-sc-dark border border-white/5 rounded text-[8px] font-black text-sc-grey/40 uppercase hover:border-sc-blue/20 hover:text-white transition-all flex items-center justify-between"
-                                    >
-                                        <span>{cap}</span>
-                                        <div className="w-1 h-1 rounded-full bg-sc-blue opacity-20"></div>
-                                    </button>
-                                ))}
+                                {['Refining', 'Mining', 'Defense', 'Medical'].map(cap => {
+                                    const caps = editingBase.capabilities ? JSON.parse(editingBase.capabilities) : [];
+                                    const isActive = Array.isArray(caps) && caps.includes(cap);
+                                    return (
+                                        <button 
+                                            key={cap}
+                                            onClick={() => {
+                                                const newCaps = isActive 
+                                                    ? caps.filter((c: string) => c !== cap)
+                                                    : [...caps, cap];
+                                                updateBaseMutation.mutate({ id: editingBase.id, updates: { capabilities: JSON.stringify(newCaps) } });
+                                                setEditingBase({ ...editingBase, capabilities: JSON.stringify(newCaps) });
+                                            }}
+                                            className={cn(
+                                                "p-2 bg-sc-dark border rounded text-[8px] font-black uppercase transition-all flex items-center justify-between",
+                                                isActive ? "border-sc-blue text-white bg-sc-blue/10" : "border-white/5 text-sc-grey/40 hover:border-sc-blue/20 hover:text-white"
+                                            )}
+                                        >
+                                            <span>{cap}</span>
+                                            <div className={cn("w-1 h-1 rounded-full bg-sc-blue", isActive ? "opacity-100" : "opacity-20")}></div>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
                         <div className="p-4 bg-sc-blue/5 border border-sc-blue/10 rounded space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-[9px] font-black text-white uppercase tracking-widest">Org Signal Broadcast</span>
-                                <button className="relative w-8 h-4 rounded-full bg-sc-blue transition-all">
-                                    <div className="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-white"></div>
+                                <button 
+                                    onClick={() => {
+                                        const newVal = !editingBase.is_private;
+                                        updateBaseMutation.mutate({ id: editingBase.id, updates: { is_private: newVal } });
+                                        setEditingBase({ ...editingBase, is_private: newVal });
+                                    }}
+                                    className={cn(
+                                        "relative w-8 h-4 rounded-full transition-all",
+                                        !editingBase.is_private ? "bg-sc-blue" : "bg-sc-grey/20"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all",
+                                        !editingBase.is_private ? "right-0.5" : "left-0.5"
+                                    )}></div>
                                 </button>
                             </div>
                             <p className="text-[8px] text-sc-grey/60 uppercase leading-relaxed font-bold tracking-tighter">
@@ -308,7 +335,10 @@ export default function BasesPage() {
                                 <Box className="w-4 h-4 text-sc-blue" />
                                 <span className="text-[10px] font-black text-white uppercase tracking-widest">Inventory Manifest</span>
                             </div>
-                            <button className="flex items-center space-x-2 text-[8px] font-black text-sc-blue uppercase hover:text-white transition-colors">
+                            <button 
+                                onClick={() => alert('Logistics Link Placeholder: Planetary inventory management is restricted in the current sector.')}
+                                className="flex items-center space-x-2 text-[8px] font-black text-sc-blue uppercase hover:text-white transition-colors"
+                            >
                                 <Plus className="w-3 h-3" />
                                 <span>Provision Item</span>
                             </button>
@@ -387,11 +417,23 @@ const BaseCard = ({ base, isOrgView, onEdit, onDelete }: { base: any, isOrgView:
 
                 {/* Capabilities Tags */}
                 <div className="flex flex-wrap gap-2">
-                    {['Refining', 'Mining', 'Defense', 'Research'].map(tag => (
-                        <span key={tag} className="px-2 py-1 bg-black/40 border border-white/5 rounded text-[8px] font-bold text-sc-grey/40 uppercase tracking-tighter hover:border-sc-blue/20 hover:text-sc-blue transition-all cursor-default">
-                            {tag}
-                        </span>
-                    ))}
+                    {(() => {
+                        try {
+                            const caps = base.capabilities ? JSON.parse(base.capabilities) : [];
+                            if (Array.isArray(caps) && caps.length > 0) {
+                                return caps.map((tag: string) => (
+                                    <span key={tag} className="px-2 py-1 bg-sc-blue/5 border border-sc-blue/20 rounded text-[8px] font-bold text-sc-blue uppercase tracking-tighter hover:bg-sc-blue/10 transition-all cursor-default">
+                                        {tag}
+                                    </span>
+                                ));
+                            }
+                        } catch (e) {}
+                        return (
+                            <span className="px-2 py-1 bg-black/40 border border-white/5 rounded text-[8px] font-bold text-sc-grey/40 uppercase tracking-tighter italic cursor-default">
+                                No Specialized Capabilities
+                            </span>
+                        );
+                    })()}
                 </div>
 
                 {/* Stats / Inventory Preview */}

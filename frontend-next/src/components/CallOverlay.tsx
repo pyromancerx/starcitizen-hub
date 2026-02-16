@@ -51,7 +51,10 @@ const CallOverlay: React.FC<CallOverlayProps> = ({
           </div>
         </div>
         <div className="flex items-center space-x-2">
-            <button className="p-2 text-sc-grey/40 hover:text-white transition-colors">
+            <button 
+                onClick={() => alert('Neural link maximization protocol initialized... [UI Scaling Placeholder]')}
+                className="p-2 text-sc-grey/40 hover:text-white transition-colors"
+            >
                 <Maximize2 className="w-5 h-5" />
             </button>
         </div>
