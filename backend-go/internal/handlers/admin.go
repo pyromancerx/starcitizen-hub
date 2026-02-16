@@ -223,7 +223,14 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) ListRSIMembers(w http.ResponseWriter, r *http.Request) {
 	var members []models.KnownRSIMember
-	if err := h.adminService.DB.Order("rsi_handle asc").Find(&members).Error; err != nil {
+	// Only return members who aren't already registered users in the Hub
+	if err := h.adminService.DB.Raw(`
+		SELECT k.* 
+		FROM known_rsi_members k 
+		LEFT JOIN users u ON k.rsi_handle = u.rsi_handle 
+		WHERE u.id IS NULL AND k.deleted_at IS NULL 
+		ORDER BY k.rsi_handle ASC
+	`).Scan(&members).Error; err != nil {
 		http.Error(w, "Failed to list RSI members", http.StatusInternalServerError)
 		return
 	}
